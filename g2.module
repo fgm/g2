@@ -1,0 +1,1275 @@
+<?php
+/**
+ * This defines a node-based glossary module, as opposed to the term-based
+ * glossary module in drupal 4.6/4.7
+ * Copyright (C) 2005 Frederic G. MARAND
+ * Licensed under the General Public License, version 2
+ * @file g2.module
+ * $Id: g2_.module,
+ * v 0.1.3 2005-12-22 23:50 osinet -
+ *   fixed bug in WOTD block (unable to key in size using FF or IE6) 
+ *   fixed bug 1 with paths and access for non-admin
+ * v 0.1.2 2005-12-21 00:50 osinet - various fixes, new feature and themeabiliy in WOTD
+ * v 0.1.1 2005-12-14 19:26 osinet Exp $
+ */ 
+
+/**
+ * G2 constants
+ */
+define('G2DEFAULTALPHABAR', '0123456789abcdefghijklmnopqrstuvwxyz');
+define('G2PATHENTRIES',     'g2/entries');
+define('G2PATHAUTOCOMPLETE','g2/autocomplete');
+define('G2PATHINITIAL',     'g2/initial');
+define('G2PATHMAIN',        'g2');
+define('G2PERMVIEW',        'view g2 entries');
+define('G2PERMADMIN',       'administer g2 entries');
+
+/**
+ * ========== Unimplemented hooks below: ==========
+ **/
+/*
+function g2_execute(&$node) 
+function g2_prepare(&$node) 
+function g2_comment($comment, $op)
+function g2_db_rewrite_sql($query, $primary_table, $primary_field, $args)
+function g2_elements()
+function g2_exit($destination = NULL)
+function g2_file_download($file)
+function g2_footer($main = 0)
+function g2_form_alter($form_id, &$form_values)
+function g2_init()
+function g2_link($type, $node = NULL, $teaser = FALSE)
+function g2_user($op, &$edit, &$user, $category = NULL)
+function g2_onload()
+function g2_node_grants($user, $op)
+function g2_nodeapi(&$node, $op, $teaser = NULL, $page = NULL)
+function g2_ping($name = '', $url = '') { 
+function g2_search($op = 'search', $keys = null)
+function g2_search_item($item)
+function g2_search_preprocess($text)
+function g2_update_index()
+function g2_taxonomy($op, $type, $object = NULL)
+*/
+
+/**
+ * Return a themed alphabar
+ */
+function _g2_alphabar()
+  {
+  $rawalphabar = variable_get('g2_alphabar', G2DEFAULTALPHABAR);
+  $ret = array();
+  for ($i = 0 ; $i < strlen($rawalphabar) ; $i++)
+    {
+    $ret[] = l($rawalphabar[$i], 'g2/initial/' . urlencode($rawalphabar[$i]), NULL, NULL, NULL, TRUE); 
+    }
+  return $ret;
+  }
+
+/**
+ * AJAX autocomplete for entry
+ *
+ * @param string $string The beginning of the entry
+ * @see g2_menu()
+ * @see g2_block()
+ */
+function _g2_autocomplete($string = NULL)
+  {
+  $matches = array();
+  if (isset($string))
+    {
+    $q = db_query_range("SELECT title FROM {node} WHERE LOWER(title) LIKE LOWER('%s%%') and type = 'g2_entry'", $string, 0, 10);
+    while ($result = db_fetch_object($q)) {
+      $matches[$result->title] = check_plain($result->title);
+    // watchdog('g2', "string = $string, matches: " . print_r($matches, TRUE), WATCHDOG_NOTICE);
+    }
+  }
+  print drupal_implode_autocomplete($matches);
+  exit();    
+  }
+  
+/**
+ * Ancillary function for g2_block(view, 0)
+ *
+ * @return string HTML
+ */
+function _g2_block_alphabar()
+  {
+  $rowlen = variable_get('g2_alphabar_rowlen', 13);
+  $links = _g2_alphabar();
+  $len = count($links);
+  $rowcount = floor($len + $rowlen - 1) / $rowlen;
+  $ret = '';
+  $i = 0;
+  foreach ($links as $link)
+    {
+    $ret .= $link;
+    if ($i % $rowlen == $rowlen - 1)
+      $ret .= '<br/>';     
+    $i++;
+    }
+  return $ret;  
+  }
+
+/**
+ * Ancillary function for g2_block to generate a "random entry" block body
+ * @return string HTML
+ */
+function _g2_block_random()
+{
+$o = _g2_random();
+
+$ret = l($o->title, "node/$o->nid");
+if ($o->teaser)
+  $ret .= t(': ') . $o->teaser ; // Why t() ? Because varying languages have varying takes on spaces before/after semicolons.
+$ret .= l(' (+)', "node/$o->nid");
+return $ret;
+}
+
+/**
+ * Provides the block-specific contents common to each G2 block: ability to rename the block and change its title
+ *
+ * @param array $form The current form for which this is built
+ * @param string $infotitle Block information: the title
+ * @param string $infovar Block information: the config variable name
+ * @param string $infodefault Block information: the default name
+ * @param string $titletitle Block title: the title
+ * @param string $titlevar Block title: the config variable name
+ * @param string $titledefault Block title: the default title
+ * @return void
+ */
+function _g2_block_settings_show(&$form, $infotitle, $infovar, $infodefault, $titletitle, $titlevar, $titledefault)
+  {
+  $form['info']   = array
+    (
+    '#type'          => 'textfield',
+    '#title'         => $infotitle,
+    '#default_value' => variable_get('g2_' . $infovar . '_info', $infodefault),
+    '#weight'        => -2,
+    );
+  $form['title']   = array
+    (
+    '#type'          => 'textfield',
+    '#title'         => $titletitle,
+    '#default_value' => variable_get('g2_' . $titlevar . '_title', $titledefault),
+    '#weight'        => -1,
+    );
+  }
+
+function _g2_block_settings_save($edit, $blockname)
+  {
+  variable_set('g2_' . $blockname . '_info',  $edit['info' ]);
+  variable_set('g2_' . $blockname . '_title', $edit['title']);  
+  }
+
+/**
+ * Ancillary function for g2_block to generate a "top n" block
+ * @return string HTML
+ */
+function _g2_block_top()
+  {
+  $tops = _g2_top();
+  $ar = array();
+  foreach ($tops as $top)
+    {
+    $ar[] = l($top->title, "node/$top->nid");
+    }
+  $ret = theme_item_list($ar);
+  return $ret;
+  }
+
+/**
+ * @return object title / nid / teaser / [body]
+ */
+function _g2_block_wotd()
+{    
+$bodysize = variable_get('g2_wotd_bodysize', 0);
+$o = _g2_wotd($bodysize);
+
+$ret = l($o->title, "node/$o->nid");
+if (isset($o->teaser) and ($o->teaser <> ''))
+  $ret .= theme('g2_wotd_teaser', $o->teaser);
+if (isset($o->body) and ($o->body <> '')) // Won't be set if bodysize is 0
+  {
+  $strippedbody = strip_tags($o->body);
+  $trimmedbody = substr($strippedbody, 0, $bodysize);
+  if (strlen($trimmedbody) < strlen($strippedbody))
+    $trimmedbody .= '&hellip;';
+  $ret .= theme('g2_wotd_body', $trimmedbody);
+  }
+$ret .= l(' (+)', "node/$o->nid");
+
+return $ret;
+}
+
+/**
+ * Return a themed page with alphabars wrapping a node
+ * to serve as the front page for the G2 glossary
+ *
+ * @return string HTML 
+ */
+function _g2_main()
+  {
+  $alphabar = theme_links(_g2_alphabar(), ' ');
+  $ret = $alphabar;
+  
+  $node = node_load(variable_get('g2_main', 0));
+  if (isset($node))
+    { 
+    drupal_set_title($node->title);
+    $ret .= theme_box('', $node->body) ;
+    $ret .= $alphabar;
+    }
+  return $ret;
+  }
+  
+/**
+ * Ancillary function for g2_block to return a pseudo-random entry
+ * selected to be different from the current WOTD and latest
+ * pseudo-random result returned.
+ * Only works for glossaries with 3 entries or more.
+ * @return object title / nid / teaser
+ */
+function _g2_random()
+  {
+  $random = variable_get('g2_random_entry', '');
+  $wotd   = variable_get('g2_wotd_entry', '');
+
+  // Count the allowed nodes
+  $sq = "select count(*) cnt from {node} n where n.type = 'g2_entry' and not (n.title = '%s' or n.title = '%s')" ;
+  $q = db_query($sq, $random, $wotd);
+  $ret = db_fetch_object($q);
+  $n = $ret->cnt;
+  $rand = rand(0, $n - 1);
+
+  // Select from the exact same list of nodes, assuming none was inserted/deleted in the meantime
+  $sq = "select n.title, n.nid, v.teaser from {node} n inner join {node_revisions} v on n.vid = v.vid where n.type = 'g2_entry' and not (n.title = '%s' or n.title = '%s')" ;
+  $q = db_query_range($sq, $random, $wotd, $rand, 1);
+  $ret = db_fetch_object($q);
+
+  variable_set('g2_random_entry', $ret->title);
+  return $ret;
+  }
+  
+/**
+ * Returns a list of the top n nodes
+ * as counted by statistics.module
+ * @return array
+ */
+function _g2_top()
+  {
+  $max = variable_get ('g2_top_itemcount', 10);
+  $sq = "select n.title, n.nid from {node} n inner join {node_counter} c on n.nid = c.nid where (n.type = 'g2_entry') and (c.totalcount is not null) order by c.totalcount desc, n.changed desc";
+  $q = db_query_range($sq, 0, $max);
+  $ret = array();
+  while ($row = db_fetch_object($q))
+    {
+    $ret[] = $row;
+//    $ret[] = "<pre>" . print_r($row, TRUE) . "</pre>";
+    }
+  return $ret;
+  }
+  
+/**
+ * Returns a structure for the WOTD.
+ * Limitation: always returns just the FIRST entry for a given word
+ * @param int $bodysize 
+ * @return object title / nid / teaser
+ */
+function _g2_wotd($bodysize = 0)
+  {
+  $sqhead = 'select n.title, n.nid, v.teaser' ;
+  $entry = variable_get('g2_wotd_entry', '');
+
+  if ($bodysize > 0)
+    $sqhead .= ', v.body';
+  $sq = $sqhead . " from {node} n inner join {node_revisions} v on n.vid = v.vid where n.type='g2_entry' and n.title='%s'";
+  $q = db_query_range($sq, $entry, 0, 1);
+  $ret = db_fetch_object($q);
+  return $ret;
+  }
+  
+/** 
+ * Define access restrictions. 
+ * 
+ * This hook allows node modules to limit access to the node types they 
+ * define. 
+ * 
+ * @param $op string
+ * @param $node int 
+ *   The node on which the operation is to be performed, or, if it does 
+ *   not yet exist, the type of node to be created. 
+ * @return boolean
+ *   TRUE if the operation may be performed; FALSE if the operation may not be 
+ *   returned; NULL to not override the settings in the node_access table. 
+ * 
+ * The administrative account (user ID #1) always passes any access check, 
+ * so this hook is not called in that case. If this hook is not defined for 
+ * a node type, all access checks will fail, so only the administrator will 
+ * be able to see content of that type. However, users with the "administer 
+ * nodes" permission may always view and edit content through the 
+ * administrative interface. 
+ */ 
+function g2_access($op, $node) 
+  { 
+  global $user; 
+
+  switch ($op)
+    {
+    case 'create':
+    case 'delete':
+    case 'update':
+      $ret = user_access(G2PERMADMIN); 
+      break;
+    case 'view':
+      $ret = user_access(G2PERMVIEW);
+      break;
+    }
+  return $ret; 
+  } 
+
+/** 
+ * Declare a block or set of blocks. 
+ * 
+ * Any module can export a block (or blocks) to be displayed by defining 
+ * the _block hook. This hook is called by theme.inc to display a block, 
+ * and also by block.module to procure the list of available blocks. 
+ * 
+ * @param $op string 
+ *   What kind of information to retrieve about the block or blocks. 
+ *   Possible values: 
+ *   - 'list': A list of all blocks defined by the module. 
+ *   - 'configure': A configuration form. 
+ *   - 'save': Save the configuration options. 
+ *   - 'view': Information about a particular block. 
+ * @param $delta int 
+ *   Which block to return (not applicable if $op is 'list'). 
+ * @param $edit array 
+ *   If $op is 'save', the submitted form data from the configuration form. 
+ * @return mixed 
+ *   If $op is 'list', return an array of arrays, each of which must define an 
+ *   'info' element describing the block. If $op is 'configure', optionally 
+ *   return a string containing the configuration form. If $op is 'save', 
+ *   return nothing, If $op is 'view', return an array which must define a 
+ *   'subject' element and a 'content' element defining the block indexed by 
+ *   $delta. 
+ * 
+ * The functions mymodule_display_block_1 and 2, as used in the example, 
+ * should of course be defined somewhere in your module and return the 
+ * content you want to display to your users. If the "content" element 
+ * is empty, no block will be displayed even if "subject" is present. 
+ * 
+ * After completing your blocks, do not forget to enable them in the 
+ * block admin menu. 
+ * 
+ * For a detailed usage example, see block_example.module. 
+ */ 
+function g2_block($op = 'list', $delta = 0, $edit = array()) { 
+  if ($op == 'list') 
+    { 
+    $blocks[0]['info'] = variable_get('g2_alphabar_info', t('G2 Alphabar')); 
+    $blocks[1]['info'] = variable_get('g2_random_info',   t('G2 Random')); 
+    $blocks[2]['info'] = variable_get('g2_top_info',      t('G2 Top')); 
+    $blocks[3]['info'] = variable_get('g2_wotd_info',     t('G2 Word of the day')); 
+    return $blocks; 
+    } 
+  elseif ($op == 'configure')
+    {
+    switch ($delta) 
+      {
+      case 0: // Alphabar
+        $form['alphabar'] = array
+          (
+          '#type'          => 'textfield',
+          '#title'         => t('List of initials to be included in alphabar'),
+          '#default_value' => variable_get('g2_alphabar', G2DEFAULTALPHABAR),
+          '#description'   => t('The alphabar lists the initials for which links to initial pages will be included.')
+          );
+        $form['rowlen']   = array
+          (
+          '#type'          => 'textfield',
+          '#title'         => t('Maximum length of lines in the alphabar'),
+          '#default_value' => variable_get('g2_alphabar_rowlen', 13),
+          '#size'          => 3,
+          '#description'   => t('Each line except the last one will have exactly that number of links.')
+          );
+        _g2_block_settings_show($form, 
+          t('Name of the block in the block list'), 'alphabar', t('G2 Alphabar'),
+          t('Title of the block when displayed'),   'alphabar', t('G2 Glossary pages'));
+        break;
+      case 1: // Random
+        _g2_block_settings_show($form, 
+          t('Name of the block in the block list'), 'random', t('G2 Random'),
+          t('Title of the block when displayed'),   'random', t('Random G2 glossary entry'));
+        break ;
+      case 2: // Top
+        $topcount = variable_get('g2_top_itemcount', 10);
+        $form['itemcount'] = array
+          ( 
+          '#type'          => 'select', 
+          '#title'         => t('Number of items'), 
+          '#default_value' => $topcount, 
+          '#options'       => array('1' => '1', '2' => '2', '5' => '5', '10' => '10')
+          ); 
+        _g2_block_settings_show($form, 
+          t('Name of the block in the block list'), 'top', sprintf (t('G2 Top %d'), $topcount),
+          t('Title of the block when displayed'),   'top', t('%d most popular G2 glossary entries'));
+        break;
+      case 3: // WOTD
+        /**
+         * @see _g2_autocomplete()
+         */
+        $form['wotd_entry'] = array
+          (
+          '#type'          => 'textfield', 
+          '#title'         => t('Entry for the day'), 
+          '#maxlength'     => 60, 
+          '#autocomplete_path' => 'g2/autocomplete', 
+          '#required'      => TRUE, 
+          '#default_value' => variable_get('g2_wotd_entry', '')
+          );
+
+        $form['wotd_bodysize'] = array
+          (
+          '#type'          => 'textfield', 
+          '#title'         => t('Number of text characters to be displayed from entry definition body, if one exists'), 
+          '#size'          => 4,
+          '#maxlength'     => 4, 
+          '#required'      => TRUE, 
+          '#default_value' => variable_get('g2_wotd_bodysize', '')
+          );
+        $form['wotd_autochange'] = array
+          (
+          '#type'          => 'checkbox', 
+          '#title'         => t('Auto-change daily'), 
+          '#required'      => TRUE, 
+          '#default_value' => variable_get('g2_wotd_autochange', TRUE),
+          '#description'   => t('This setting will only work if cron or poormanscron is used.')
+          );
+
+        _g2_block_settings_show($form, 
+          t('Name of the block in the block list'), 'wotd', t('G2 Word of the day'),
+          t('Title of the block when displayed'),   'wotd', t('Word of the day in the G2 glossary'));
+        break;
+      default:
+        break;
+      } 
+    return $form; 
+    } 
+  elseif ($op == 'save')
+    { 
+    // echo "<pre>block/SAVE" . print_r($edit, TRUE) . "</pre>";
+    switch ($delta) 
+      {
+      case 0: // Alphabar
+        variable_set('g2_alphabar', $edit['alphabar']);
+        variable_set('g2_alphabar_rowlen', $edit['rowlen']);
+        _g2_block_settings_save($edit, 'alphabar');
+        break;  
+      case 1: // Random
+        _g2_block_settings_save($edit, 'random');
+        break;
+      case 2: // Top
+        variable_set('g2_top_itemcount', $edit['itemcount']); 
+        _g2_block_settings_save($edit, 'top');
+        break;
+      case 3: // WOTD
+        variable_set('g2_wotd_entry', $edit['wotd_entry']);
+        variable_set('g2_wotd_bodysize', $edit['wotd_bodysize']);
+        variable_set('g2_wotd_autochange', $edit['wotd_autochange']);
+        variable_set('g2_wotd_date', mktime());
+        _g2_block_settings_save($edit, 'wotd');
+      default:
+        break;
+      }
+    } 
+  elseif ($op == 'view') 
+    { 
+    switch($delta) 
+      { 
+      case 0: 
+        $block['subject'] = variable_get('g2_alphabar_title', t('G2 Glossary pages')); 
+        $block['content'] = _g2_block_alphabar(); 
+        break; 
+      case 1: 
+        $block['subject'] = variable_get('g2_random_title',   t('Random G2 glossary entry')); 
+        $block['content'] = _g2_block_random(); 
+        break; 
+      case 2: 
+        $block['subject'] = sprintf (
+          variable_get('g2_top_title',      t('%d most popular G2 glossary entries')),
+          variable_get('g2_top_itemcount', 10)); 
+        $block['content'] = _g2_block_top(); 
+        break; 
+      case 3: 
+        $block['subject'] = variable_get('g2_wotd_title',     t('Word of the day in the G2 glossary')); 
+        $block['content'] = _g2_block_wotd(); 
+        break; 
+      } 
+    return $block; 
+    } 
+} 
+
+/** 
+ * In G2's case, change the WOTD once a day if this feature 
+ * is enabled, which is the default case.
+ * 
+ * @return void
+ * 
+ * This hook will only be called if cron.php is run (e.g. by crontab). 
+ */ 
+function g2_cron() 
+  { 
+  if (variable_get('g2_wotd_autochange', TRUE))
+    {
+    $date0 = date('z', variable_get('g2_wotd_date', mktime()));
+    $date1 = date('z');
+    if ($date1 <> $date0)
+      {
+      $random = _g2_random();
+      variable_set ('g2_wotd_entry', $random->nid);
+      variable_set ('g2_wotd_date',  mktime());
+      }
+    }
+  } 
+
+/** 
+ * Respond to node deletion. 
+ * 
+ * This is a hook used by node modules. It is called to allow the module 
+ * to take action when a node is being deleted from the database by, for 
+ * example, deleting information from related tables. 
+ * 
+ * @param &$node int
+ *   The node being deleted. 
+ * @return 
+ *   None. 
+ * 
+ * To take action when nodes of any type are deleted (not just nodes of 
+ * the type defined by this module), use hook_nodeapi() instead. 
+ */ 
+function g2_delete(&$node) { 
+  db_query('DELETE FROM {g2_node} WHERE nid = %d', $node->nid); 
+} 
+
+/** 
+ * Define content filters. 
+ * 
+ * Content in Drupal is passed through all enabled filters before it is 
+ * output. This lets a module modify content to the site administrator's 
+ * liking. 
+ * 
+ * This hook contains all that is needed for having a module provide filtering 
+ * functionality. 
+ * 
+ * Depending on $op, different tasks are performed. 
+ * 
+ * A module can contain as many filters as it wants. The 'list' operation tells 
+ * the filter system which filters are available. Every filter has a numerical 
+ * 'delta' which is used to refer to it in every operation. 
+ * 
+ * Filtering is a two-step process. First, the content is 'prepared' by calling 
+ * the 'prepare' operation for every filter. The purpose of 'prepare' is to 
+ * escape HTML-like structures. For example, imagine a filter which allows the 
+ * user to paste entire chunks of programming code without requiring manual 
+ * escaping of special HTML characters like @< or @&. If the programming code 
+ * were left untouched, then other filters could think it was HTML and change 
+ * it. For most filters however, the prepare-step is not necessary, and they can 
+ * just return the input without changes. 
+ * 
+ * Filters should not use the 'prepare' step for anything other than escaping, 
+ * because that would short-circuits the control the user has over the order 
+ * in which filters are applied. 
+ * 
+ * The second step is the actual processing step. The result from the 
+ * prepare-step gets passed to all the filters again, this time with the 
+ * 'process' operation. It's here that filters should perform actual changing of 
+ * the content: transforming URLs into hyperlinks, converting smileys into 
+ * images, etc. 
+ * 
+ * An important aspect of the filtering system are 'input formats'. Every input 
+ * format is an entire filter setup: which filters to enable, in what order 
+ * and with what settings. Filters that provide settings should usually store 
+ * these settings per format. 
+ * 
+ * If the filter's behaviour depends on an extensive list and/or external data 
+ * (e.g. a list of smileys, a list of glossary terms) then filters are allowed 
+ * to provide a separate, global configuration page rather than provide settings 
+ * per format. In that case, there should be a link from the format-specific 
+ * settings to the separate settings page. 
+ * 
+ * For performance reasons content is only filtered once; the result is stored 
+ * in the cache table and retrieved the next time the piece of content is 
+ * displayed. If a filter's output is dynamic it can override the cache 
+ * mechanism, but obviously this feature should be used with caution: having one 
+ * 'no cache' filter in a particular input format disables caching for the 
+ * entire format, not just for one filter. 
+ * 
+ * Beware of the filter cache when developing your module: it is advised to set 
+ * your filter to 'no cache' while developing, but be sure to remove it again 
+ * if it's not needed. You can clear the cache by running the SQL query 'DELETE 
+ * FROM cache'; 
+ * 
+ * @param string $op 
+ *  Which filtering operation to perform. Possible values: 
+ *   - list: provide a list of available filters. 
+ *     Returns an associative array of filter names with numerical keys. 
+ *     These keys are used for subsequent operations and passed back through 
+ *     the $delta parameter. 
+ *   - no cache: Return true if caching should be disabled for this filter. 
+ *   - description: Return a short description of what this filter does. 
+ *   - prepare: Return the prepared version of the content in $text. 
+ *   - process: Return the processed version of the content in $text. 
+ *   - settings: Return HTML form controls for the filter's settings. These 
+ *     settings are stored with variable_set() when the form is submitted. 
+ *     Remember to use the $format identifier in the variable and control names 
+ *     to store settings per input format (e.g. "mymodule_setting_$format"). 
+ * @param int $delta 
+ *   Which of the module's filters to use (applies to every operation except 
+ *   'list'). Modules that only contain one filter can ignore this parameter. 
+  * @param int $format 
+ *   Which input format the filter is being used in (applies to 'prepare', 
+ *   'process' and 'settings'). 
+ * @param string $text  
+ *   The content to filter (applies to 'prepare' and 'process'). 
+ * @return string 
+ *   The return value depends on $op. The filter hook is designed so that a 
+ *   module can return $text for operations it does not use/need. 
+ * 
+ * For a detailed usage example, see filter_example.module. For an example of 
+ * using multiple filters in one module, see filter_filter() and 
+ * filter_filter_tips(). 
+ */ 
+function g2_filter($op, $delta = 0, $format = -1, $text = '') { 
+  switch ($op) { 
+    case 'list': 
+      return array(0 => t('G2 Glossary filter')); 
+
+    case 'description': 
+      return t('Allows users to link to G2 entries using &lt;dfn&gt; elements.'); 
+
+    case 'prepare': 
+      // Note: we use the bytes 0xFE and 0xFF to replace < > during the filtering process. 
+      // These bytes are not valid in UTF-8 data and thus least likely to cause problems. 
+      $text = preg_replace('@<dfn>(.+?)</dfn>@s', "\xFEdfn\xFF\\1\xFE/dfn\xFF", $text);
+      return $text; 
+
+    case "process": 
+      $text = preg_replace('@\xFEdfn\xFF(.+?)\xFE/dfn\xFF@se', "_g2_filter_process('$1')", $text);
+      return $text; 
+
+    default: 
+      return $text; 
+  } 
+} 
+
+/** 
+ * Provide tips for using filters. 
+ * 
+ * A module's tips should be informative and to the point. Short tips are 
+ * preferably one-liners. 
+ * 
+ * @param $delta 
+ *   Which of this module's filters to use. Modules which only implement one 
+ *   filter can ignore this parameter. 
+ * @param $format 
+ *   Which format we are providing tips for. 
+ * @param $long 
+ *   If set to true, long tips are requested, otherwise short tips are needed. 
+ * @return 
+ *   The text of the filter tip. 
+ * 
+ * 
+ */ 
+function g2_filter_tips($delta, $format, $long = false) { 
+  if ($long) { 
+    return t('Wrap <dfn> elements around the terms for which you want a link to the available G2 definition(s).'); 
+  } 
+  else { 
+    return t('You may link to G2 definitions using &lt;dfn&gt; elements.'); 
+  } 
+} 
+
+function _g2_filter_process($entry)
+  {
+  $ret = l($entry, G2ENTRIESPATH ."/$entry");
+  return $ret;
+  }
+  
+/** 
+ * Display a node editing form. 
+ * 
+ * This hook, implemented by node modules, is called to retrieve the form 
+ * that is displayed when one attempts to "create/edit" an item. This form is 
+ * displayed at the URI http://www.example.com/?q=node/<add|edit>/nodetype. 
+ * 
+ * @param $node int 
+ *   The node being added or edited. 
+ * @param $param array 
+ *   The hook can set this variable to an associative array of attributes 
+ *   to add to the enclosing \<form\> tag. 
+ * @return array 
+ *   An array containing the form elements to be displayed in the node 
+  *   edit form. 
+ * 
+ * The submit and preview buttons, taxonomy controls, and administrative 
+  * accoutrements are displayed automatically by node.module. This hook 
+  * needs to return the node title, the body text area, and fields 
+ * specific to the node type. 
+ * 
+ * For a detailed usage example, see node_example.module. 
+ */ 
+function g2_form(&$node, &$param) 
+  { 
+  //echo "<pre>g2 form node = " . print_r ($node, TRUE) . ", param = " . print_r($param,true) . "</pre>";
+  $form['content'] = array(
+    '#type'        => 'fieldset',
+    '#title'       => 'Contents',
+    '#collapsible' => TRUE, 
+    '#collapsed'   => FALSE,    
+    '#weight'      => -10
+    );
+  $form['content']['title'] = array( 
+    '#type'          => 'textfield', 
+    '#title'         => t('Title'), 
+    '#required'      => TRUE, 
+    '#default_value' => $node->title
+    ); 
+  $form['content']['teaser'] = array( 
+    '#type'          => 'textfield', 
+    '#title'         => t('Entry expansion (for acronyms) or translation'), 
+    '#required'      => FALSE,
+    '#default_value' => $node->teaser    
+    ); 
+  $form['content']['body'] = array( 
+    '#type'          => 'textarea', 
+    '#title'         => t('Entry definition'), 
+    '#rows'          => 10, 
+    '#required'      => TRUE, 
+    '#default_value' => $node->body    
+    );  
+  $form['content']['period'] = array( 
+    '#type'          => 'textfield', 
+    '#title'         => t('Life period of this entry'), 
+    '#required'      => FALSE, 
+    '#description'   => t('This is the period of time during which the entity described by the term was actually alive, not the lifetime of the term itself, since any term is immortal to some extent.'),
+    '#default_value' => $node->period    
+    ); 
+  $form['publishing'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => 'Editor-only information',
+    '#collapsible'   => TRUE, 
+    '#collapsed'     => TRUE,
+    '#description'   => 'Information in this box is not published in view mode, only during node edition.',
+    '#weight'        => 0
+    );
+  $form['publishing']['complement'] = array( 
+    '#type'          => 'textarea', 
+    '#title'         => t('Complement'), 
+    '#rows'          => 10, 
+    '#required'      => FALSE, 
+    '#description'   => t('Information not pertaining to origin of document: comments, notes...'),
+    '#default_value' => $node->complement    
+    ); 
+  $form['publishing']['origin'] = array( 
+    '#type'          => 'textarea', 
+    '#title'         => t('Origin/I.P.'), 
+    '#rows'          => 10, 
+    '#required'      => FALSE, 
+    '#description'   => t('Informations about the origin/IP licensing of the definition'),
+    '#default_value' => $node->origin    
+    ); 
+
+  $form['format'] = filter_form($node->format);
+  return $form;
+  } 
+
+/** 
+ * Provide online user help. 
+ * 
+ * By implementing hook_help(), a module can make documentation 
+ * available to the engine or to other modules. All user help should be 
+ * returned using this hook; developer help should be provided with 
+ * Doxygen/api.module comments. 
+ * 
+ * @param $section string 
+ *   Drupal URL path (or: menu item) the help is being requested for, e.g. 
+ *   admin/node or user/edit. Recognizes special descriptors after a "#" 
+ *   sign. Some examples: 
+ *   - user/help#modulename 
+ *     The help for a distributed authorization module (if applicable). 
+ * @return string
+ *   A localized string containing the help text. Every web link, l(), or 
+ *   url() must be replaced with %something and put into the final t() 
+ *   call: 
+ *   $output .= 'A role defines a group of users that have certain 
+ *     privileges as defined in %permission.'; 
+ *   $output = t($output, array('%permission' => l(t('user permissions'), 
+ *     'admin/user/permission'))); 
+ */ 
+function g2_help($section) 
+  { 
+  switch ($section) { 
+    case 'admin/modules#name':
+      $ret = 'g2';
+      break;
+    case 'admin/help#g2': 
+      $ret = t('<p>G2 defines a glossary service for Drupal sites. To compare it with the default Drupal glossary:'
+        . '<ul><li>G2 content is node-based, not term-based</li>'
+        . '  <li>G2 leverages existing code from glossary for input filtering and node marking</li>'
+        . '  <li>G2 RAM use does not significantly increase with larger entry counts, which makes is more suitable for larger glossaries</li>'
+        . '  <li>G2 requests much less from the database than the default glossary</li>'
+        . '  <li>G2 uses three taxonomy vcabularies: context, period, and grammatical nature.</li>'
+        . '  <li>G2 defines optional blocks</li>'
+        . '  <li>G2 is remotely usable via XML-RPC</li>'
+        . '  <li>G2 does not provide term feeds</li>'
+        . '  <li>G2 access control is simplistic, targeted to non-community sites</ul></p>'); 
+      break; 
+    case 'admin/modules#description': 
+      $ret = t('G2 manages a node-based glossary.'); 
+      break; 
+    case 'node/add#g2_entry': 
+      $ret = t('A G2 entry is a term (usual sense, not drupal sense) for which a definition'
+        . ' and various additional information is provided, notably at the editorial level');
+      break ;
+    case 'admin/block/configure/g2/0':
+      $ret = t('This block displays a clickable list of initials from the G2 glossary.');
+      break;
+    case 'admin/block/configure/g2/1':
+      $ret = t('This block displays a pseudo-random entry (different each time) from the G2 glossary.');
+      break;
+    case 'admin/block/configure/g2/2':
+      $stats = module_exist('statistics');
+      $count = variable_get('statistics_count_content_views', NULL);
+      $ar = array();
+      $ar[] = $stats
+        ? t('Statistics module installed and activated: OK.')
+        : t('Statistics module not installed or not activated. Install and activate it and try again.');
+      $ret .= '"' . t('Count content views') . '" ' . t('setting is ') ;
+      $ret .= ($count > 0) ? 'ON: OK' : 'OFF: Error. Please enabled this counter in admin/settings/statistics';
+      $ar[] = $ret;
+      $ret = theme_item_list($ar, t("Dependencies checklist"));
+      break;
+    case 'admin/block/configure/g2/3':
+      $ret = t('This block displays a once-a-day entry from the G2 glossary.');
+      break;
+    default: // ignore, this hook is called all over the place in 4.7b1
+      //$ret = "g2_help($section)";
+    } 
+  return $ret;
+  } 
+
+/** 
+ * Respond to node insertion. 
+ * 
+ * This is a hook used by node modules. It is called to allow the module 
+ * to take action when a new node is being inserted in the database by, 
+ * for example, inserting information into related tables. 
+ * 
+ * @param $node  int 
+ * @return void 
+ * 
+ * To take action when nodes of any type are inserted (not just nodes of 
+ * the type(s) defined by this module), use hook_nodeapi() instead. 
+ */ 
+function g2_insert($node) 
+  { 
+  db_query("INSERT INTO {g2_node} (nid, period, complement, origin) 
+    VALUES (%d, '%s', '%s', '%s')", $node->nid, $node->period, $node->complement, $node->origin); 
+  } 
+
+/** 
+ * Load node-type-specific information. 
+ * 
+ * This is a hook used by node modules. It is called to allow the module 
+ * a chance to load extra information that it stores about a node, or 
+  * possibly replace already loaded information - which can be dangerous. 
+ * 
+ * @param $node int 
+ *   The node being loaded. At call time, node.module has already loaded 
+ *   the basic information about the node, such as its node ID (nid), 
+ *   title, and body. 
+ * @return object 
+ *   An object containing properties of the node being loaded. This will 
+ *   be merged with the passed-in $node to result in an object containing 
+ *   a set of properties resulting from adding the extra properties to 
+ *   the passed-in ones, and overwriting the passed-in ones with the 
+ *   extra properties if they have the same name as passed-in properties. 
+ */ 
+function g2_load($node) 
+  { 
+  $ret = db_fetch_object(db_query('SELECT * FROM {g2_node} WHERE nid = %s', $node->nid)); 
+  return $ret; 
+  } 
+
+/** 
+ * Define menu items and page callbacks. 
+ * 
+ * This hook enables modules to register paths which whose requests they wish to handle. 
+ * Depending on the type of registration requested by each path, a link is placed in the 
+ * the navigation block and/or an item appears in the menu administration page (q=admin/menu). 
+ * 
+ * This hook is also a good place to put code which should run exactly once 
+ * per page view. Put it in an if (!may_cache) block. 
+ * 
+ * @param boolean $may_cache  
+ *   A boolean indicating whether cacheable menu items should be returned. The 
+ *   menu cache is per-user, so items can be cached so long as they are not 
+ *   dependent on the user's current location. See the local task definitions 
+ *   in node_menu() for an example of uncacheable menu items. 
+ * @return array 
+ *   An array of menu items. Each menu item is an associative array that may 
+ *   contain the following key-value pairs: 
+ *   - "path": Required. The path to link to when the user selects the item. 
+ *   - "title": Required. The translated title of the menu item. 
+ *   - "callback": The function to call to display a web page when the user 
+ *     visits the path. If omitted, the parent menu item's callback will be used 
+ *     instead. 
+ *   - "callback arguments": An array of arguments to pass to the callback function. 
+ *   - "access": A boolean value that determines whether the user has access 
+ *     rights to this menu item. Usually determined by a call to user_access(). 
+ *     If omitted and "callback" is also absent, the access rights of the parent 
+ *     menu item will be used instead. 
+ *   - "weight": An integer that determines relative position of items in the menu; 
+ *     higher-weighted items sink. Defaults to 0. When in doubt, leave this alone; 
+ *     the default alphabetical order is usually best. 
+ *   - "type": A bitmask of flags describing properties of the menu item. 
+ *     Many shortcut bitmasks are provided as constants in menu.inc: 
+ *     - MENU_NORMAL_ITEM: Normal menu items show up in the menu tree and can be 
+ *       moved/hidden by the administrator. 
+ *     - MENU_ITEM_GROUPING: Item groupings are used for pages like "node/add" 
+ *       that simply list subpages to visit. 
+ *     - MENU_CALLBACK: Callbacks simply register a path so that the correct 
+ *       function is fired when the URL is accessed. 
+ *     - MENU_DYNAMIC_ITEM: Dynamic menu items change frequently, and so should 
+ *       not be stored in the database for administrative customization. 
+ *     - MENU_SUGGESTED_ITEM: Modules may "suggest" menu items that the 
+ *       administrator may enable. 
+ *     - MENU_LOCAL_TASK: Local tasks are rendered as tabs by default. 
+ *     - MENU_DEFAULT_LOCAL_TASK: Every set of local tasks should provide one 
+ *       "default" task, that links to the same path as its parent when clicked. 
+ *     If the "type" key is omitted, MENU_NORMAL_ITEM is assumed. 
+ * 
+ * For a detailed usage example, see page_example.module. 
+ * 
+ */ 
+function g2_menu($may_cache) 
+  { 
+  global $user; 
+  $items = array(); 
+  
+  $view_access = (user_access(G2PERMVIEW) || ($user->uid == arg(1)));
+  if ($may_cache) 
+    { 
+    $items[] = array // AJAX autocomplete callback
+      (
+      'path'     => G2PATHAUTOCOMPLETE, 
+      'title'    => t('entry autocomplete'),
+      'callback' => '_g2_autocomplete', 
+      'access'   => $view_access, 
+      'type'     => MENU_CALLBACK
+      );
+    $items[] = array //
+      (
+      'path'     => G2PATHINITIAL, 
+      'title'    => t('entries starting by initial'),
+      'callback' => '_g2_initial', 
+      'access'   => $view_access, 
+      'type'     => MENU_CALLBACK
+      );
+    $items[] = array
+      (
+      'path'     => G2PATHENTRIES,
+      'title'    => 'G2 entries by name',
+      'callback' => '_g2_entries',
+      'access'   => $view_access,
+      'type'     => MENU_CALLBACK
+      );
+    $items[] = array // G2 main page
+      (
+      'path'     => G2PATHMAIN,
+      'title'    => t('G2 glossary main page'),
+      'callback' => '_g2_main',
+      'access'   => $view_access, 
+      'type'     => MENU_NORMAL_ITEM
+      );
+    } 
+
+  return $items; 
+  } 
+
+/** 
+ * Define the human-readable name of a node type. 
+ * 
+ * This is a hook used by node modules. This hook is required of modules 
+ * that define a node type. It is called to determine the names of the module's 
+ * nodes. 
+ * 
+ * @return array 
+ *   An array of information on the module's nodes. The array contains a 
+ *   sub-array for each node with the node name as the key. Each sub-array has 
+ *   two elements, 'name' and 'base'. 
+ * 
+ * The 'name' value is a human-readable name for the node and while the 'base' 
+ * value tells Drupal how a module's functions map to hooks (i.e. if the base 
+ * is example_foo then example_foo_insert will be called when inserting the 
+ * node). 
+ * 
+ * To prevent namespace conflicts, each node type defined by a module 
+ * should be prefixed by the name of the module and an underscore. 
+ * 
+ * For a detailed usage example, see node_example.module. 
+ */ 
+function g2_node_info() 
+  { 
+  return array
+    ( 
+    'g2_entry' => array('name' => t('G2 entry'), 'base' => 'g2')
+    ); 
+  } 
+
+/** 
+ * Define user permissions. 
+ * 
+ * This hook can supply permissions that the module defines, so that they 
+ * can be selected on the user permissions page and used to restrict 
+ * access to actions the module performs. 
+ * 
+ * @return array An array of permissions strings. 
+ * 
+ * Permissions are checked using user_access(). 
+ */ 
+function g2_perm() { 
+  return array
+    (
+    G2PERMADMIN,
+    G2PERMVIEW
+    ); 
+} 
+
+/** 
+ * Declare administrative settings for a module. 
+ * 
+ * This hook provides an administrative interface for controlling various 
+ * settings for this module. A menu item for the module under "administration >> 
+ * settings" will appear in the administrative menu when this hook is implemented. 
+ * 
+ * @return array 
+ *   An array containing form items to place on the module settings 
+ *   page. 
+ * 
+ * The form items defined on the settings page will be saved with 
+ * variable_set(), and can be later retrieved with variable_get(). If you 
+ * need to store more complicated data (for example, in a separate table), 
+ * define your own administration page and link to it using hook_menu(). 
+ */ 
+function g2_settings() { 
+  $form['g2_xmlrpc'] = array
+    ( 
+    '#type'          => 'checkbox', 
+    '#title'         => t('Enable G2 XML-RPC services'),
+    '#default_value' => variable_get('g2_xmlrpc', TRUE), 
+    '#description'   => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC services.'), 
+    ); 
+  $form['g2_main'] = array( 
+    '#type'          => 'textfield', 
+    '#title'         => t('Node used for the main page of G2 on this site'), 
+    '#default_value' => variable_get('g2_main', 0), 
+    '#description'   => t('This page will be used as the main text for the G2 glossary, wrapped between alphabars. This will typically be an unpublished page node.'),
+    ); 
+
+  return $form; 
+} 
+
+/** 
+ * Respond to node updating. 
+ * 
+ * This is a hook used by node modules. It is called to allow the module 
+ * to take action when an edited node is being updated in the database by, 
+ * for example, updating information in related tables. 
+ * 
+ * @param $node int 
+ *   The node being updated. 
+ * @return void 
+ *   None. 
+ * 
+ * To take action when nodes of any type are updated (not just nodes of 
+ * the type(s) defined by this module), use hook_nodeapi() instead. 
+ */ 
+function g2_update($node) { 
+  db_query("UPDATE {g2_node} SET period = '%s', complement = '%s', origin = '%s' WHERE nid = %d", 
+    $node->period, $node->complement, $node->origin, $node->nid); 
+} 
+
+/** 
+ * Verify a node editing form. 
+ * 
+ * This is a hook used by node modules. It is called to allow the module 
+ * to verify that the node is in a format valid to post to the site. It 
+ * can also be used to make changes to the node before submission, such 
+ * as node-type-specific formatting. Errors should be set with 
+ * form_set_error(). 
+ * 
+ * @param &$node 
+ *   The node to be validated. 
+ * 
+ * To validate nodes of all types (not just nodes of the type(s) defined by 
+ * this module), use hook_nodeapi() instead. 
+ * 
+ * For a detailed usage example, see node_example.module. 
+ */ 
+function g2_validate(&$node) { 
+  if ($node) { 
+    if ($node->end && $node->start) { 
+      if ($node->start > $node->end) { 
+        form_set_error('time', t('An event may not end before it starts.')); 
+      } 
+    } 
+  } 
+} 
+
+/** 
+ * Display a node. 
+ * 
+ * This is a hook used by node modules. It allows a module to define a 
+ * custom method of displaying its nodes, usually by displaying extra 
+ * information particular to that node type. 
+ * 
+ * @param $node object 
+ *   The node to be displayed. 
+ * @param $teaser boolean 
+ *   Whether we are to generate a "teaser" or summary of the node, rather than 
+ *   display the whole thing. 
+ * @param $page boolean 
+ *   Whether the node is being displayed as a standalone page. If this is 
+ *   TRUE, the node title should not be displayed, as it will be printed 
+ *   automatically by the theme system. Also, the module may choose to alter 
+ *   the default breadcrumb trail in this case. 
+ * @return  void
+ *   None. The passed-by-reference $node parameter should be modified as 
+ *   necessary so it can be properly presented by theme('node', $node). This 
+ *   means, for instance, that content should be passed through the filter 
+ *   system by calling check_output() on appropriate fields or by sending the 
+ *   node through node_prepare(). 
+ */ 
+function g2_view(&$node, $teaser = FALSE, $page = FALSE) 
+  { 
+/**
+ * @todo FGM 20051215: This will have to be reexamined later
+ */
+/*
+  if ($page) 
+    { 
+    $breadcrumb = array(); 
+    $breadcrumb[] = array('path' => 'g2', 'title' => t('G2')); 
+    $breadcrumb[] = array('path' => 'g2/'. $node->title, 
+      'title' => t('%category', array('%category' => $node->title))); 
+    $breadcrumb[] = array('path' => 'node/'. $node->nid); 
+    menu_set_location($breadcrumb); 
+    } 
+ */
+
+  //echo "<pre>In g2_view, node = " . print_r($node,TRUE) . "</pre>";
+  $node = node_prepare($node, $teaser); 
+  $node->body = theme_box(t('Definition'), $node->body);
+  if (isset ($node->teaser) && ($node->teaser <> ''))
+    $node->body = theme_box(t('In other words'), $node->teaser) . $node->body ;
+  if (isset ($node->period) && ($node->period <> ''))
+    $node->body .= theme_box(t('Term time period'),  $node->period);
+  }
+
+
+/** 
+ * Register XML-RPC callbacks. 
+ * 
+ * This hook lets a module register callback functions to be called when 
+ * particular XML-RPC methods are invoked by a client. 
+ * 
+ * @return array 
+ *   An array which maps XML-RPC methods to Drupal functions. Each array 
+ *   element is either a pair of method => function or an array with four 
+ *   entries: 
+ *   - The XML-RPC method name (for example, module.function). 
+ *   - The Drupal callback function (for example, module_function). 
+ *   - The method signature is an array of XML-RPC types. The first element 
+ *     of this array is the type of return value and then you should write a 
+ *     list of the types of the parameters. XML-RPC types are the following 
+ *     (See the types at http://www.xmlrpc.com/spec): 
+ *       - "boolean": 0 (false) or 1 (true). 
+ *       - "double": a floating point number (for example, -12.214). 
+ *       - "int": a integer number (for example,  -12). 
+ *       - "array": an array without keys (for example, array(1, 2, 3)). 
+ *       - "struct": an associative array or an object (for example, 
+ *          array('one' => 1, 'two' => 2)). 
+ *       - "date": when you return a date, then you may either return a 
+ *          timestamp (time(), mktime() etc.) or an ISO8601 timestamp. When 
+ *          date is specified as an input parameter, then you get an object, 
+ *          which is described in the function xmlrpc_date 
+ *       - "base64": a string containing binary data, automatically 
+ *          encoded/decoded automatically. 
+ *       - "string": anything else, typically a string. 
+ *   - A descriptive help string, enclosed in a t() function for translation purposes. 
+ *   Both forms are shown in the example. 
+ */ 
+function g2_xmlrpc() { 
+  return array( 
+    'g2.alphabar'          => '_g2_alphabar', 
+    'g2.getentriesbystart' => '_g2_getentriesbystart',
+    'g2.getnetriesbyname'  => '_g2_getentriesbyname',
+    'g2.getentrydefinition'=> '_g2_getentrydefinition',
+    'g2.top'               => '_g2_top',
+    'g2.random'            => '_g2_random',
+    'g2.wotd'              => '_g2_wotd',
+  ); 
+} 
+
+/*======================================================================
+  ============================ @@ Code limit ===========================
+  ======================================================================*/
+
+function _g2_getentriesbyname($entry)
+  {
+  //
+  }
+  
+function _g2_initial($initial)
+  {
+  return 'coucou'  ;
+  }
+
+/**
+ * Callback for G2ENTRIESPATH
+ *
+ * @param unknown_type $entry
+ * @return unknown
+ */
+function _g2_entries($entry)
+  {
+  $entry2 = check_plain($_REQUEST['q']);
+  $entry2 = substr($entry2, strlen(G2ENTRIESPATH) + 1);
+  $sq = "select n.nid, v.teaser from {node} n inner join {node_revisions} v on n.vid = v.vid where n.type='g2_entry' and n.title = '%s'";
+  $q = db_query($sq, $entry2);
+  $ar = array();
+  while ($result = db_fetch_object($q))
+    {
+    $ar[] = l($entry2, "node/$result->nid") . t(': ') . check_plain($result->teaser) . l(' (+)', "node/$result->nid");
+    }
+  $ret = theme_item_list($ar)  ;
+  return $ret;
+  }
+  
+/**
+ * Default theme for the teaser in the WOTD block
+ *
+ * @param string $teaser
+ * @return string HTML
+ */
+function theme_g2_wotd_teaser($teaser)
+  {
+  // Why t() below? Because varying languages have varying takes on spaces before/after semicolons.
+  return t(': ') . '<span id="g2_wotd_teaser">' . $teaser . '</span>';
+  }
+
+function theme_g2_wotd_body($body)
+  {
+  return '<div id="g2_wotd_body">' . $body . '</div>';
+  }

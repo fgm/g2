@@ -1,0 +1,25 @@
+G2 glossary module
+Copyright (C) 2005 Frederic G. MARAND (fgm@osinet.fr)
+License under the General Public License version 2
+
+Installation notes*
+
+1. execute g2.mysql on your server to add the G2 schema extension
+2. copy the g2 directory to <drupal>/modules/g2
+3. activate the module in administer/modules
+
+The module is ready.
+
+It is recommended to define one or more vocabularies and their terms
+in taxonomy.module to classify your entries.
+
+Associate the new vocabularies to the g2_entry node type.
+
+  . To create entries, choose create content / G2 entry
+  . To create G2 links in your other nodes,
+    . activate the G2 glossary filter in administer / input formats / configure
+    . wrap the terms from which you want to link in <dfn> elements
+    
+Read the other documentation made available.
+
+

@@ -1,0 +1,8 @@
+CREATE TABLE `g2_node` 
+  (
+  `nid`        INT( 11 ) DEFAULT '0' NOT NULL ,
+  `period`     VARCHAR( 50 ) ,
+  `complement` MEDIUMTEXT,
+  `origin`     MEDIUMTEXT,
+  PRIMARY KEY ( `nid` ) 
+  ) COMMENT = 'Extensions to node for g2 module';

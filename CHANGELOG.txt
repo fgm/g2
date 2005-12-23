@@ -1,0 +1,6 @@
+$Id$
+$Name$
+
+Drupal HEAD, 2005-12-23
+-----------------------
+Initial CVS files by Frederic G. MARAND (fgm@osinet.fr)
