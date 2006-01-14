@@ -5,5 +5,9 @@ Drupal module created by Frederic G. MARAND
 
 Maintained by:
 -------------
+
 Frederic G. MARAND (fgm@osinet.fr)
+
+On drupal.org   fgm
+On IRC          osinet
 

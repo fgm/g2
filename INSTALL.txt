@@ -1,8 +1,12 @@
-G2 glossary module
-Copyright (C) 2005 Frederic G. MARAND (fgm@osinet.fr)
-License under the General Public License version 2
+G2 Glossary module for Drupal 4.7.x
 
-Installation notes*
+$Id$
+
+Copyright (C) 2005-2006 Frederic G. MARAND (fgm@osinet.fr)
+Licensed under the General Public License version 2
+
+Installation notes
+------------------
 
 1. execute g2.mysql on your server to add the G2 schema extension
 2. copy the g2 directory to <drupal>/modules/g2
@@ -10,16 +14,27 @@ Installation notes*
 
 The module is ready.
 
-It is recommended to define one or more vocabularies and their terms
+You are advised to define one or more vocabularies and their terms
 in taxonomy.module to classify your entries.
 
 Associate the new vocabularies to the g2_entry node type.
 
   . To create entries, choose create content / G2 entry
-  . To create G2 links in your other nodes,
+  . To create G2 links from your nodes to G2 definitions:
     . activate the G2 glossary filter in administer / input formats / configure
     . wrap the terms from which you want to link in <dfn> elements
-    
-Read the other documentation made available.
 
+Read The Fine Documentation
+---------------------------
 
+  On Drupal.org:
+        http://drupal.org/node/41641
+  Or on the G2 Wiki:
+        http://wiki.audean.com/doku.php?id=g2:start
+
+Now that I (fgm on drupal.org / osinet on IRC) have CVS access on Drupal.org, 
+the latest G2 versions are no longer made available on the wiki, only on
+Drupal.org
+
+Feel free to request features or report bugs on Drupal.org: this is still
+a beta version.

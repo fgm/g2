@@ -1,4 +1,9 @@
-CREATE TABLE `g2_node` 
+#-------------------------------------------------
+# New table for the G2 glossary module
+# $Id$
+#-------------------------------------------------
+
+CREATE TABLE `g2_node`
   (
   `nid`        INT( 11 ) DEFAULT '0' NOT NULL ,
   `period`     VARCHAR( 50 ) ,

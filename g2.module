@@ -5,24 +5,73 @@
  * Copyright (C) 2005 Frederic G. MARAND
  * Licensed under the General Public License, version 2
  * @file g2.module
- * $Id: g2_.module,
- * v 0.1.3 2005-12-22 23:50 osinet -
- *   fixed bug in WOTD block (unable to key in size using FF or IE6) 
- *   fixed bug 1 with paths and access for non-admin
- * v 0.1.2 2005-12-21 00:50 osinet - various fixes, new feature and themeabiliy in WOTD
- * v 0.1.1 2005-12-14 19:26 osinet Exp $
- */ 
+ * $Id$
+ * 2005-12-29 24:30 osinet - List of entries by initial segment now operational. This can be considered 1.0beta1.
+ * 2005-12-28 23:30 osinet - All four predefined blocks are now themeable. Removed earlier themeing functions.
+ * 2005-12-24 23:59 osinet - Fixes http://drupal.org/node/42247
+ * 2005-12-21 00:50 osinet - various fixes, new feature and themeabiliy in WOTD
+ * 2005-12-14 19:26:00 osinet Exp $
+ */
 
 /**
- * G2 constants
+ * G2 various constants
  */
-define('G2DEFAULTALPHABAR', '0123456789abcdefghijklmnopqrstuvwxyz');
-define('G2PATHENTRIES',     'g2/entries');
-define('G2PATHAUTOCOMPLETE','g2/autocomplete');
-define('G2PATHINITIAL',     'g2/initial');
-define('G2PATHMAIN',        'g2');
-define('G2PERMVIEW',        'view g2 entries');
-define('G2PERMADMIN',       'administer g2 entries');
+define('G2NODETYPE',          'g2_entry');
+define('G2PERMVIEW',          'view g2 entries');
+define('G2PERMADMIN',         'administer g2 entries');
+define('G2VERSION',           '2006-01-05 23:20 CUT+1');
+
+/**
+ * G2 menu information
+ */
+define('G2PATHAUTOCOMPLETE',  'g2/autocomplete');
+define('G2PATHENTRIES',       'g2/entries');
+define('G2PATHINITIAL',       'g2/initial');
+define('G2PATHMAIN',          'g2');
+define('G2PATHNODEADD',       'node/add/' . G2NODETYPE);
+define('G2PATHWOTDFEED',      'g2/wotd/feed');
+define('G2TITLEAUTOCOMPLETE', t('entry autocomplete'));
+define('G2TITLEENTRIES',      t('G2 entries by name'));
+define('G2TITLEINITIAL',      t('entries starting by initial %initial'));
+define('G2TITLEMAIN',         t('G2 glossary main page'));
+define('G2TITLEWOTDFEED',     t('G2 wotd of the day RSS feed'));
+
+/**
+ * G2 settings and block configuration, persisted in {variable}
+ */
+define('G2VARALPHABAR',       'g2_alphabar');       // Alphabar block: list of the one-symbol initials being displayed
+define('G2VARALPHABARROWLEN', 'g2_alphabar_rowlen');// Alphabar block: row length of the themed alphabar
+define('G2VARALPHABARTITLE',  'g2_alphabar_title'); // Alphabar block: title
+define('G2VARGOTOSINGLE',     'g2_goto_single');    // Automatically go to the match on an "entries" page if only one exists
+define('G2VARHIDDENTITLE',    'g2_hidden_title');   // Does hook_view include a CSS-hidden version of the title for hook_update_index
+define('G2VARHOMONYMS',       'g2_homonyms');       // disambiguation page for homonyms
+define('G2VARMAIN',           'g2_main');           // nid of the node used as main page for G2
+define('G2VARNOFREETAGGING',  'g2_nofreetagging');  // Hide information from freetagging vocabularies to non-G2 admin
+define('G2VARRANDOMENTRY',    'g2_random_entry');   // Random block: latest pseudo-random entry displayed
+define('G2VARRANDOMSTORE',    'g2_random_store');   // Random block: store the latest random entry
+define('G2VARRANDOMTERMS',    'g2_random_terms');   // Random block: show terms bound to entry
+define('G2VARRANDOMTITLE',    'g2_random_title');   // Random block: title
+define('G2VARWOTDAUTOCHANGE', 'g2_wotd_autochange');// WOTD block: automatically change the WOTD once a day
+define('G2VARWOTDBODYSIZE',   'g2_wotd_bodysize');  // WOTD block: number of body characters to be displayed in the block
+define('G2VARWOTDDATE',       'g2_wotd_date');      // WOTD block: date for which this WOTD entry is current
+define('G2VARWOTDENTRY',      'g2_wotd_entry');     // WOTD block: current entry
+define('G2VARWOTDFEEDLINK',   'g2_wotd_feed_link'); // WOTD block feed: include a link to the WOTD RSS feed in the block
+define('G2VARWOTDFEEDTITLE',  'g2_wotd_feed_link'); // WOTD block feed: the title for the WOTD RSS feed
+define('G2VARWOTDFEEDDESCR',  'g2_wotd_feed_descr');// WOTD block feed: the description for the WOTD RSS feed
+define('G2VARWOTDFEEDAUTHOR', 'g2_wotd_feed_author');//WOTD block feed: include the author in the feed entries
+define('G2VARWOTDTITLE',      'g2_wotd_title');     // WOTD block: title
+define('G2VARWOTDTERMS',      'g2_wotd_terms');     // WOTD block: show terms bound to entry
+define('G2VARTOPITEMCOUNT',   'g2_top_item_count'); // Top(x) block: value of x
+define('G2VARTOPTITLE',       'g2_top_title');      // Top(x) block: title
+define('G2VARXMLRPC',         'g2_xmlrpc');         // Is the XML-RPC server enabled ?
+
+/**
+ * G2 default values for some of the persistent variables above
+ */
+define('G2DEFAULTALPHABAR',      '0123456789abcdefghijklmnopqrstuvwxyz');
+define('G2DEFAULTWOTDTITLE',     t('Word of the day in the G2 glossary'));
+define('G2DEFAULTWOTDFEEDDESCR', "A daily definition from the G2 Glossary at %site"); // Do not apply a t(): it is done later.
+define('G2DEFAULTWOTDFEEDAUTHOR',"%author"); // This default will use the actual node author
 
 /**
  * ========== Unimplemented hooks below: ==========
@@ -42,25 +91,24 @@ function g2_link($type, $node = NULL, $teaser = FALSE)
 function g2_user($op, &$edit, &$user, $category = NULL)
 function g2_onload()
 function g2_node_grants($user, $op)
-function g2_nodeapi(&$node, $op, $teaser = NULL, $page = NULL)
 function g2_ping($name = '', $url = '') { 
-function g2_search($op = 'search', $keys = null)
-function g2_search_item($item)
-function g2_search_preprocess($text)
+function g2_search($op = 'search', $keys = null) {}
+function g2_search_item($item) {}
+function g2_search_preprocess($text) -- for Asian languages only ?
 function g2_update_index()
 function g2_taxonomy($op, $type, $object = NULL)
 */
 
 /**
- * Return a themed alphabar
+ * Return alphabar data
  */
 function _g2_alphabar()
   {
-  $rawalphabar = variable_get('g2_alphabar', G2DEFAULTALPHABAR);
+  $rawalphabar = variable_get(G2VARALPHABAR, G2DEFAULTALPHABAR);
   $ret = array();
   for ($i = 0 ; $i < strlen($rawalphabar) ; $i++)
     {
-    $ret[] = l($rawalphabar[$i], 'g2/initial/' . urlencode($rawalphabar[$i]), NULL, NULL, NULL, TRUE); 
+    $ret[] = l($rawalphabar[$i], G2PATHINITIAL . '/' . urlencode($rawalphabar[$i]), NULL, NULL, NULL, TRUE); 
     }
   return $ret;
   }
@@ -77,53 +125,15 @@ function _g2_autocomplete($string = NULL)
   $matches = array();
   if (isset($string))
     {
-    $q = db_query_range("SELECT title FROM {node} WHERE LOWER(title) LIKE LOWER('%s%%') and type = 'g2_entry'", $string, 0, 10);
+    $q = db_query_range("SELECT title FROM {node} WHERE LOWER(title) LIKE LOWER('%s%%') and type = '" . G2NODETYPE . "' and (status = 1)", $string, 0, 10);
     while ($result = db_fetch_object($q)) {
       $matches[$result->title] = check_plain($result->title);
     // watchdog('g2', "string = $string, matches: " . print_r($matches, TRUE), WATCHDOG_NOTICE);
     }
   }
   print drupal_implode_autocomplete($matches);
-  exit();    
+  exit();
   }
-  
-/**
- * Ancillary function for g2_block(view, 0)
- *
- * @return string HTML
- */
-function _g2_block_alphabar()
-  {
-  $rowlen = variable_get('g2_alphabar_rowlen', 13);
-  $links = _g2_alphabar();
-  $len = count($links);
-  $rowcount = floor($len + $rowlen - 1) / $rowlen;
-  $ret = '';
-  $i = 0;
-  foreach ($links as $link)
-    {
-    $ret .= $link;
-    if ($i % $rowlen == $rowlen - 1)
-      $ret .= '<br/>';     
-    $i++;
-    }
-  return $ret;  
-  }
-
-/**
- * Ancillary function for g2_block to generate a "random entry" block body
- * @return string HTML
- */
-function _g2_block_random()
-{
-$o = _g2_random();
-
-$ret = l($o->title, "node/$o->nid");
-if ($o->teaser)
-  $ret .= t(': ') . $o->teaser ; // Why t() ? Because varying languages have varying takes on spaces before/after semicolons.
-$ret .= l(' (+)', "node/$o->nid");
-return $ret;
-}
 
 /**
  * Provides the block-specific contents common to each G2 block: ability to rename the block and change its title
@@ -158,95 +168,139 @@ function _g2_block_settings_show(&$form, $infotitle, $infovar, $infodefault, $ti
 function _g2_block_settings_save($edit, $blockname)
   {
   variable_set('g2_' . $blockname . '_info',  $edit['info' ]);
-  variable_set('g2_' . $blockname . '_title', $edit['title']);  
+  variable_set('g2_' . $blockname . '_title', $edit['title']);
+  }
+  
+/**
+ * Remove unwanted terms from a taxonomy array
+ *
+ * @param array $taxonomy array of fully loaded terms (tid, vid, weight..)
+ */
+function _g2_comb_taxonomy($taxonomy)
+  {
+  $vocabs = array();
+  if (variable_get(G2VARNOFREETAGGING, true)) // These are hidden by default
+    { 
+    // We still hide the terms within freetagging vocabularies to allow partial display
+    foreach ($taxonomy as $key => $value)
+      {
+      // Is the current term in a freetagging vocabulary ?
+      if (!array_key_exists($value->vid, $vocabs))
+        {
+        $vocab = taxonomy_get_vocabulary($value->vid);
+        $vocabs[$value->vid] = $vocab->tags;
+        }
+      
+      if ($vocabs[$value->vid] == true)
+        unset ($taxonomy[$key]);
+      }
+    }
+  return $taxonomy;
   }
 
 /**
- * Ancillary function for g2_block to generate a "top n" block
+ * Callback for G2PATHENTRIES
+ * @param string $entry
+ * @return string
+ */
+function _g2_entries($entry)
+  {
+  return theme('g2_entries', $entry);
+  }
+  
+/**
+ * Return a span containing links to taxonomy terms, or nothing
+ * if node information contains no terms. The "node" passed must
+ * contain full term information, not just tids.
+ * @param object $node imitation of a node
+ */
+function _g2_entry_terms($node)
+  {
+  if (sizeof($node->taxonomy) > 0)
+    {
+    $ret = ' <span class="taxonomy">' ;
+    foreach ($node->taxonomy as $term)
+      {
+      $ret .= l($term->name, "taxonomy/term/$term->tid", array('rel' => 'tag', 'title' => $term->title)) . ' | ';
+      }
+    $ret = substr($ret, 0, strlen($ret) - 3);
+    $ret .= '</span>' ;
+    }
+  return $ret;
+  }
+
+/**
+ * Return a list of words starting by an initial segment
+ * (typically one letter, but this can be any starting substring)
+ * The logic is different from the one in _g2_entries because
+ * we don't care for the case of "/" as an initial segment
+ *
+ * @param string $initial
  * @return string HTML
  */
-function _g2_block_top()
+function _g2_initial($initial)
   {
-  $tops = _g2_top();
+  $initial = check_plain($initial);
+  $sq = "select n.nid, v.title, v.teaser from {node} n inner join {node_revisions} v on n.vid = v.vid "
+    . " where n.type='%s' and v.title like '%s%%' "
+    . "order by v.title ";
+  $q = db_query($sq, G2NODETYPE, $initial);
   $ar = array();
-  foreach ($tops as $top)
+  while ($result = db_fetch_object($q))
     {
-    $ar[] = l($top->title, "node/$top->nid");
+    $ar[] = l($result->title, "node/$result->nid") . t(': ') . strip_tags(($result->teaser)) . l(' (+)', "node/$result->nid");
     }
-  $ret = theme_item_list($ar);
+  $ret = 
+  $ret = theme('item_list', $ar);
   return $ret;
   }
 
-/**
- * @return object title / nid / teaser / [body]
- */
-function _g2_block_wotd()
-{    
-$bodysize = variable_get('g2_wotd_bodysize', 0);
-$o = _g2_wotd($bodysize);
-
-$ret = l($o->title, "node/$o->nid");
-if (isset($o->teaser) and ($o->teaser <> ''))
-  $ret .= theme('g2_wotd_teaser', $o->teaser);
-if (isset($o->body) and ($o->body <> '')) // Won't be set if bodysize is 0
-  {
-  $strippedbody = strip_tags($o->body);
-  $trimmedbody = substr($strippedbody, 0, $bodysize);
-  if (strlen($trimmedbody) < strlen($strippedbody))
-    $trimmedbody .= '&hellip;';
-  $ret .= theme('g2_wotd_body', $trimmedbody);
-  }
-$ret .= l(' (+)', "node/$o->nid");
-
-return $ret;
-}
-
-/**
- * Return a themed page with alphabars wrapping a node
- * to serve as the front page for the G2 glossary
- *
- * @return string HTML 
- */
-function _g2_main()
-  {
-  $alphabar = theme_links(_g2_alphabar(), ' ');
-  $ret = $alphabar;
-  
-  $node = node_load(variable_get('g2_main', 0));
-  if (isset($node))
-    { 
-    drupal_set_title($node->title);
-    $ret .= theme_box('', $node->body) ;
-    $ret .= $alphabar;
-    }
-  return $ret;
-  }
-  
 /**
  * Ancillary function for g2_block to return a pseudo-random entry
- * selected to be different from the current WOTD and latest
- * pseudo-random result returned.
+ * selected to be different from the current WOTD and, in the
+ * default setting, from the latest pseudo-random result returned.
  * Only works for glossaries with 3 entries or more.
  * @return object title / nid / teaser
  */
 function _g2_random()
   {
-  $random = variable_get('g2_random_entry', '');
-  $wotd   = variable_get('g2_wotd_entry', '');
+  $wotd   = variable_get(G2VARWOTDENTRY, '');
 
   // Count the allowed nodes
-  $sq = "select count(*) cnt from {node} n where n.type = 'g2_entry' and not (n.title = '%s' or n.title = '%s')" ;
-  $q = db_query($sq, $random, $wotd);
+  if (variable_get(G2VARRANDOMSTORE, True))
+    {
+    $random = variable_get(G2VARRANDOMENTRY, '');
+    $sq = 'select count(*) cnt '
+        . 'from {node} n '
+        . "where n.type = '" . G2NODETYPE . "' and (n.status = 1) and not (n.title = '%s' or n.nid = %d)" ;
+    $q = db_query($sq, $random, $wotd);
+    }
+  else 
+    {
+    $random = '';
+    $sq = "select count(*) cnt from {node} n where n.type = '" . G2NODETYPE . "' and (n.status = 1) and not (n.nid = %d)" ;
+    $q = db_query($sq, $wotd);        
+    }
   $ret = db_fetch_object($q);
   $n = $ret->cnt;
   $rand = rand(0, $n - 1);
 
   // Select from the exact same list of nodes, assuming none was inserted/deleted in the meantime
-  $sq = "select n.title, n.nid, v.teaser from {node} n inner join {node_revisions} v on n.vid = v.vid where n.type = 'g2_entry' and not (n.title = '%s' or n.title = '%s')" ;
+  $sq = 'select n.title, n.nid, v.teaser '
+      . 'from {node} n inner join {node_revisions} v on n.vid = v.vid '
+      . "where n.type = '" . G2NODETYPE . "' and not (n.title = '%s' or n.nid = %d)" ;
   $q = db_query_range($sq, $random, $wotd, $rand, 1);
   $ret = db_fetch_object($q);
 
-  variable_set('g2_random_entry', $ret->title);
+  if (variable_get(G2VARRANDOMTERMS, FALSE))
+    { 
+    $ret->taxonomy = taxonomy_node_get_terms($ret->nid); 
+    }
+  // echo "<pre>ret = " . print_r($ret, TRUE) . ", terms: " . print_r($x, TRUE) . "</pre>";
+  if (variable_get(G2VARRANDOMSTORE, True))
+    { 
+    variable_set(G2VARRANDOMENTRY, $ret->title); 
+    }
   return $ret;
   }
   
@@ -257,14 +311,13 @@ function _g2_random()
  */
 function _g2_top()
   {
-  $max = variable_get ('g2_top_itemcount', 10);
-  $sq = "select n.title, n.nid from {node} n inner join {node_counter} c on n.nid = c.nid where (n.type = 'g2_entry') and (c.totalcount is not null) order by c.totalcount desc, n.changed desc";
+  $max = variable_get (G2VARTOPITEMCOUNT, 10);
+  $sq = "select n.title, n.nid, n.status from {node} n inner join {node_counter} c on n.nid = c.nid where (n.type = '" . G2NODETYPE . "') and (c.totalcount is not null) order by c.totalcount desc, n.changed desc";
   $q = db_query_range($sq, 0, $max);
   $ret = array();
   while ($row = db_fetch_object($q))
     {
     $ret[] = $row;
-//    $ret[] = "<pre>" . print_r($row, TRUE) . "</pre>";
     }
   return $ret;
   }
@@ -276,18 +329,49 @@ function _g2_top()
  * @return object title / nid / teaser
  */
 function _g2_wotd($bodysize = 0)
-  {
+  {  
+  // No need for a static: this function is normally never called twice
+    
   $sqhead = 'select n.title, n.nid, v.teaser' ;
-  $entry = variable_get('g2_wotd_entry', '');
+  $entrynid = variable_get(G2VARWOTDENTRY, 0);
 
   if ($bodysize > 0)
     $sqhead .= ', v.body';
-  $sq = $sqhead . " from {node} n inner join {node_revisions} v on n.vid = v.vid where n.type='g2_entry' and n.title='%s'";
-  $q = db_query_range($sq, $entry, 0, 1);
+  $sq = $sqhead 
+    . " from {node} n inner join {node_revisions} v on n.vid = v.vid where n.type='" 
+    . G2NODETYPE 
+    . "' and n.nid=%d";
+  $q = db_query_range($sq, $entrynid, 0, 1);
   $ret = db_fetch_object($q);
+  if (variable_get(G2VARWOTDTERMS, FALSE))
+    { 
+    $ret->taxonomy = _g2_comb_taxonomy(taxonomy_node_get_terms($ret->nid));
+    }
   return $ret;
   }
   
+/**
+ * Generate an RSS feed containing the latest WOTD
+ * @return string XML in UTF-8 encoding
+ */
+function _g2_wotd_feed()
+ {
+ global $base_url;
+ 
+ $channelinfo = array
+   (
+   // Link element:  Drupal 4.7 defaults to $base url
+   // Language: Drupal 4.7 defaults to $locale
+   'title'          => variable_get(G2VARWOTDFEEDTITLE, variable_get(G2VARWOTDTITLE, G2DEFAULTWOTDTITLE)),  // Drupal defaults to site name - site slogan
+   'description'    => t(variable_get(G2VARWOTDFEEDDESCR, G2DEFAULTWOTDFEEDDESCR), array('%site' => $base_url)), // Drupal defaults to $site_mission
+   'managingEditor' => variable_get('site_mail', 'nobody@example.com'),
+   );
+ $sq = "select n.nid from {node} n where n. nid = '%d'"; // Silly looking, but node_feed needs to be passed a query
+ $q = db_query($sq, variable_get(G2VARWOTDENTRY, 0));
+ $ret = node_feed($q, $channelinfo);
+ return $ret;
+ }
+ 
 /** 
  * Define access restrictions. 
  * 
@@ -347,7 +431,7 @@ function g2_access($op, $node)
  *   If $op is 'save', the submitted form data from the configuration form. 
  * @return mixed 
  *   If $op is 'list', return an array of arrays, each of which must define an 
- *   'info' element describing the block. If $op is 'configure', optionally 
+ *   'info' element describing the block. If $op is 'configure', optionally
  *   return a string containing the configuration form. If $op is 'save', 
  *   return nothing, If $op is 'view', return an array which must define a 
  *   'subject' element and a 'content' element defining the block indexed by 
@@ -381,14 +465,14 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
           (
           '#type'          => 'textfield',
           '#title'         => t('List of initials to be included in alphabar'),
-          '#default_value' => variable_get('g2_alphabar', G2DEFAULTALPHABAR),
+          '#default_value' => variable_get(G2VARALPHABAR, G2DEFAULTALPHABAR),
           '#description'   => t('The alphabar lists the initials for which links to initial pages will be included.')
           );
         $form['rowlen']   = array
           (
           '#type'          => 'textfield',
           '#title'         => t('Maximum length of lines in the alphabar'),
-          '#default_value' => variable_get('g2_alphabar_rowlen', 13),
+          '#default_value' => variable_get(G2VARALPHABARROWLEN, 13),
           '#size'          => 3,
           '#description'   => t('Each line except the last one will have exactly that number of links.')
           );
@@ -397,12 +481,28 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
           t('Title of the block when displayed'),   'alphabar', t('G2 Glossary pages'));
         break;
       case 1: // Random
+        $form['random_store'] = array
+          (
+          '#type'          => 'checkbox', 
+          '#title'         => t('Store latest random entry'), 
+          '#default_value' => variable_get(G2VARRANDOMSTORE, TRUE),
+          '#description'   => t('When this setting is true (default value), the latest random value is kept in the DB to avoid showing the same pseudo-random value on consecutive page displays. '
+            . 'For small sites, it is usually best to keep it saved. '
+            . 'For larger sites, unchecking this setting will remove one database write with locking.'),
+          );
+        $form['random_terms'] = array(
+          '#type'          => 'checkbox', 
+          '#title'         => t('Return taxonomy terms for the current entry'), 
+          '#default_value' => variable_get(G2VARRANDOMTERMS, FALSE),
+          '#description'   => t('The taxonomy terms will be returned by XML-RPC and made available to the theme. '
+            . 'Default G2 themeing will display them.'),
+          );
         _g2_block_settings_show($form, 
           t('Name of the block in the block list'), 'random', t('G2 Random'),
           t('Title of the block when displayed'),   'random', t('Random G2 glossary entry'));
         break ;
       case 2: // Top
-        $topcount = variable_get('g2_top_itemcount', 10);
+        $topcount = variable_get(G2VARTOPITEMCOUNT, 10);
         $form['itemcount'] = array
           ( 
           '#type'          => 'select', 
@@ -418,16 +518,16 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
         /**
          * @see _g2_autocomplete()
          */
+        $node = node_load(variable_get(G2VARWOTDENTRY, 0));
         $form['wotd_entry'] = array
           (
           '#type'          => 'textfield', 
           '#title'         => t('Entry for the day'), 
           '#maxlength'     => 60, 
-          '#autocomplete_path' => 'g2/autocomplete', 
+          '#autocomplete_path' => G2PATHAUTOCOMPLETE, 
           '#required'      => TRUE, 
-          '#default_value' => variable_get('g2_wotd_entry', '')
+          '#default_value' => $node->title,
           );
-
         $form['wotd_bodysize'] = array
           (
           '#type'          => 'textfield', 
@@ -435,17 +535,68 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
           '#size'          => 4,
           '#maxlength'     => 4, 
           '#required'      => TRUE, 
-          '#default_value' => variable_get('g2_wotd_bodysize', '')
+          '#default_value' => variable_get(G2VARWOTDBODYSIZE, '')
           );
         $form['wotd_autochange'] = array
           (
           '#type'          => 'checkbox', 
           '#title'         => t('Auto-change daily'), 
           '#required'      => TRUE, 
-          '#default_value' => variable_get('g2_wotd_autochange', TRUE),
+          '#default_value' => variable_get(G2VARWOTDAUTOCHANGE, TRUE),
           '#description'   => t('This setting will only work if cron or poormanscron is used.')
           );
 
+        $form['wotd_terms'] = array(
+          '#type'          => 'checkbox', 
+          '#title'         => t('Return taxonomy terms for the current entry'), 
+          '#default_value' => variable_get(G2VARWOTDTERMS, FALSE),
+          '#description'   => t('The taxonomy terms will be returned by XML-RPC and made available to the theme. '
+            . 'Default G2 themeing will display them.'),
+          );
+        $form['wotd_feed'] = array(
+          '#type'          => 'fieldset',
+          '#title'         => 'RSS Feed',
+          );
+        $form['wotd_feed']['wotd_feed_link'] = array(
+          '#type'          => 'checkbox', 
+          '#title'         => t('Display feed link'), 
+          '#default_value' => variable_get(G2VARWOTDFEEDLINK, TRUE),
+          '#description'   => t('Should the theme display the link to the RSS feed for this block ?'),
+          );
+        $form['wotd_feed']['wotd_feed_title'] = array(
+          '#type'          => 'textfield', 
+          '#title'         => t('The feed title'), 
+          '#size'          => 60,
+          '#maxlength'     => 60, 
+          '#required'      => TRUE, 
+          '#default_value' => variable_get(G2VARWOTDFEEDTITLE, variable_get(G2VARWOTDTITLE, G2DEFAULTWOTDTITLE)),
+          '#description'   => t('The title for the feed itself. '
+            . 'This will typically be used by aggregators to remind users of the feed and link to it. '
+            . 'If nulled, G2 will reset it to the title of the block.'),
+          );
+        $form['wotd_feed']['wotd_feed_author'] = array(
+          '#type'          => 'textfield', 
+          '#title'         => t('The feed item author'), 
+          '#size'          => 60,
+          '#maxlength'     => 60, 
+          '#required'      => TRUE, 
+          '#default_value' => t(variable_get(G2VARWOTDFEEDAUTHOR, G2DEFAULTWOTDFEEDAUTHOR)),
+          '#description'   => t('The author name to be included in the feed entries. '
+            . 'In this string %author will be replaced by the actual author information. '
+            . 'Defaults to %author.'),
+          );
+        $form['wotd_feed']['wotd_feed_descr'] = array(
+          '#type'          => 'textfield', 
+          '#title'         => t('The feed description'), 
+          '#size'          => 60,
+          '#maxlength'     => 60, 
+          '#required'      => TRUE, 
+          '#default_value' => t(variable_get(G2VARWOTDFEEDDESCR, G2DEFAULTWOTDFEEDDESCR)),
+          '#description'   => t('The description for the feed itself. This will typically be used by aggregators when describing the feed prior to subscription. '
+            . 'It may contain %site, which will dynamically be replaced by the site base URL. '
+            . 'If nulled, G2 will reset it to a default description.'),
+          );
+          
         _g2_block_settings_show($form, 
           t('Name of the block in the block list'), 'wotd', t('G2 Word of the day'),
           t('Title of the block when displayed'),   'wotd', t('Word of the day in the G2 glossary'));
@@ -457,26 +608,33 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
     } 
   elseif ($op == 'save')
     { 
-    // echo "<pre>block/SAVE" . print_r($edit, TRUE) . "</pre>";
+    //echo "<pre>block/SAVE" . print_r($edit, TRUE) . "</pre>";
     switch ($delta) 
       {
       case 0: // Alphabar
-        variable_set('g2_alphabar', $edit['alphabar']);
-        variable_set('g2_alphabar_rowlen', $edit['rowlen']);
+        variable_set(G2VARALPHABAR, $edit['alphabar']);
+        variable_set(G2VARALPHABARROWLEN, $edit['rowlen']);
         _g2_block_settings_save($edit, 'alphabar');
         break;  
       case 1: // Random
+        variable_set(G2VARRANDOMTERMS,    $edit['random_terms']);
         _g2_block_settings_save($edit, 'random');
         break;
       case 2: // Top
-        variable_set('g2_top_itemcount', $edit['itemcount']); 
+        variable_set(G2VARTOPITEMCOUNT, $edit['itemcount']); 
         _g2_block_settings_save($edit, 'top');
         break;
       case 3: // WOTD
-        variable_set('g2_wotd_entry', $edit['wotd_entry']);
-        variable_set('g2_wotd_bodysize', $edit['wotd_bodysize']);
-        variable_set('g2_wotd_autochange', $edit['wotd_autochange']);
-        variable_set('g2_wotd_date', mktime());
+        $node = node_load(array('title' => $edit['wotd_entry']));
+        variable_set(G2VARWOTDENTRY,      $node->nid);
+        variable_set(G2VARWOTDBODYSIZE,   $edit['wotd_bodysize']);
+        variable_set(G2VARWOTDAUTOCHANGE, $edit['wotd_autochange']);
+        variable_set(G2VARWOTDDATE,       mktime());
+        variable_set(G2VARWOTDTERMS,      $edit['wotd_terms']);
+        variable_set(G2VARWOTDFEEDLINK,   $edit['wotd_feed_link']);
+        variable_set(G2VARWOTDFEEDTITLE,  $edit['wotd_feed_title']);
+        variable_set(G2VARWOTDFEEDDESCR,  $edit['wotd_feed_descr']);
+        variable_set(G2VARWOTDFEEDAUTHOR, $edit['wotd_feed_author']);
         _g2_block_settings_save($edit, 'wotd');
       default:
         break;
@@ -484,25 +642,26 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
     } 
   elseif ($op == 'view') 
     { 
+    watchdog('g2', "hook_block/view/$delta");
     switch($delta) 
       { 
       case 0: 
-        $block['subject'] = variable_get('g2_alphabar_title', t('G2 Glossary pages')); 
-        $block['content'] = _g2_block_alphabar(); 
+        $block['subject'] = variable_get(G2VARALPHABARTITLE, t('G2 Glossary pages')); 
+        $block['content'] = theme('g2_block_alphabar'); 
         break; 
       case 1: 
-        $block['subject'] = variable_get('g2_random_title',   t('Random G2 glossary entry')); 
-        $block['content'] = _g2_block_random(); 
+        $block['subject'] = variable_get(G2VARRANDOMTITLE,   t('Random G2 glossary entry')); 
+        $block['content'] = theme('g2_block_random'); 
         break; 
       case 2: 
         $block['subject'] = sprintf (
-          variable_get('g2_top_title',      t('%d most popular G2 glossary entries')),
-          variable_get('g2_top_itemcount', 10)); 
-        $block['content'] = _g2_block_top(); 
+          variable_get(G2VARTOPTITLE,     t('%d most popular G2 glossary entries')),
+          variable_get(G2VARTOPITEMCOUNT, 10)); 
+        $block['content'] = theme('g2_block_top'); 
         break; 
       case 3: 
-        $block['subject'] = variable_get('g2_wotd_title',     t('Word of the day in the G2 glossary')); 
-        $block['content'] = _g2_block_wotd(); 
+        $block['subject'] = variable_get(G2VARWOTDTITLE, G2DEFAULTWOTDTITLE); 
+        $block['content'] = theme('g2_block_wotd'); 
         break; 
       } 
     return $block; 
@@ -519,15 +678,16 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
  */ 
 function g2_cron() 
   { 
-  if (variable_get('g2_wotd_autochange', TRUE))
+  if (variable_get(G2VARWOTDAUTOCHANGE, TRUE))
     {
-    $date0 = date('z', variable_get('g2_wotd_date', mktime()));
+    $date0 = date('z', variable_get(G2VARWOTDDATE, mktime()));
     $date1 = date('z');
     if ($date1 <> $date0)
       {
       $random = _g2_random();
-      variable_set ('g2_wotd_entry', $random->nid);
-      variable_set ('g2_wotd_date',  mktime());
+      // watchdog("g2_cron", "d0 = $date0, d1 = $date1, random : " . print_r($random,TRUE) . "</pre>");
+      variable_set (G2VARWOTDENTRY, $random->nid);
+      variable_set (G2VARWOTDDATE,  mktime());
       }
     }
   } 
@@ -689,9 +849,18 @@ function g2_filter_tips($delta, $format, $long = false) {
   } 
 } 
 
+/**
+ * Translate glossary linking elements (<dfn>) to actual links)
+ * This function generates absolute links, for the benefit of the WOTD RSS feed
+ * If this feed is not used, it is possible to use the (shorter) relative URLs
+ * by swapping comments.
+ * @param string $entry An entry
+ * @return string HTML
+ */
 function _g2_filter_process($entry)
   {
-  $ret = l($entry, G2ENTRIESPATH ."/$entry");
+  // $ret = l($entry, G2PATHENTRIES ."/$entry");
+  $ret = l($entry, G2PATHENTRIES ."/$entry", NULL, NULL, NULL, TRUE, FALSE);
   return $ret;
   }
   
@@ -827,7 +996,7 @@ function g2_help($section)
     case 'admin/modules#description': 
       $ret = t('G2 manages a node-based glossary.'); 
       break; 
-    case 'node/add#g2_entry': 
+    case 'node/add#' . G2NODETYPE: 
       $ret = t('A G2 entry is a term (usual sense, not drupal sense) for which a definition'
         . ' and various additional information is provided, notably at the editorial level');
       break ;
@@ -847,7 +1016,7 @@ function g2_help($section)
       $ret .= '"' . t('Count content views') . '" ' . t('setting is ') ;
       $ret .= ($count > 0) ? 'ON: OK' : 'OFF: Error. Please enabled this counter in admin/settings/statistics';
       $ar[] = $ret;
-      $ret = theme_item_list($ar, t("Dependencies checklist"));
+      $ret = theme('item_list', $ar, t("Dependencies checklist"));
       break;
     case 'admin/block/configure/g2/3':
       $ret = t('This block displays a once-a-day entry from the G2 glossary.');
@@ -876,6 +1045,15 @@ function g2_insert($node)
   db_query("INSERT INTO {g2_node} (nid, period, complement, origin) 
     VALUES (%d, '%s', '%s', '%s')", $node->nid, $node->period, $node->complement, $node->origin); 
   } 
+  
+/**
+ * Supplies the default main page
+ * @return string HTML
+ */
+function _g2_main()
+  {
+  return theme('g2_main');
+  }
 
 /** 
  * Load node-type-specific information. 
@@ -957,13 +1135,14 @@ function g2_menu($may_cache)
   global $user; 
   $items = array(); 
   
-  $view_access = (user_access(G2PERMVIEW) || ($user->uid == arg(1)));
+  $view_access  = (user_access(G2PERMVIEW)  || ($user->uid == arg(1)));
+  $admin_access = (user_access(G2PERMADMIN) || ($user->uid == arg(1)));
   if ($may_cache) 
     { 
     $items[] = array // AJAX autocomplete callback
       (
       'path'     => G2PATHAUTOCOMPLETE, 
-      'title'    => t('entry autocomplete'),
+      'title'    => G2TITLEAUTOCOMPLETE,
       'callback' => '_g2_autocomplete', 
       'access'   => $view_access, 
       'type'     => MENU_CALLBACK
@@ -971,15 +1150,14 @@ function g2_menu($may_cache)
     $items[] = array //
       (
       'path'     => G2PATHINITIAL, 
-      'title'    => t('entries starting by initial'),
-      'callback' => '_g2_initial', 
+      'callback' => '_g2_initial_page', 
       'access'   => $view_access, 
       'type'     => MENU_CALLBACK
       );
     $items[] = array
       (
       'path'     => G2PATHENTRIES,
-      'title'    => 'G2 entries by name',
+      'title'    => G2TITLEENTRIES,
       'callback' => '_g2_entries',
       'access'   => $view_access,
       'type'     => MENU_CALLBACK
@@ -987,13 +1165,28 @@ function g2_menu($may_cache)
     $items[] = array // G2 main page
       (
       'path'     => G2PATHMAIN,
-      'title'    => t('G2 glossary main page'),
+      'title'    => G2TITLEMAIN,
       'callback' => '_g2_main',
       'access'   => $view_access, 
       'type'     => MENU_NORMAL_ITEM
       );
-    } 
-
+    $items[] = array // Add a G2 entry
+      (
+      'path'     => G2PATHNODEADD,
+      'title'    => t('G2 entry'),
+      'access'   => $admin_access,
+      'type'     => MENU_NORMAL_ITEM      
+      );
+    $items[] = array // WOTD feed
+      (
+      'path'     => G2PATHWOTDFEED,
+      'title'    => G2TITLEWOTDFEED,
+      'callback' => _g2_wotd_feed,
+      'access'   => $view_access, 
+      'type'     => MENU_CALLBACK,
+      );
+    }
+     
   return $items; 
   } 
 
@@ -1023,10 +1216,30 @@ function g2_node_info()
   { 
   return array
     ( 
-    'g2_entry' => array('name' => t('G2 entry'), 'base' => 'g2')
+    G2NODETYPE => array('name' => t('G2 entry'), 'base' => 'g2')
     ); 
   } 
 
+
+/**
+ * Change the publication date for the WOTD feed (and other feeds)
+ * so that even old terms, when chosen for publication, reflect the
+ * publication date, instead of the node creation date as is the default.
+ *
+ * @param object $node
+ * @param string $op
+ * @param boolean $teaser
+ * @param boolean $page
+ */
+function g2_nodeapi(&$node, $op, $teaser = NULL, $page = NULL)
+  {
+  if ($op == 'rss item')
+    {
+    $node->created = time();
+    $node->name = t(variable_get(G2VARWOTDFEEDAUTHOR, '%author'), array('%author' => $node->name)) ;
+    }
+  }
+  
 /** 
  * Define user permissions. 
  * 
@@ -1063,22 +1276,64 @@ function g2_perm() {
  * define your own administration page and link to it using hook_menu(). 
  */ 
 function g2_settings() { 
-  $form['g2_xmlrpc'] = array
+  $form[G2VARMAIN] = array( 
+    '#type'          => 'textfield', 
+    '#title'         => t('Node used for the main page of G2 on this site'),
+    '#default_value' => variable_get(G2VARMAIN, 0), 
+    '#description'   => t('When themeing for G2 is supplied by a non-G2-aware theme, the <code>theme_g2_main</code> function will use this node as the main page for the G2 glossary, wrapped between alphabars. This node will typically be an unpublished page or story node. G2-aware themes can provide their own home page, using this page as a basis, or not.'),
+    ); 
+  $form['automation'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => 'Site automation'
+    );    
+  $form['automation'][G2VARHIDDENTITLE] = array
+    ( 
+    '#type'          => 'checkbox', 
+    '#title'         => t('Embed a CSS-masked version of the definition titles in the node rendition'),
+    '#default_value' => variable_get(G2VARHIDDENTITLE, TRUE), 
+    '#description'   => t('This setting enables search to work better on definition titles, but can be frowned upon by search engines.'), 
+    ); 
+  $form['automation'][G2VARNOFREETAGGING] = array
+    ( 
+    '#type'          => 'checkbox', 
+    '#title'         => t('Hide terms from free-tagging vocabularies to users without G2 administrator permissions.'),
+    '#default_value' => variable_get(G2VARNOFREETAGGING, TRUE), 
+    '#description'   => t('Terms bound to a G2 node belonging in a free tagging vocabulary are typically not meant for end-user consumption.'), 
+    );     
+
+  $form['homonyms'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => 'Homonyms processing'
+    );    
+  $form['homonyms'][G2VARHOMONYMS] = array(
+    '#type'          => 'textfield', 
+    '#title'         => t('Node used for the homonyms disambiguation page of G2 on this site'),
+    '#default_value' => variable_get(G2VARHOMONYMS, 0), 
+    '#description'   => t('If this node is non-zero, this is the page used to build the disambiguation page for G2 entries at <code>&lt;drupal&gt;/g2/entries/&lt;someentry&gt;</code>. Otherwise, a default page is used.'),
+    );
+  $form['homonyms'][G2VARGOTOSINGLE] = array
+    ( 
+    '#type'          => 'checkbox', 
+    '#title'         => t('Enable auto-jump to single match on entry'),
+    '#default_value' => variable_get(G2VARGOTOSINGLE, TRUE), 
+    '#description'   => t('This setting enables automatic redirection from <code>&lt;drupal&gt;/g2/entries/someeentry</code> to the entry page if only one match exists for "someentry". This is especially useful for links generated from content nodes.'), 
+    ); 
+
+  $form[G2VARXMLRPC] = array
     ( 
     '#type'          => 'checkbox', 
     '#title'         => t('Enable G2 XML-RPC services'),
-    '#default_value' => variable_get('g2_xmlrpc', TRUE), 
+    '#default_value' => variable_get(G2VARXMLRPC, FALSE), 
     '#description'   => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC services.'), 
     ); 
-  $form['g2_main'] = array( 
-    '#type'          => 'textfield', 
-    '#title'         => t('Node used for the main page of G2 on this site'), 
-    '#default_value' => variable_get('g2_main', 0), 
-    '#description'   => t('This page will be used as the main text for the G2 glossary, wrapped between alphabars. This will typically be an unpublished page node.'),
-    ); 
+    
+  $form[G2VERSION] = array
+    (
+    '#value'         => '<p>' . t('This site is running G2 version %version', array('%version' => G2VERSION)) . '</p>',
+    );
 
   return $form; 
-} 
+  } 
 
 /** 
  * Respond to node updating. 
@@ -1160,8 +1415,8 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE)
   if ($page) 
     { 
     $breadcrumb = array(); 
-    $breadcrumb[] = array('path' => 'g2', 'title' => t('G2')); 
-    $breadcrumb[] = array('path' => 'g2/'. $node->title, 
+    $breadcrumb[] = array('path' => G2PATHMAIN, 'title' => t('G2')); 
+    $breadcrumb[] = array('path' => G2PATHMAIN . "/$node->title", 
       'title' => t('%category', array('%category' => $node->title))); 
     $breadcrumb[] = array('path' => 'node/'. $node->nid); 
     menu_set_location($breadcrumb); 
@@ -1170,11 +1425,26 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE)
 
   //echo "<pre>In g2_view, node = " . print_r($node,TRUE) . "</pre>";
   $node = node_prepare($node, $teaser); 
-  $node->body = theme_box(t('Definition'), $node->body);
+  $node->body = theme('box', t('Definition'), $node->body);
   if (isset ($node->teaser) && ($node->teaser <> ''))
-    $node->body = theme_box(t('In other words'), $node->teaser) . $node->body ;
+    $node->body = theme('box', t('In other words'), $node->teaser) . $node->body ;
   if (isset ($node->period) && ($node->period <> ''))
-    $node->body .= theme_box(t('Term time period'),  $node->period);
+    $node->body .= theme('box', t('Term time period'), $node->period);
+   
+  // The following line adds invisible text that will be available to the default node update_index
+  // It is prepended to the node in case some later search routine favors the beginning of the body 
+  // It can be turned off in case search engines frown upon this.
+  if (variable_get(G2VARHIDDENTITLE, TRUE))
+    $node->body = '<div style="display: none">' . check_plain($node->title) . '</div>' . $node->body;
+    
+  // Modify displayed taxonomy according to our settings
+  $taxonomy = taxonomy_node_get_terms($node->nid);
+  $taxonomy = _g2_comb_taxonomy($taxonomy);
+  $node->taxonomy = array();
+  foreach ($taxonomy as $term) 
+    {
+  	$node->taxonomy[] = $term->tid;
+    }
   }
 
 
@@ -1213,63 +1483,186 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE)
 function g2_xmlrpc() { 
   return array( 
     'g2.alphabar'          => '_g2_alphabar', 
-    'g2.getentriesbystart' => '_g2_getentriesbystart',
-    'g2.getnetriesbyname'  => '_g2_getentriesbyname',
-    'g2.getentrydefinition'=> '_g2_getentrydefinition',
     'g2.top'               => '_g2_top',
     'g2.random'            => '_g2_random',
     'g2.wotd'              => '_g2_wotd',
   ); 
 } 
 
-/*======================================================================
-  ============================ @@ Code limit ===========================
-  ======================================================================*/
-
-function _g2_getentriesbyname($entry)
+/**
+ * Ancillary function for to return a themed alphabar g2_block(view, 0)
+ *
+ * @return string HTML
+ */
+function theme_g2_block_alphabar()
   {
-  //
-  }
-  
-function _g2_initial($initial)
-  {
-  return 'coucou'  ;
+  $rowlen = variable_get(G2VARALPHABARROWLEN, 13);
+  $links = _g2_alphabar();
+  $ret = '';
+  $i = 0;
+  foreach ($links as $link)
+    {
+    $ret .= $link;
+    if ($i % $rowlen == $rowlen - 1)
+      $ret .= '<br/>';     
+    $i++;
+    }
+  return $ret;  
   }
 
 /**
- * Callback for G2ENTRIESPATH
- *
- * @param unknown_type $entry
- * @return unknown
+ * Ancillary function for g2_block to generate a themed "random entry" block body
+ * @return string HTML
  */
-function _g2_entries($entry)
+function theme_g2_block_random()
   {
-  $entry2 = check_plain($_REQUEST['q']);
-  $entry2 = substr($entry2, strlen(G2ENTRIESPATH) + 1);
-  $sq = "select n.nid, v.teaser from {node} n inner join {node_revisions} v on n.vid = v.vid where n.type='g2_entry' and n.title = '%s'";
-  $q = db_query($sq, $entry2);
+  $o = _g2_random();
+
+  $ret = l($o->title, "node/$o->nid");
+  if ($o->teaser)
+    $ret .= t(': ') . $o->teaser ; // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
+  $ret .= l(t(' (+)'), "node/$o->nid");
+  $ret .= _g2_entry_terms($o); // No need to test: it won't change anything if a taxonomy has not been returned
+  return $ret;
+  }
+
+/**
+ * Ancillary function for g2_block to generate a themed "top n" block
+ * @return string HTML
+ */
+function theme_g2_block_top()
+  {
+  $tops = _g2_top();
   $ar = array();
-  while ($result = db_fetch_object($q))
+  foreach ($tops as $top)
     {
-    $ar[] = l($entry2, "node/$result->nid") . t(': ') . check_plain($result->teaser) . l(' (+)', "node/$result->nid");
+    if ($top->status == 1)
+      $ar[] = l($top->title, "node/$top->nid");
+    else 
+      $ar[] = $top->title . t(' [offline]');
     }
-  $ret = theme_item_list($ar)  ;
+  $ret = theme('item_list', $ar);
+  return $ret;
+  }
+
+/**
+ * @return object title / nid / teaser / [body]
+ */
+function theme_g2_block_wotd()
+  {    
+  $bodysize = variable_get(G2VARWOTDBODYSIZE, 0);
+  $o = _g2_wotd($bodysize);
+
+  $ret = l($o->title, "node/$o->nid");
+  if (isset($o->teaser) and ($o->teaser <> ''))
+    $ret .= t(': ') . '<span id="g2_wotd_teaser">' . $o->teaser . '</span>';
+  if (isset($o->body) and ($o->body <> '')) // Won't be set if bodysize is 0
+    {
+    $strippedbody = strip_tags($o->body);
+    $trimmedbody = substr($strippedbody, 0, $bodysize);
+    if (strlen($trimmedbody) < strlen($strippedbody))
+      $trimmedbody .= '&hellip;';
+    $ret .= '<div id="g2_wotd_body">' . $trimmedbody . '</div>';
+    }
+  $ret .= l(t(' (+)'), "node/$o->nid");
+  $ret .= _g2_entry_terms($o); // No need to test: it won't change anything if a taxonomy has not been returned    
+  if (variable_get(G2VARWOTDFEED, TRUE))
+    $ret .= theme('xml_icon', url(G2PATHWOTDFEED, NULL, NULL, TRUE));
+  return $ret;
+  }
+
+/**
+ * Return a simple nodepage built with alphabars wrapping a node
+ * to serve as the main page for the G2 glossary.
+ *
+ * @return string HTML
+ */
+function theme_g2_main()
+  {
+  $alphabar = theme('links', _g2_alphabar(), ' ');
+  $ret = $alphabar;
+
+  $node = node_load(variable_get(G2VARMAIN, 0));
+  if (isset($node))
+    {
+    drupal_set_title($node->title);
+    $ret .= theme('box', '', $node->body) ;
+    $ret .= $alphabar;
+    }
+  return $ret;
+  }
+
+/**
+ * Return a homonyms disambiguation page, built:
+ * - either by this module
+ * - either from a site node (typically in PHP input format)
+ * The default procesing doesn't use the entry as processed by drupal
+ * because we need to obtain slashes, which drupal preprocesses
+ * @param string $entry
+ * @return string
+ */
+function theme_g2_entries($entry)
+  {
+  $nid = variable_get(G2VARHOMONYMS, 0);
+  if ($nid > 0)
+    {
+    $node = node_load($nid);
+    $ret .= node_view($node);
+    }
+  else 
+    {    
+    $count = 0 ;
+    $nid = 0 ;
+    $entry2 = check_plain($_REQUEST['q']);
+    $entry2 = substr($entry2, strlen(G2PATHENTRIES) + 1);
+    $sq = "select n.nid, v.teaser from {node} n inner join {node_revisions} v on n.vid = v.vid where n.type='"
+      . G2NODETYPE
+      . "' and n.title = '%s'";
+    $q = db_query($sq, $entry2);
+    $ar = array();
+    while ($result = db_fetch_object($q))
+      {
+      $ar[] = l($entry2, "node/$result->nid") . t(': ') . check_plain($result->teaser) . l(' (+)', "node/$result->nid");
+      $nid = $result->nid;
+      $count++;
+      }
+    if ($count == 1) // Single answer, we can jump to it automatically
+      if (variable_get(G2VARGOTOSINGLE, TRUE)) // Does the webmaster want us to jump ?
+        {
+        drupal_goto("node/$nid") ;
+        // Never returns
+        }
+      else 
+        { 
+        }
+    else
+      {
+      $ret .= theme('item_list', $ar);
+      } 
+    }
+  return $ret;     
+  }
+  
+/**
+ * Return a themed page listing entries by initial segment
+ * @param string $initial
+ * @return string HTML
+ */
+function theme_g2_initial($initial = NULL)
+  {
+  $initial = check_plain($initial);
+  drupal_set_title(t(G2TITLEINITIAL, array('%initial' => $initial)));
+  $ret .= _g2_initial($initial);
   return $ret;
   }
   
 /**
- * Default theme for the teaser in the WOTD block
+ * Themeability wrapper around g2_initial
  *
- * @param string $teaser
- * @return string HTML
+ * @param unknown_type $initial
+ * @return unknown
  */
-function theme_g2_wotd_teaser($teaser)
+function _g2_initial_page($initial)
   {
-  // Why t() below? Because varying languages have varying takes on spaces before/after semicolons.
-  return t(': ') . '<span id="g2_wotd_teaser">' . $teaser . '</span>';
-  }
-
-function theme_g2_wotd_body($body)
-  {
-  return '<div id="g2_wotd_body">' . $body . '</div>';
+  return theme('g2_initial', $initial)  ;
   }
