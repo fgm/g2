@@ -1,17 +1,11 @@
 <?php
-/**
- * This defines a node-based glossary module, as opposed to the term-based
+/** 
+ * This defines a node-based glossary module, as opposed to the term-based 
  * glossary module in drupal 4.6/4.7
  * Copyright (C) 2005 Frederic G. MARAND
  * Licensed under the General Public License, version 2
- * @file g2.module
  * $Id$
- * 2005-12-29 24:30 osinet - List of entries by initial segment now operational. This can be considered 1.0beta1.
- * 2005-12-28 23:30 osinet - All four predefined blocks are now themeable. Removed earlier themeing functions.
- * 2005-12-24 23:59 osinet - Fixes http://drupal.org/node/42247
- * 2005-12-21 00:50 osinet - various fixes, new feature and themeabiliy in WOTD
- * 2005-12-14 19:26:00 osinet Exp $
- */
+ */ 
 
 /**
  * G2 various constants
@@ -19,7 +13,7 @@
 define('G2NODETYPE',          'g2_entry');
 define('G2PERMVIEW',          'view g2 entries');
 define('G2PERMADMIN',         'administer g2 entries');
-define('G2VERSION',           '2006-01-05 23:20 CUT+1');
+define('G2VERSION',           '$Id$');
 
 /**
  * G2 menu information
@@ -242,7 +236,7 @@ function _g2_initial($initial)
   {
   $initial = check_plain($initial);
   $sq = "select n.nid, v.title, v.teaser from {node} n inner join {node_revisions} v on n.vid = v.vid "
-    . " where n.type='%s' and v.title like '%s%%' "
+    . " where (n.type='%s') and (v.title like '%s%%') and (n.status = 1) "
     . "order by v.title ";
   $q = db_query($sq, G2NODETYPE, $initial);
   $ar = array();
@@ -288,7 +282,7 @@ function _g2_random()
   // Select from the exact same list of nodes, assuming none was inserted/deleted in the meantime
   $sq = 'select n.title, n.nid, v.teaser '
       . 'from {node} n inner join {node_revisions} v on n.vid = v.vid '
-      . "where n.type = '" . G2NODETYPE . "' and not (n.title = '%s' or n.nid = %d)" ;
+      . "where n.type = '" . G2NODETYPE . "' and (n.status = 1) and not (n.title = '%s' or n.nid = %d)" ;
   $q = db_query_range($sq, $random, $wotd, $rand, 1);
   $ret = db_fetch_object($q);
 
@@ -300,6 +294,45 @@ function _g2_random()
   if (variable_get(G2VARRANDOMSTORE, True))
     { 
     variable_set(G2VARRANDOMENTRY, $ret->title); 
+    }
+  return $ret;
+  }
+  
+/**
+ * Counts the number of entries matching two criteria:
+ * @param int $tid Term Id (ignored if 0)
+ * @param string $initial Start of entry (ignored if null)
+ */
+function _g2_stats($tid = 0, $initial = NULL)
+  {
+  $test1 = false;
+  $test2 = false;
+  
+  $sq = "SELECT status, count(distinct n.nid) cnt FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid WHERE n.type = '" 
+    . G2NODETYPE . "' ";
+  if (isset($tid) && $tid > 0)
+    {
+    $sq .= 'AND tn.tid = %d ';
+    $test1 = true;
+    }
+  if (isset($initial) && $initial <> '')
+    {
+    $sq .= "AND n.title like '%s%%' ";
+    $test2 = true;
+    }
+  $sq .= 'GROUP BY status';
+  if ($test1 && $test2)  
+    $q = db_query($sq, $tid, $initial);
+  elseif ($test1)
+    $q = db_query($sq, $tid);
+  elseif ($test2)
+    $q = db_query($sq, $initial);
+  else 
+    $q = db_query($sq);
+  $ret = array();
+  while ($o = db_fetch_object($q))
+    {
+    $ret[$o->status] = $o->cnt;
     }
   return $ret;
   }
@@ -340,7 +373,7 @@ function _g2_wotd($bodysize = 0)
   $sq = $sqhead 
     . " from {node} n inner join {node_revisions} v on n.vid = v.vid where n.type='" 
     . G2NODETYPE 
-    . "' and n.nid=%d";
+    . "' and (n.status = 1) and (n.nid=%d)";
   $q = db_query_range($sq, $entrynid, 0, 1);
   $ret = db_fetch_object($q);
   if (variable_get(G2VARWOTDTERMS, FALSE))
@@ -366,7 +399,7 @@ function _g2_wotd_feed()
    'description'    => t(variable_get(G2VARWOTDFEEDDESCR, G2DEFAULTWOTDFEEDDESCR), array('%site' => $base_url)), // Drupal defaults to $site_mission
    'managingEditor' => variable_get('site_mail', 'nobody@example.com'),
    );
- $sq = "select n.nid from {node} n where n. nid = '%d'"; // Silly looking, but node_feed needs to be passed a query
+ $sq = "select n.nid from {node} n where n.nid = '%d'"; // Silly looking, but node_feed needs to be passed a query
  $q = db_query($sq, variable_get(G2VARWOTDENTRY, 0));
  $ret = node_feed($q, $channelinfo);
  return $ret;
@@ -1485,6 +1518,7 @@ function g2_xmlrpc() {
     'g2.alphabar'          => '_g2_alphabar', 
     'g2.top'               => '_g2_top',
     'g2.random'            => '_g2_random',
+    'g2.stats'             => '_g2_stats',
     'g2.wotd'              => '_g2_wotd',
   ); 
 } 
@@ -1586,7 +1620,7 @@ function theme_g2_main()
   if (isset($node))
     {
     drupal_set_title($node->title);
-    $ret .= theme('box', '', $node->body) ;
+    $ret .= theme('box', $node->body, FALSE, TRUE) ;
     $ret .= $alphabar;
     }
   return $ret;
@@ -1617,7 +1651,7 @@ function theme_g2_entries($entry)
     $entry2 = substr($entry2, strlen(G2PATHENTRIES) + 1);
     $sq = "select n.nid, v.teaser from {node} n inner join {node_revisions} v on n.vid = v.vid where n.type='"
       . G2NODETYPE
-      . "' and n.title = '%s'";
+      . "' and (n.status = 1) and (n.title = '%s')";
     $q = db_query($sq, $entry2);
     $ar = array();
     while ($result = db_fetch_object($q))
