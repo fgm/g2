@@ -1,6 +1,73 @@
 $Id$
 $Name$
 
-Drupal HEAD, 2005-12-23
------------------------
-Initial CVS files by Frederic G. MARAND (fgm@osinet.fr)
+2006-01-13
+        - Themable functions are now used correctly within the module itself
+        - Added wrappers around all theme functions for themeability
+2006-01-11
+        - Taxonomy terms are no longer displayed or returned by WOTD for 
+          freetagging vocabularies, unless admin so chooses. They are only 
+          available to g2 node editors.
+        - Security: RPC is now disabled by default.
+        - a new setting has been added to allow site admins to relax the
+          "entries must include a definition" requirement
+        - definition teasers including html code are now stripped instead of
+          being converted to plain text
+2006-01-02
+        - title for the “entries by initial” page now includes the initial
+          for http://drupal.org/node/43479
+        - override/extend the author name for entries when displayed in the
+          WOTD RSS feed
+2006-01-01
+        - items in the WOTD RSS feed are now dated with the day they are
+          requested instead of the node creation date.
+        - G2-generated links in the RSS feed (and on node pages) are now
+          absolute: feed now validates without warnings.
+        - Setting for the description of the WOTD RSS feed
+        - Setting for the title of the WOTD RSS feed, now distinct from the
+          title of the WOTD block, but defaulting to it if nulled
+        - RSS feed for word of the day http://drupal.org/node/43078
+        - homonyms disambiguation page at “<drupal>/g2/entries/<someterm>” is
+          now customizable at the site level, and themeable, and can thus be
+          overriden both by site webmasters and by themes
+          for http://drupal.org/node/42965
+        - main page at <drupal>/g2 is now themeable, and can thus be
+          overriden by themes (it could already be overriden by site webmasters)
+        - added G2 path in content/add
+        - WOTD autochange now works
+        - fixed constant name errors in g2_settings: constants in that form
+          were not duly prefixed.
+        - Setting to enable auto-jump from disambiguation on single entry
+          match for http://drupal.org/node/42947
+        - Setting to toggle display of taxonomy terms in random and WOTD blocks
+          for http://drupal.org/node/42928
+2005-12-31
+        - Patch to optimize random block on high-volume sites
+          for http://drupal.org/node/42842
+2005-12-30
+        - Patches for Naudefj http://drupal.org/node/42750
+        - Code cleanup: many strings moved to one of the constant groups on top
+          of the file for easier maintenability, notably all of the persistent
+          variable names http://drupal.org/node/42750
+        - Setting to optimize search on entry titles
+
+2005-12-29
+        - Version 1.0 Beta 1 (on the G2 wiki)
+        - page by initial segment now works (in other words,
+          the alphabar points to valid pages)
+2005-12-28
+        - All four predefined blocks are now fully themeable.
+        - The initial themeing functions theme_g2_wotd_teaser and
+          theme_g2_wotd_body have been replaced by theme_g2_block_wotd
+2005-12-24
+        - Bug fix: http: //drupal.org/node/42247 G2 no longer links to
+          unpublished nodes.
+
+2005-12-23 v 1.1
+        Initial CVS files by Frederic G. MARAND (fgm@osinet.fr).
+        Commit by Chris. Thanks to him.
+2005-12-21
+        Various fixes, new feature block, embryonic themeability for wotd block
+2005-12-14
+        First usable version
+
