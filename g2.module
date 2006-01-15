@@ -1,12 +1,27 @@
 <?php
 /** 
- * This defines a node-based glossary module, as opposed to the term-based 
- * glossary module in drupal 4.6/4.7
- * Copyright (C) 2005 Frederic G. MARAND
+ * This defines a node-based glossary module, 
+ * as opposed to the term-based glossary module in drupal 4.6/4.7
+ * Copyright (C) 2005-2006 Frederic G. MARAND
  * Licensed under the General Public License, version 2
  * $Id$
  */ 
 
+/**
+ * Constants missing from older node.module versions (still missing from node.module 1.582, see http://drupal.org/node/43355)
+ */
+if (!defined('NODE_PUBLISHED'))
+  {
+  define('NODE_NOT_PUBLISHED', 0);
+  define('NODE_PUBLISHED', 1)  ;
+  define('NODE_NOT_IN_MODERATION', 0);  // moderate
+  define('NODE_IN_MODERATION', 1);
+  define('NODE_NOT_PROMOTED', 0);       // promote
+  define('NODE_PROMOTED', 1);
+  define('NODE_NOT_STICKY', 0);         // sticky
+  define('NODE_STICKY', 1);
+  }
+  
 /**
  * G2 various constants
  */
@@ -239,13 +254,33 @@ function _g2_initial($initial)
     . " where (n.type='%s') and (v.title like '%s%%') and (n.status = 1) "
     . "order by v.title ";
   $q = db_query($sq, G2NODETYPE, $initial);
+  $arTotal   = _g2_stats();
+  $arInitial = _g2_stats(0, $initial);
+  $ret = t("<p>Displaying %count entries starting by '%initial' from a total number of %total entries.</p>",
+    array(
+      '%count'   => isset($arInitial[NODE_PUBLISHED]) ? ($arInitial[NODE_PUBLISHED]) : 0,
+      '%initial' => $initial,
+      '%total'   => $arTotal[NODE_PUBLISHED],
+      )
+    );
+  if (user_access(G2PERMADMIN))
+    {
+    $ret .= t('<p>Admin info: there are also %count unpublished matching entries from a total number of %total unpublished entries.</p>',
+      array(
+        '%count' => isset($arInitial[NODE_NOT_PUBLISHED]) ? ($arInitial[NODE_NOT_PUBLISHED]) : 0,
+        '%total' => $arTotal[NODE_NOT_PUBLISHED],
+        )
+      );
+    }
+  unset($arInitial);
+  unset($arTotal);
+  
   $ar = array();
   while ($result = db_fetch_object($q))
     {
     $ar[] = l($result->title, "node/$result->nid") . t(': ') . strip_tags(($result->teaser)) . l(' (+)', "node/$result->nid");
     }
-  $ret = 
-  $ret = theme('item_list', $ar);
+  $ret .= theme('item_list', $ar);
   return $ret;
   }
 
@@ -675,7 +710,7 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
     } 
   elseif ($op == 'view') 
     { 
-    watchdog('g2', "hook_block/view/$delta");
+    // watchdog('g2', "hook_block/view/$delta");
     switch($delta) 
       { 
       case 0: 
@@ -1614,14 +1649,13 @@ function theme_g2_block_wotd()
 function theme_g2_main()
   {
   $alphabar = theme('links', _g2_alphabar(), ' ');
-  $ret = $alphabar;
 
   $node = node_load(variable_get(G2VARMAIN, 0));
   if (isset($node))
     {
     drupal_set_title($node->title);
-    $ret .= theme('box', $node->body, FALSE, TRUE) ;
-    $ret .= $alphabar;
+    $node->body = $alphabar . $node->body . $alphabar;
+    $ret .= node_view($node, false, true); // theme('box', $node->body, FALSE, TRUE) ;
     }
   return $ret;
   }

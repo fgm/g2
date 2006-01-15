@@ -1,6 +1,12 @@
 $Id$
 $Name$
 
+2006-01-15
+  FIX   PHP code in g2 main page now works with default themes 
+        as in http://drupal.org/node/44756
+  FEAT  'By initial' page now displays stats http://drupal.org/node/44800
+  QUAL  Debugging watchog removed
+  QUAL  NODE constants introduced for core version missing them
 2006-01-14
   FIX   Fix for unpublished nodes being returned http://drupal.org/node/44722 and
   FEAT  New g2.stats RPC function
