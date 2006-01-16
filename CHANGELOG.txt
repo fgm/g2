@@ -1,6 +1,15 @@
 $Id$
 $Name$
 
+2006-01-16
+  FEAT  The URL of the main page is now a module setting, grouped with its nid
+  FEAT  RPC setting and version info have been moved to a collapsed fieldset
+        to mask them from first sight
+  FEAT  Under the default themeing, when a link is done to an "entries" page
+        matching no definition, a link to automatically create one is provided
+        if user has g2 admin permission.
+  FIX   "More" links ('+') now carry the standard "read-more" class
+        for standard themes
 2006-01-15
   FIX   PHP code in g2 main page now works with default themes 
         as in http://drupal.org/node/44756

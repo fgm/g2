@@ -36,7 +36,6 @@ define('G2VERSION',           '$Id$');
 define('G2PATHAUTOCOMPLETE',  'g2/autocomplete');
 define('G2PATHENTRIES',       'g2/entries');
 define('G2PATHINITIAL',       'g2/initial');
-define('G2PATHMAIN',          'g2');
 define('G2PATHNODEADD',       'node/add/' . G2NODETYPE);
 define('G2PATHWOTDFEED',      'g2/wotd/feed');
 define('G2TITLEAUTOCOMPLETE', t('entry autocomplete'));
@@ -55,6 +54,7 @@ define('G2VARGOTOSINGLE',     'g2_goto_single');    // Automatically go to the m
 define('G2VARHIDDENTITLE',    'g2_hidden_title');   // Does hook_view include a CSS-hidden version of the title for hook_update_index
 define('G2VARHOMONYMS',       'g2_homonyms');       // disambiguation page for homonyms
 define('G2VARMAIN',           'g2_main');           // nid of the node used as main page for G2
+define('G2VARPATHMAIN',       'g2_pathmain');       // path for the G2 main page
 define('G2VARNOFREETAGGING',  'g2_nofreetagging');  // Hide information from freetagging vocabularies to non-G2 admin
 define('G2VARRANDOMENTRY',    'g2_random_entry');   // Random block: latest pseudo-random entry displayed
 define('G2VARRANDOMSTORE',    'g2_random_store');   // Random block: store the latest random entry
@@ -78,6 +78,7 @@ define('G2VARXMLRPC',         'g2_xmlrpc');         // Is the XML-RPC server ena
  * G2 default values for some of the persistent variables above
  */
 define('G2DEFAULTALPHABAR',      '0123456789abcdefghijklmnopqrstuvwxyz');
+define('G2DEFAULTPATHMAIN',      'g2');
 define('G2DEFAULTWOTDTITLE',     t('Word of the day in the G2 glossary'));
 define('G2DEFAULTWOTDFEEDDESCR', "A daily definition from the G2 Glossary at %site"); // Do not apply a t(): it is done later.
 define('G2DEFAULTWOTDFEEDAUTHOR',"%author"); // This default will use the actual node author
@@ -278,7 +279,10 @@ function _g2_initial($initial)
   $ar = array();
   while ($result = db_fetch_object($q))
     {
-    $ar[] = l($result->title, "node/$result->nid") . t(': ') . strip_tags(($result->teaser)) . l(' (+)', "node/$result->nid");
+    $ar[] = l($result->title, "node/$result->nid") 
+      . t(': ') 
+      . strip_tags(($result->teaser)) 
+      . l(' (+)', "node/$result->nid", array('class' => 'read-more'));
     }
   $ret .= theme('item_list', $ar);
   return $ret;
@@ -957,7 +961,11 @@ function _g2_filter_process($entry)
  */ 
 function g2_form(&$node, &$param) 
   { 
-  //echo "<pre>g2 form node = " . print_r ($node, TRUE) . ", param = " . print_r($param,true) . "</pre>";
+  if (!isset($node->title))
+    {
+    $node->title = check_plain(substr($_REQUEST['q'], strlen(G2PATHNODEADD) + 1)) ;
+    }
+    
   $form['content'] = array(
     '#type'        => 'fieldset',
     '#title'       => 'Contents',
@@ -1232,7 +1240,7 @@ function g2_menu($may_cache)
       );
     $items[] = array // G2 main page
       (
-      'path'     => G2PATHMAIN,
+      'path'     => variable_get(G2VARPATHMAIN, G2DEFAULTPATHMAIN),
       'title'    => G2TITLEMAIN,
       'callback' => '_g2_main',
       'access'   => $view_access, 
@@ -1344,12 +1352,24 @@ function g2_perm() {
  * define your own administration page and link to it using hook_menu(). 
  */ 
 function g2_settings() { 
-  $form[G2VARMAIN] = array( 
+  $form['main'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => 'Main page',
+    );
+  $form['main'][G2VARMAIN] = array( 
     '#type'          => 'textfield', 
     '#title'         => t('Node used for the main page of G2 on this site'),
     '#default_value' => variable_get(G2VARMAIN, 0), 
     '#description'   => t('When themeing for G2 is supplied by a non-G2-aware theme, the <code>theme_g2_main</code> function will use this node as the main page for the G2 glossary, wrapped between alphabars. This node will typically be an unpublished page or story node. G2-aware themes can provide their own home page, using this page as a basis, or not.'),
     ); 
+  $form['main'][G2VARPATHMAIN] = array(
+    '#type'          => 'textfield', 
+    '#title'         => t('Path for the main page of G2 on this site'),
+    '#default_value' => variable_get(G2VARPATHMAIN, G2DEFAULTPATHMAIN), 
+    '#description'   => t('This setting allows site admins to modify the URL at which the home page will be found. '
+      . 'This will typically be done to replace the standard path ("g2") by a SEO-engineered path.'),
+    );
+
   $form['automation'] = array(
     '#type'          => 'fieldset',
     '#title'         => 'Site automation'
@@ -1387,15 +1407,22 @@ function g2_settings() {
     '#description'   => t('This setting enables automatic redirection from <code>&lt;drupal&gt;/g2/entries/someeentry</code> to the entry page if only one match exists for "someentry". This is especially useful for links generated from content nodes.'), 
     ); 
 
-  $form[G2VARXMLRPC] = array
+  $form['advanced'] = array(
+    '#type'          => 'fieldset',
+    '#title'         => t('Advanced settings (for programmers only)'),
+    '#collapsible'   => true,
+    '#collapsed'     => true,
+    );
+  $form['advanced'][G2VARXMLRPC] = array
     ( 
     '#type'          => 'checkbox', 
     '#title'         => t('Enable G2 XML-RPC services'),
     '#default_value' => variable_get(G2VARXMLRPC, FALSE), 
-    '#description'   => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC services.'), 
+    '#description'   => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC services. '
+      . 'Enabling it without additional access control is typically not a good idea.'), 
     ); 
     
-  $form[G2VERSION] = array
+  $form['advanced'][G2VERSION] = array
     (
     '#value'         => '<p>' . t('This site is running G2 version %version', array('%version' => G2VERSION)) . '</p>',
     );
@@ -1483,8 +1510,8 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE)
   if ($page) 
     { 
     $breadcrumb = array(); 
-    $breadcrumb[] = array('path' => G2PATHMAIN, 'title' => t('G2')); 
-    $breadcrumb[] = array('path' => G2PATHMAIN . "/$node->title", 
+    $breadcrumb[] = array('path' => variable_get(G2VARPATHMAIN, G2DEFAULTPATHMAIN), 'title' => t('G2')); 
+    $breadcrumb[] = array('path' => variable_get(G2VARPATHMAIN, G2DEFAULTPATHMAIN) . "/$node->title", 
       'title' => t('%category', array('%category' => $node->title))); 
     $breadcrumb[] = array('path' => 'node/'. $node->nid); 
     menu_set_location($breadcrumb); 
@@ -1590,7 +1617,7 @@ function theme_g2_block_random()
   $ret = l($o->title, "node/$o->nid");
   if ($o->teaser)
     $ret .= t(': ') . $o->teaser ; // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
-  $ret .= l(t(' (+)'), "node/$o->nid");
+  $ret .= l(t(' (+)'), "node/$o->nid", array('class' => 'read-more'));
   $ret .= _g2_entry_terms($o); // No need to test: it won't change anything if a taxonomy has not been returned
   return $ret;
   }
@@ -1633,7 +1660,7 @@ function theme_g2_block_wotd()
       $trimmedbody .= '&hellip;';
     $ret .= '<div id="g2_wotd_body">' . $trimmedbody . '</div>';
     }
-  $ret .= l(t(' (+)'), "node/$o->nid");
+  $ret .= l(t(' (+)'), "node/$o->nid", array('class' => 'read-more'));
   $ret .= _g2_entry_terms($o); // No need to test: it won't change anything if a taxonomy has not been returned    
   if (variable_get(G2VARWOTDFEED, TRUE))
     $ret .= theme('xml_icon', url(G2PATHWOTDFEED, NULL, NULL, TRUE));
@@ -1690,7 +1717,9 @@ function theme_g2_entries($entry)
     $ar = array();
     while ($result = db_fetch_object($q))
       {
-      $ar[] = l($entry2, "node/$result->nid") . t(': ') . check_plain($result->teaser) . l(' (+)', "node/$result->nid");
+      $ar[] = l($entry2, "node/$result->nid") . t(': ') 
+        . check_plain($result->teaser) 
+        . l(' (+)', "node/$result->nid", array('class' => 'read-more'));
       $nid = $result->nid;
       $count++;
       }
@@ -1703,6 +1732,15 @@ function theme_g2_entries($entry)
       else 
         { 
         }
+    elseif ($count == 0)
+      {
+      $ret = t('<p>There are currently no entries for "%entry".</p>', array('%entry' => $entry));
+      if (user_access(G2PERMADMIN))
+        {
+        $ret .= t('<p>Would you like to <a href="%url" title="Create new entry for %entry">create</a> one ?</p>',
+          array('%url' => url(G2PATHNODEADD . '/' . $entry), '%entry' => $entry));
+        }
+      }
     else
       {
       $ret .= theme('item_list', $ar);
