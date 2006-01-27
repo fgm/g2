@@ -1533,12 +1533,12 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE)
     $node->body = '<div style="display: none">' . check_plain($node->title) . '</div>' . $node->body;
     
   // Modify displayed taxonomy according to our settings
-  $taxonomy = taxonomy_node_get_terms($node->nid);
+  $taxonomy = taxonomy_node_get_terms($node->nid);  
   $taxonomy = _g2_comb_taxonomy($taxonomy);
   $node->taxonomy = array();
   foreach ($taxonomy as $term) 
     {
-  	$node->taxonomy[] = $term->tid;
+  	$node->taxonomy[] = $term;
     }
   }
 
@@ -1603,6 +1603,7 @@ function theme_g2_block_alphabar()
       $ret .= '<br/>';     
     $i++;
     }
+  $ret = '<div class="content">' . $ret . '</div>';
   return $ret;  
   }
 
@@ -1613,13 +1614,13 @@ function theme_g2_block_alphabar()
 function theme_g2_block_random()
   {
   $o = _g2_random();
-
+  
   $ret = l($o->title, "node/$o->nid");
   if ($o->teaser)
     $ret .= t(': ') . $o->teaser ; // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
   $ret .= l(t(' (+)'), "node/$o->nid", array('class' => 'read-more'));
   $ret .= _g2_entry_terms($o); // No need to test: it won't change anything if a taxonomy has not been returned
-  return $ret;
+  return '<div class="content">' . $ret . '</div>';
   }
 
 /**
@@ -1637,7 +1638,7 @@ function theme_g2_block_top()
     else 
       $ar[] = $top->title . t(' [offline]');
     }
-  $ret = theme('item_list', $ar);
+  $ret = '<div class="content">' .theme('item_list', $ar) . '</div>';
   return $ret;
   }
 
@@ -1664,6 +1665,7 @@ function theme_g2_block_wotd()
   $ret .= _g2_entry_terms($o); // No need to test: it won't change anything if a taxonomy has not been returned    
   if (variable_get(G2VARWOTDFEED, TRUE))
     $ret .= theme('xml_icon', url(G2PATHWOTDFEED, NULL, NULL, TRUE));
+  $ret = '<div class="content">' . $ret . '</div>';
   return $ret;
   }
 
