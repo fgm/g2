@@ -1,6 +1,9 @@
 $Id$
 $Name$
 
+2006-01-27
+  FIX   This version is now compatible with Drupal 4.7beta4: this required a change in g2_view
+  FEAT  Themeability improvement: blocks now use a <div class="content">
 2006-01-16
   FEAT  The URL of the main page is now a module setting, grouped with its nid
   FEAT  RPC setting and version info have been moved to a collapsed fieldset
