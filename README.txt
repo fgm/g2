@@ -15,11 +15,8 @@ and does not automatically link terms in other nodes to their entries in G2.
 Buzzword-compliance:
   XML-RPC Web services
   AJAX UI (some)
-  Forms API
 
 Its development to this date has been entirely sponsored by OSInet.fr
 
 Project page on Drupal.org:
         http://drupal.org/node/41641
-
-

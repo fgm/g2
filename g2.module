@@ -38,11 +38,13 @@ define('G2PATHENTRIES',       'g2/entries');
 define('G2PATHINITIAL',       'g2/initial');
 define('G2PATHNODEADD',       'node/add/' . G2NODETYPE);
 define('G2PATHWOTDFEED',      'g2/wotd/feed');
+define('G2PATHREFERERWIPE',   'g2/wipe');
 define('G2TITLEAUTOCOMPLETE', t('entry autocomplete'));
 define('G2TITLEENTRIES',      t('G2 entries by name'));
 define('G2TITLEINITIAL',      t('entries starting by initial %initial'));
 define('G2TITLEMAIN',         t('G2 glossary main page'));
 define('G2TITLEWOTDFEED',     t('G2 wotd of the day RSS feed'));
+define('G2TITLEREFERERWIPE',  t('Wipe all G2 referer information'));
 
 /**
  * G2 settings and block configuration, persisted in {variable}
@@ -51,7 +53,7 @@ define('G2VARALPHABAR',       'g2_alphabar');       // Alphabar block: list of t
 define('G2VARALPHABARROWLEN', 'g2_alphabar_rowlen');// Alphabar block: row length of the themed alphabar
 define('G2VARALPHABARTITLE',  'g2_alphabar_title'); // Alphabar block: title
 define('G2VARGOTOSINGLE',     'g2_goto_single');    // Automatically go to the match on an "entries" page if only one exists
-define('G2VARHIDDENTITLE',    'g2_hidden_title');   // Does hook_view include a CSS-hidden version of the title for hook_update_index
+define('G2VARHIDDENTITLE',    'g2_hidden_title');   // Does hook_view include a hidden version of title for hook_update_index
 define('G2VARHOMONYMS',       'g2_homonyms');       // disambiguation page for homonyms
 define('G2VARMAIN',           'g2_main');           // nid of the node used as main page for G2
 define('G2VARPATHMAIN',       'g2_pathmain');       // path for the G2 main page
@@ -288,6 +290,17 @@ function _g2_initial($initial)
   return $ret;
   }
 
+/**
+ * Themeability wrapper around g2_initial
+ *
+ * @param unknown_type $initial
+ * @return unknown
+ */
+function _g2_initial_page($initial)
+  {
+  return theme('g2_initial', $initial)  ;
+  }
+  
 /**
  * Ancillary function for g2_block to return a pseudo-random entry
  * selected to be different from the current WOTD and, in the
@@ -1261,7 +1274,31 @@ function g2_menu($may_cache)
       'access'   => $view_access, 
       'type'     => MENU_CALLBACK,
       );
+    $items[] = array // Clear referers for a given entry
+      (
+      'path'     => G2PATHREFERERWIPE,
+      'title'    => t('Wipe referer info for this entry'),
+      'callback' => _g2_referer_wipe,
+      'access'   => $admin_access,
+      'type'     => MENU_CALLBACK,
+      );
     }
+  else 
+    {
+    if (arg(0) == 'node' && is_numeric(arg(1))) 
+      {
+      $items[] = array
+      (
+      'path'     => 'node/'. arg(1) .'/links', 
+      'title'    => t('referers'),
+      'callback' => '_g2_referer_links', 
+      'access'   => $admin_access,
+      'type'     => MENU_LOCAL_TASK, 
+      'weight'   => 2
+      );
+      }
+    }
+
      
   return $items; 
   } 
@@ -1424,9 +1461,23 @@ function g2_settings() {
     
   $form['advanced'][G2VERSION] = array
     (
-    '#value'         => '<p>' . t('This site is running G2 version %version', array('%version' => G2VERSION)) . '</p>',
+    '#value'         => '<p>' . t('This site is running G2 version %version. '
+      . 'See the <a href="%page" title="G2 Glossary project page">G2 project page</a> on Drupal.org.', 
+        array(
+          '%version' => G2VERSION,
+          '%page'    => 'http://drupal.org/node/41641',
+          )
+        ) 
+      . '</p>',
     );
 
+  $form[G2PATHREFERERWIPE] = array
+    (
+    '#type'          => 'submit',
+    '#value'         => G2TITLEREFERERWIPE,
+    '#weight'        => 2,
+    '#callback'      => _g2_referer_wipe,
+    );
   return $form; 
   } 
 
@@ -1539,6 +1590,29 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE)
   foreach ($taxonomy as $term) 
     {
   	$node->taxonomy[] = $term;
+    }
+    
+  global $base_url;
+  $referer = referer_uri();
+  if (strpos($referer, $base_url . '/') === 0) // MUST use ===, otherwise False would match too
+    {
+    $referer = substr($referer, strlen($base_url) + 1); // Is now a local path
+    $referer = drupal_get_normal_path($referer); // Is now an unaliased local path
+    $referer = check_plain($referer);
+    $sq = "UPDATE {g2_referer} SET incoming = incoming + 1 WHERE nid = %d AND referer = '%s'" ;
+    db_query($sq, $node->nid, $referer);
+    if (!db_affected_rows())
+      {
+      $sq = "INSERT INTO {g2_referer} (nid, referer, incoming) VALUES (%d, '%s', 1)";
+      db_query($sq, $node->nid, $referer);
+      }
+    }
+  else 
+    {
+    /**
+     * Referer is non-local. 
+     * Maybe we'll do something later on, but not right now
+     */        
     }
   }
 
@@ -1764,13 +1838,62 @@ function theme_g2_initial($initial = NULL)
   return $ret;
   }
   
-/**
- * Themeability wrapper around g2_initial
- *
- * @param unknown_type $initial
- * @return unknown
- */
-function _g2_initial_page($initial)
+function _g2_referer_links()
   {
-  return theme('g2_initial', $initial)  ;
+  $nid = arg(1);
+  $sq = "SELECT gr.referer, gr.incoming "
+      . "FROM {g2_referer} gr "
+      . "WHERE gr.nid = %d "
+      . "ORDER BY gr.incoming DESC";
+  $q = db_query($sq, $nid);
+  $ar = array();
+  while ($o = db_fetch_object($q))
+    {
+    $ar[] = l(
+      t("%link : %incoming incoming clicks", array('%link' => $o->referer, '%incoming' => $o->incoming)), 
+      $o->referer,
+      NULL,
+      NULL,
+      NULL,
+      TRUE);
+    }
+  $ret = theme('item_list', $ar, '');
+  $ret .= t("WARNING: just because a click came from a node doesn't mean the node has a link. "
+    . "The click may have come from a block on the page. These stats are just a hint for editors.");
+  $ret = theme('box', t('Local referers for this node'), $ret);
+
+  $form = array();
+  $form['#action'] = G2PATHREFERERWIPE . '/' . $nid;
+  $form['submit'] = array(
+    '#type'       => 'submit',
+    '#value'      => t('Wipe referer info for this entry'),
+    );
+  
+  $ret .= drupal_get_form('g2_referer_wipe', $form);
+  return $ret;
   }
+  
+function _g2_referer_wipe($nid = NULL)
+  {
+  if (isset($nid))
+    {  
+    $sq .= 'DELETE from {g2_referer} WHERE nid = %d';
+    db_query($sq, check_plain($nid));
+    drupal_goto(url("node/$nid"));
+    }
+  else
+    {
+    $sq .= 'DELETE from {g2_referer}';
+    db_query($sq);
+    drupal_goto(url('admin/settings/g2'));      
+    }
+  }
+  
+function g2_settings_form_validate($form_id, &$form) 
+  {
+  if ($_POST['op'] == G2TITLEREFERERWIPE) 
+    {
+    drupal_goto(G2PATHREFERERWIPE);
+    }
+  }
+

@@ -1,6 +1,9 @@
 $Id$
 $Name$
 
+2006-01-28
+  FEAT  New feature: referrer tracking. Adds a tab on the node edit form, 
+        a setting and a path to wipe referers for a node or for all g2 nodes
 2006-01-27
   FIX   This version is now compatible with Drupal 4.7beta4: this required a change in g2_view
   FEAT  Themeability improvement: blocks now use a <div class="content">
