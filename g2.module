@@ -1453,11 +1453,12 @@ function g2_settings() {
   $form['advanced'][G2VARXMLRPC] = array
     ( 
     '#type'          => 'checkbox', 
-    '#title'         => t('Enable G2 XML-RPC services'),
+    '#title'         => t('Enable G2 remote XML-RPC services'),
     '#default_value' => variable_get(G2VARXMLRPC, FALSE), 
     '#description'   => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC services. '
-      . 'Enabling it without additional access control is typically not a good idea.'), 
-    ); 
+      . 'Enabling it without additional access control is typically not a good idea. '
+      . 'Note that local XML-RPC is always enabled, which may need to be modified on shared hosts.'),
+    );
     
   $form['advanced'][G2VERSION] = array
     (
@@ -1649,15 +1650,26 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE)
  *   - A descriptive help string, enclosed in a t() function for translation purposes. 
  *   Both forms are shown in the example. 
  */ 
-function g2_xmlrpc() { 
-  return array( 
+function g2_xmlrpc() 
+  { 
+  $ret = array( 
     'g2.alphabar'          => '_g2_alphabar', 
     'g2.top'               => '_g2_top',
     'g2.random'            => '_g2_random',
     'g2.stats'             => '_g2_stats',
     'g2.wotd'              => '_g2_wotd',
   ); 
-} 
+
+  if ((variable_get(G2VARXMLRPC, FALSE) == false)
+    && ($_SERVER['REMOTE_ADDR'] != $_SERVER['SERVER_ADDR'])) // We always allow local RPC
+    {
+    foreach ($ret as $methodname => $methodfun) 
+      {
+      $ret[$methodname] = _g2_ip_ban;    	
+      }
+    } 
+  return $ret;
+  } 
 
 /**
  * Ancillary function for to return a themed alphabar g2_block(view, 0)
@@ -1897,3 +1909,36 @@ function g2_settings_form_validate($form_id, &$form)
     }
   }
 
+function g2_user($op, &$edit, &$user, $category = NULL)
+  {
+  switch ($op) 
+    {
+  	case 'load':
+  	  $sq = "SELECT n.nid, n.title FROM {node} n WHERE n.type = '" 
+  	    . G2NODETYPE 
+  	    . "' AND n.uid = %d ORDER BY n.changed DESC, n.created DESC";
+  	  $q = db_query_range($sq, $user->uid, 0, 10); 
+  	  $user->nodes = array();
+  	  while ($o = db_fetch_object($q))
+  	    {
+  	    $user->nodes[] = array('value' => l($o->title, "node/$o->nid", NULL, NULL, NULL, TRUE));
+        }
+      break;
+  	case 'view':
+  	  if (isset($user->nodes))
+  	    {
+  	    $title = array('title' => t('10 most recently changed only'));
+  	    array_unshift($user->nodes, $title);
+  	    return array(t('Owned G2 nodes') => $user->nodes);
+  	    }
+      break;
+  	default:
+     //dprint_r($op)  ;
+  	  break;
+    }
+  }
+
+function _g2_ip_ban()
+  {
+  return xmlrpc_error();
+  }
