@@ -1,6 +1,9 @@
 $Id$
 $Name$
 
+2006-02-02
+  FEAT  New feature: list of recently updated entries in user profile
+  SECU  Security fix: IP-based access control was not implemented
 2006-01-28
   FEAT  New feature: referrer tracking. Adds a tab on the node edit form, 
         a setting and a path to wipe referers for a node or for all g2 nodes
