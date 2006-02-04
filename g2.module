@@ -55,6 +55,7 @@ define('G2VARALPHABARTITLE',  'g2_alphabar_title'); // Alphabar block: title
 define('G2VARGOTOSINGLE',     'g2_goto_single');    // Automatically go to the match on an "entries" page if only one exists
 define('G2VARHIDDENTITLE',    'g2_hidden_title');   // Does hook_view include a hidden version of title for hook_update_index
 define('G2VARHOMONYMS',       'g2_homonyms');       // disambiguation page for homonyms
+define('G2VARHOMONYMSVID',    'g2_homonyms_vid');   // disambiguation vocabulary id for homonyms
 define('G2VARMAIN',           'g2_main');           // nid of the node used as main page for G2
 define('G2VARPATHMAIN',       'g2_pathmain');       // path for the G2 main page
 define('G2VARNOFREETAGGING',  'g2_nofreetagging');  // Hide information from freetagging vocabularies to non-G2 admin
@@ -1443,6 +1444,19 @@ function g2_settings() {
     '#default_value' => variable_get(G2VARGOTOSINGLE, TRUE), 
     '#description'   => t('This setting enables automatic redirection from <code>&lt;drupal&gt;/g2/entries/someeentry</code> to the entry page if only one match exists for "someentry". This is especially useful for links generated from content nodes.'), 
     ); 
+  $arVoc = array ('0'  => t('None'));
+  foreach (taxonomy_get_vocabularies(G2NODETYPE) as $voc) 
+    {
+  	$arVoc[$voc->vid] = $voc->name;
+    }
+  $form['homonyms'][G2VARHOMONYMSVID] = array(
+    '#type'          => 'select',
+    '#title'         => t('Vocabulary to be used on the homonyms disambiguation page'),
+    '#default_value' => variable_get(G2VARHOMONYMSVID, 0),
+    '#description'   => t('If a vocabulary is chosen here, the terms bound to ambiguous entries (homonyms) '
+                        . 'will be displayed on the defaut disambiguation page.'),
+    '#options'       => $arVoc,
+    );
 
   $form['advanced'] = array(
     '#type'          => 'fieldset',
@@ -1798,23 +1812,58 @@ function theme_g2_entries($entry)
     $nid = 0 ;
     $entry2 = check_plain($_REQUEST['q']);
     $entry2 = substr($entry2, strlen(G2PATHENTRIES) + 1);
-    $sq = "select n.nid, v.teaser from {node} n inner join {node_revisions} v on n.vid = v.vid where n.type='"
-      . G2NODETYPE
-      . "' and (n.status = 1) and (n.title = '%s')";
-    $q = db_query($sq, $entry2);
-    $ar = array();
-    while ($result = db_fetch_object($q))
+    if (($vid = variable_get(G2VARHOMONYMSVID, 0)) != 0)
       {
-      $ar[] = l($entry2, "node/$result->nid") . t(': ') 
-        . check_plain($result->teaser) 
-        . l(' (+)', "node/$result->nid", array('class' => 'read-more'));
-      $nid = $result->nid;
-      $count++;
+      $sq = "SELECT distinct n.nid, v.teaser, td.name "
+          . "FROM {node} n "
+          . "INNER JOIN {node_revisions} v on n.vid = v.vid "
+          . "INNER JOIN {term_node} tn on n.nid = tn.nid " // Some nodes may not be categorized
+          . "INNER JOIN {term_data} td on tn.tid = td.tid "
+          . "WHERE n.type='" . G2NODETYPE . "' AND (n.status = 1) AND (n.title = '%s') AND (td.vid = %d)"
+          . "ORDER BY 1, 3 "; // Order by 1 is needed for multi-termed nodes
+          ;
+      $q = db_query($sq, $entry2, $vid);
+      $ar = array();        
+      $current_nid = 0;
+      $row = '';
+      while ($result = db_fetch_object($q))
+        {
+        if ($result->nid != $current_nid) // This is a new entry
+          {
+          $ar[] = "</span>$row";
+          $current_nid = $result->nid; 
+          $row = l($entry2, "node/$result->nid") . t(': ') 
+            . check_plain($result->teaser) 
+            . l(' (+)', "node/$result->nid", array('class' => 'read-more'))
+            . '<span class="taxonomy">';
+          }
+        if (isset($result->name))
+          $row .= ' ' . $result->name;
+        $count++;
+        }
+      $ar[] = $row;
+      array_shift($ar);
+      }
+    else
+      {
+      $sq = "SELECT n.nid, v.teaser "
+          . "from {node} n inner join {node_revisions} v on n.vid = v.vid "
+          . "where n.type='" . G2NODETYPE . "' and (n.status = 1) and (n.title = '%s')";
+      $q = db_query($sq, $entry2);
+      $ar = array();
+      while ($result = db_fetch_object($q))
+        {
+        $ar[] = l($entry2, "node/$result->nid") . t(': ') 
+          . check_plain($result->teaser) 
+          . l(' (+)', "node/$result->nid", array('class' => 'read-more'));
+        $current_nid = $result->nid;
+        $count++;
+        }
       }
     if ($count == 1) // Single answer, we can jump to it automatically
       if (variable_get(G2VARGOTOSINGLE, TRUE)) // Does the webmaster want us to jump ?
         {
-        drupal_goto("node/$nid") ;
+        drupal_goto("node/$current_nid") ;
         // Never returns
         }
       else 
