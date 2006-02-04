@@ -1,6 +1,9 @@
 $Id$
 $Name$
 
+2006-02-04
+  FEAT  Use a vocabulary to disambiguate entries on the homonyms page
+        The vocabulary is chosen on admin/settings/g2
 2006-02-02
   FEAT  New feature: list of recently updated entries in user profile
   SECU  Security fix: IP-based access control was not implemented
