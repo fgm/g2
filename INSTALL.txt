@@ -3,7 +3,8 @@ G2 Glossary module for Drupal 4.7.x
 $Id$
 
 Copyright (C) 2005-2006 Frederic G. MARAND (fgm@osinet.fr)
-Licensed under the General Public License version 2
+Code Licensed under the General Public License version 2
+Documentation licensed under the Creative Commons BY-SA-2.0 for France
 
 Installation notes
 ------------------

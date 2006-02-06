@@ -1288,15 +1288,20 @@ function g2_menu($may_cache)
     {
     if (arg(0) == 'node' && is_numeric(arg(1))) 
       {
-      $items[] = array
-      (
-      'path'     => 'node/'. arg(1) .'/links', 
-      'title'    => t('referers'),
-      'callback' => '_g2_referer_links', 
-      'access'   => $admin_access,
-      'type'     => MENU_LOCAL_TASK, 
-      'weight'   => 2
-      );
+      $node = node_load(arg(1));
+      if ($node->type == G2NODETYPE)
+        {
+        $items[] = array
+          (
+          'path'     => 'node/'. arg(1) .'/links', 
+          'title'    => t('referers'),
+          'callback' => '_g2_referer_links', 
+          'access'   => $admin_access,
+          'type'     => MENU_LOCAL_TASK, 
+          'weight'   => 2
+          );
+        }
+      unset($node);
       }
     }
 
@@ -1347,9 +1352,9 @@ function g2_node_info()
  */
 function g2_nodeapi(&$node, $op, $teaser = NULL, $page = NULL)
   {
-  if ($op == 'rss item')
+  if (($op == 'rss item') && ($node->type == G2NODETYPE))
     {
-    $node->created = time();
+    $node->created = variable_get(G2VARWOTDDATE, time());
     $node->name = t(variable_get(G2VARWOTDFEEDAUTHOR, '%author'), array('%author' => $node->name)) ;
     }
   }
