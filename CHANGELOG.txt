@@ -1,11 +1,13 @@
 $Id$
 $Name$
 
+2006-02-07
+  BUG   Better fix for http://drupal.org/node/48149
 2006-02-06
   BUG   http://drupal.org/node/48149
   BUG   G2 no longer overwrites the node author on non-G2 feed items
   BUG   G2 no longer displays its "referer" tab on non-G2 nodes
-  BUG   G2 now displays the date for a WOTD as the date for which it 
+  BUG   G2 now displays the date for a WOTD as the date for which it
         was chosen as WOTD instead of The Epoch
 2006-02-04
   FEAT  Use a vocabulary to disambiguate entries on the homonyms page

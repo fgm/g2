@@ -1341,9 +1341,10 @@ function g2_node_info()
 
 
 /**
- * Change the publication date for the WOTD feed (and other feeds)
+ * Change the publication date for the WOTD feed
  * so that even old terms, when chosen for publication, reflect the
  * publication date, instead of the node creation date as is the default.
+ * Do not apply to non-G2 nodes. Do not apply to non-WOTD feeds.
  *
  * @param object $node
  * @param string $op
@@ -1352,7 +1353,7 @@ function g2_node_info()
  */
 function g2_nodeapi(&$node, $op, $teaser = NULL, $page = NULL)
   {
-  if (($op == 'rss item') && ($node->type == G2NODETYPE))
+  if (($op == 'rss item') && ($node->type == G2NODETYPE) && ($_GET['q'] == G2PATHWOTDFEED))
     {
     $node->created = variable_get(G2VARWOTDDATE, time());
     $node->name = t(variable_get(G2VARWOTDFEEDAUTHOR, '%author'), array('%author' => $node->name)) ;
