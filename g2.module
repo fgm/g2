@@ -1801,12 +1801,14 @@ function theme_g2_main()
  * - either from a site node (typically in PHP input format)
  * The default procesing doesn't use the entry as processed by drupal
  * because we need to obtain slashes, which drupal preprocesses
+ * Note that we query and use n.title instead of using $entry2 
+ * in the results to obtain mixed case results when they exist
  * @param string $entry
  * @return string
  */
 function theme_g2_entries($entry)
   {
-  $nid = variable_get(G2VARHOMONYMS, 0);
+  $nid = variable_get(G2VARHOMONYMS, 0); // The nid for the disambiguation page
   if ($nid > 0)
     {
     $node = node_load($nid);
@@ -1820,10 +1822,11 @@ function theme_g2_entries($entry)
     $entry2 = substr($entry2, strlen(G2PATHENTRIES) + 1);
     if (($vid = variable_get(G2VARHOMONYMSVID, 0)) != 0)
       {
-      $sq = "SELECT distinct n.nid, v.teaser, td.name "
+      // We query n.title instead of using $entry2 in the results to obtain mixed case results
+      $sq = "SELECT distinct n.nid, n.title, v.teaser, td.name "
           . "FROM {node} n "
           . "INNER JOIN {node_revisions} v on n.vid = v.vid "
-          . "INNER JOIN {term_node} tn on n.nid = tn.nid " // Some nodes may not be categorized
+          . "LEFT  JOIN {term_node} tn on n.nid = tn.nid " // Some nodes may not be categorized
           . "INNER JOIN {term_data} td on tn.tid = td.tid "
           . "WHERE n.type='" . G2NODETYPE . "' AND (n.status = 1) AND (n.title = '%s') AND (td.vid = %d)"
           . "ORDER BY 1, 3 "; // Order by 1 is needed for multi-termed nodes
@@ -1838,7 +1841,7 @@ function theme_g2_entries($entry)
           {
           $ar[] = "</span>$row";
           $current_nid = $result->nid; 
-          $row = l($entry2, "node/$result->nid") . t(': ') 
+          $row = l($result->title, "node/$result->nid") . t(': ') 
             . check_plain($result->teaser) 
             . l(' (+)', "node/$result->nid", array('class' => 'read-more'))
             . '<span class="taxonomy">';
@@ -1852,14 +1855,14 @@ function theme_g2_entries($entry)
       }
     else
       {
-      $sq = "SELECT n.nid, v.teaser "
+      $sq = "SELECT n.nid, n.title, v.teaser "
           . "from {node} n inner join {node_revisions} v on n.vid = v.vid "
           . "where n.type='" . G2NODETYPE . "' and (n.status = 1) and (n.title = '%s')";
       $q = db_query($sq, $entry2);
       $ar = array();
       while ($result = db_fetch_object($q))
         {
-        $ar[] = l($entry2, "node/$result->nid") . t(': ') 
+        $ar[] = l($result->title, "node/$result->nid") . t(': ') 
           . check_plain($result->teaser) 
           . l(' (+)', "node/$result->nid", array('class' => 'read-more'));
         $current_nid = $result->nid;
@@ -1875,7 +1878,7 @@ function theme_g2_entries($entry)
       else 
         { 
         }
-    elseif ($count == 0)
+    if ($count == 0)
       {
       $ret = t('<p>There are currently no entries for "%entry".</p>', array('%entry' => $entry));
       if (user_access(G2PERMADMIN))
@@ -1884,7 +1887,7 @@ function theme_g2_entries($entry)
           array('%url' => url(G2PATHNODEADD . '/' . $entry), '%entry' => $entry));
         }
       }
-    else
+    else // Must include the == 1 case
       {
       $ret .= theme('item_list', $ar);
       } 

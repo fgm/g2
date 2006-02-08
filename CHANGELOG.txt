@@ -2,12 +2,17 @@ $Id$
 $Name$
 
 2006-02-07
-  BUG   Better fix for http://drupal.org/node/48149
+  FIX   Remove the problem caused by the 2006-01-01 fix for
+        http://drupal.org/node/42947 (single matching entry/no jump set)
+  QUAL  The disambiguation page now displays mixed case matches instead
+        of displaying all results with the queried case.
+2006-02-07
+  FIX   Better fix for http://drupal.org/node/48149
 2006-02-06
-  BUG   http://drupal.org/node/48149
-  BUG   G2 no longer overwrites the node author on non-G2 feed items
-  BUG   G2 no longer displays its "referer" tab on non-G2 nodes
-  BUG   G2 now displays the date for a WOTD as the date for which it
+  FIX   http://drupal.org/node/48149
+  FIX   G2 no longer overwrites the node author on non-G2 feed items
+  FIX   G2 no longer displays its "referer" tab on non-G2 nodes
+  FIX   G2 now displays the date for a WOTD as the date for which it
         was chosen as WOTD instead of The Epoch
 2006-02-04
   FEAT  Use a vocabulary to disambiguate entries on the homonyms page
@@ -16,7 +21,7 @@ $Name$
   FEAT  New feature: list of recently updated entries in user profile
   SECU  Security fix: IP-based access control was not implemented
 2006-01-28
-  FEAT  New feature: referrer tracking. Adds a tab on the node edit form, 
+  FEAT  New feature: referrer tracking. Adds a tab on the node edit form,
         a setting and a path to wipe referers for a node or for all g2 nodes
 2006-01-27
   FIX   This version is now compatible with Drupal 4.7beta4: this required a change in g2_view
