@@ -1,6 +1,9 @@
 $Id$
 $Name$
 
+2006-03-25
+  FIX   http://drupal.org/node/47422 alphabar displayed twice
+  FEAT  Incorporate some private OSInet extensions that others can use too
 2006-02-07
   FIX   Remove the problem caused by the 2006-01-01 fix for
         http://drupal.org/node/42947 (single matching entry/no jump set)

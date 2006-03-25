@@ -3,7 +3,7 @@
  * This defines a node-based glossary module, 
  * as opposed to the term-based glossary module in drupal 4.6/4.7
  * Copyright (C) 2005-2006 Frederic G. MARAND
- * Licensed under the General Public License, version 2
+ * Licensed under the CeCILL, version 2
  * $Id$
  */ 
 
@@ -322,11 +322,11 @@ function _g2_random()
         . "where n.type = '" . G2NODETYPE . "' and (n.status = 1) and not (n.title = '%s' or n.nid = %d)" ;
     $q = db_query($sq, $random, $wotd);
     }
-  else 
+  else
     {
     $random = '';
     $sq = "select count(*) cnt from {node} n where n.type = '" . G2NODETYPE . "' and (n.status = 1) and not (n.nid = %d)" ;
-    $q = db_query($sq, $wotd);        
+    $q = db_query($sq, $wotd);
     }
   $ret = db_fetch_object($q);
   $n = $ret->cnt;
@@ -340,17 +340,25 @@ function _g2_random()
   $ret = db_fetch_object($q);
 
   if (variable_get(G2VARRANDOMTERMS, FALSE))
-    { 
-    $ret->taxonomy = taxonomy_node_get_terms($ret->nid); 
+    {
+    $taxonomy = taxonomy_node_get_terms($ret->nid);
+
+    // Currently an OSInet.fr private extension. Ignored on other sites.
+    if (function_exists('_osinode_comb_taxonomy'))
+      {
+      $taxonomy = _osinode_comb_taxonomy ($taxonomy);
+      }
+    $ret->taxonomy = $taxonomy;
+    unset ($taxonomy);
     }
   // echo "<pre>ret = " . print_r($ret, TRUE) . ", terms: " . print_r($x, TRUE) . "</pre>";
   if (variable_get(G2VARRANDOMSTORE, True))
-    { 
-    variable_set(G2VARRANDOMENTRY, $ret->title); 
+    {
+    variable_set(G2VARRANDOMENTRY, $ret->title);
     }
   return $ret;
   }
-  
+
 /**
  * Counts the number of entries matching two criteria:
  * @param int $tid Term Id (ignored if 0)
@@ -360,8 +368,8 @@ function _g2_stats($tid = 0, $initial = NULL)
   {
   $test1 = false;
   $test2 = false;
-  
-  $sq = "SELECT status, count(distinct n.nid) cnt FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid WHERE n.type = '" 
+
+  $sq = "SELECT status, count(distinct n.nid) cnt FROM {node} n INNER JOIN {term_node} tn ON n.nid = tn.nid WHERE n.type = '"
     . G2NODETYPE . "' ";
   if (isset($tid) && $tid > 0)
     {
@@ -787,8 +795,7 @@ function g2_cron()
  * 
  * @param &$node int
  *   The node being deleted. 
- * @return 
- *   None. 
+ * @return void
  * 
  * To take action when nodes of any type are deleted (not just nodes of 
  * the type defined by this module), use hook_nodeapi() instead. 
@@ -921,7 +928,7 @@ function g2_filter($op, $delta = 0, $format = -1, $text = '') {
  *   Which format we are providing tips for. 
  * @param $long 
  *   If set to true, long tips are requested, otherwise short tips are needed. 
- * @return 
+ * @return stringe
  *   The text of the filter tip. 
  * 
  * 
@@ -1137,7 +1144,13 @@ function g2_insert($node)
   } 
   
 /**
- * Supplies the default main page
+ * Supplies the default main page.
+ * In case you wonder why there's nothing done here, this is to avoid
+ * calling a theme function directly (_g2_main is invoked as the
+ * callback for path G2VARPATHMAIN).
+ * In case you wonder why we're not generating main page content here
+ * and delegate it to a theme function, this is to allow maximum 
+ * customizability for the main page.t
  * @return string HTML
  */
 function _g2_main()
@@ -1777,7 +1790,9 @@ function theme_g2_block_wotd()
 
 /**
  * Return a simple nodepage built with alphabars wrapping a node
- * to serve as the main page for the G2 glossary.
+ * to serve as the main page for the G2 glossary. If no node
+ * is set, just return an alphabar.
+ * @see _g2_main()
  *
  * @return string HTML
  */
@@ -1789,7 +1804,7 @@ function theme_g2_main()
   if (isset($node))
     {
     drupal_set_title($node->title);
-    $node->body = $alphabar . $node->body . $alphabar;
+    $node->body = isset($node->body) ? ($alphabar .  $node->body . $alphabar) : $alphabar;
     $ret .= node_view($node, false, true); // theme('box', $node->body, FALSE, TRUE) ;
     }
   return $ret;
