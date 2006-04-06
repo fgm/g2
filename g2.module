@@ -144,7 +144,7 @@ function _g2_autocomplete($string = NULL)
     // watchdog('g2', "string = $string, matches: " . print_r($matches, TRUE), WATCHDOG_NOTICE);
     }
   }
-  print drupal_implode_autocomplete($matches);
+  print drupal_to_js($matches);
   exit();
   }
 
