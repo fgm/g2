@@ -1,6 +1,10 @@
 $Id$
 $Name$
 
+2006-04-11
+  FIX   http://drupal.org/node/58318 G2 WOTD feed icon not properly set up
+  FEAT  First version fully compatible with extractor.php. 
+  FEAT  First version of french translation.
 2006-03-25
   FIX   http://drupal.org/node/47422 alphabar displayed twice
   FEAT  Incorporate some private OSInet extensions that others can use too
@@ -73,7 +77,7 @@ $Name$
   FEAT  Setting for the title of the WOTD RSS feed, now distinct from the
         title of the WOTD block, but defaulting to it if nulled
   FEAT  RSS feed for word of the day http://drupal.org/node/43078
-  FEAT  homonyms disambiguation page at “<drupal>/g2/entries/<someterm>” is
+  FEAT  homonyms disambiguation page at ï¿½<drupal>/g2/entries/<someterm>ï¿½ is
         now customizable at the site level, and themeable, and can thus be
         overriden both by site webmasters and by themes
         for http://drupal.org/node/42965

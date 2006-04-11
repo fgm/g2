@@ -43,7 +43,7 @@ define('G2TITLEAUTOCOMPLETE', t('entry autocomplete'));
 define('G2TITLEENTRIES',      t('G2 entries by name'));
 define('G2TITLEINITIAL',      t('entries starting by initial %initial'));
 define('G2TITLEMAIN',         t('G2 glossary main page'));
-define('G2TITLEWOTDFEED',     t('G2 wotd of the day RSS feed'));
+define('G2TITLEWOTDFEED',     t('G2 word of the day RSS feed'));
 define('G2TITLEREFERERWIPE',  t('Wipe all G2 referer information'));
 
 /**
@@ -68,7 +68,7 @@ define('G2VARWOTDBODYSIZE',   'g2_wotd_bodysize');  // WOTD block: number of bod
 define('G2VARWOTDDATE',       'g2_wotd_date');      // WOTD block: date for which this WOTD entry is current
 define('G2VARWOTDENTRY',      'g2_wotd_entry');     // WOTD block: current entry
 define('G2VARWOTDFEEDLINK',   'g2_wotd_feed_link'); // WOTD block feed: include a link to the WOTD RSS feed in the block
-define('G2VARWOTDFEEDTITLE',  'g2_wotd_feed_link'); // WOTD block feed: the title for the WOTD RSS feed
+define('G2VARWOTDFEEDTITLE',  'g2_wotd_feed_title');// WOTD block feed: the title for the WOTD RSS feed
 define('G2VARWOTDFEEDDESCR',  'g2_wotd_feed_descr');// WOTD block feed: the description for the WOTD RSS feed
 define('G2VARWOTDFEEDAUTHOR', 'g2_wotd_feed_author');//WOTD block feed: include the author in the feed entries
 define('G2VARWOTDTITLE',      'g2_wotd_title');     // WOTD block: title
@@ -83,7 +83,7 @@ define('G2VARXMLRPC',         'g2_xmlrpc');         // Is the XML-RPC server ena
 define('G2DEFAULTALPHABAR',      '0123456789abcdefghijklmnopqrstuvwxyz');
 define('G2DEFAULTPATHMAIN',      'g2');
 define('G2DEFAULTWOTDTITLE',     t('Word of the day in the G2 glossary'));
-define('G2DEFAULTWOTDFEEDDESCR', "A daily definition from the G2 Glossary at %site"); // Do not apply a t(): it is done later.
+define('G2DEFAULTWOTDFEEDDESCR', t("A daily definition from the G2 Glossary at %site"));  // see _g2_wotd_feed()
 define('G2DEFAULTWOTDFEEDAUTHOR',"%author"); // This default will use the actual node author
 
 /**
@@ -457,7 +457,7 @@ function _g2_wotd_feed()
    // Link element:  Drupal 4.7 defaults to $base url
    // Language: Drupal 4.7 defaults to $locale
    'title'          => variable_get(G2VARWOTDFEEDTITLE, variable_get(G2VARWOTDTITLE, G2DEFAULTWOTDTITLE)),  // Drupal defaults to site name - site slogan
-   'description'    => t(variable_get(G2VARWOTDFEEDDESCR, G2DEFAULTWOTDFEEDDESCR), array('%site' => $base_url)), // Drupal defaults to $site_mission
+   'description'    => strtr(variable_get(G2VARWOTDFEEDDESCR, G2DEFAULTWOTDFEEDDESCR), array('%site' => $base_url)), // Drupal defaults to $site_mission
    'managingEditor' => variable_get('site_mail', 'nobody@example.com'),
    );
  $sq = "select n.nid from {node} n where n.nid = '%d'"; // Silly looking, but node_feed needs to be passed a query
@@ -580,16 +580,18 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
           '#type'          => 'checkbox', 
           '#title'         => t('Store latest random entry'), 
           '#default_value' => variable_get(G2VARRANDOMSTORE, TRUE),
-          '#description'   => t('When this setting is true (default value), the latest random value is kept in the DB to avoid showing the same pseudo-random value on consecutive page displays. '
-            . 'For small sites, it is usually best to keep it saved. '
-            . 'For larger sites, unchecking this setting will remove one database write with locking.'),
+          '#description'   => t('When this setting is true (default value), 
+               the latest random value is kept in the DB to avoid showing the same pseudo-random 
+               value on consecutive page displays. 
+               For small sites, it is usually best to keep it saved. 
+               For larger sites, unchecking this setting will remove one database write with locking.'),
           );
         $form['random_terms'] = array(
           '#type'          => 'checkbox', 
           '#title'         => t('Return taxonomy terms for the current entry'), 
           '#default_value' => variable_get(G2VARRANDOMTERMS, FALSE),
-          '#description'   => t('The taxonomy terms will be returned by XML-RPC and made available to the theme. '
-            . 'Default G2 themeing will display them.'),
+          '#description'   => t('The taxonomy terms will be returned by XML-RPC and made available to the theme. 
+               Default G2 themeing will display them.'),
           );
         _g2_block_settings_show($form, 
           t('Name of the block in the block list'), 'random', t('G2 Random'),
@@ -644,8 +646,8 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
           '#type'          => 'checkbox', 
           '#title'         => t('Return taxonomy terms for the current entry'), 
           '#default_value' => variable_get(G2VARWOTDTERMS, FALSE),
-          '#description'   => t('The taxonomy terms will be returned by XML-RPC and made available to the theme. '
-            . 'Default G2 themeing will display them.'),
+          '#description'   => t('The taxonomy terms will be returned by XML-RPC and made available to the theme.  
+               Default G2 themeing will display them.'),
           );
         $form['wotd_feed'] = array(
           '#type'          => 'fieldset',
@@ -664,9 +666,9 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
           '#maxlength'     => 60, 
           '#required'      => TRUE, 
           '#default_value' => variable_get(G2VARWOTDFEEDTITLE, variable_get(G2VARWOTDTITLE, G2DEFAULTWOTDTITLE)),
-          '#description'   => t('The title for the feed itself. '
-            . 'This will typically be used by aggregators to remind users of the feed and link to it. '
-            . 'If nulled, G2 will reset it to the title of the block.'),
+          '#description'   => t('The title for the feed itself.  
+               This will typically be used by aggregators to remind users of the feed and link to it.  
+               If nulled, G2 will reset it to the title of the block.'),
           );
         $form['wotd_feed']['wotd_feed_author'] = array(
           '#type'          => 'textfield', 
@@ -674,10 +676,10 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
           '#size'          => 60,
           '#maxlength'     => 60, 
           '#required'      => TRUE, 
-          '#default_value' => t(variable_get(G2VARWOTDFEEDAUTHOR, G2DEFAULTWOTDFEEDAUTHOR)),
-          '#description'   => t('The author name to be included in the feed entries. '
-            . 'In this string %author will be replaced by the actual author information. '
-            . 'Defaults to %author.'),
+          '#default_value' => variable_get(G2VARWOTDFEEDAUTHOR, G2DEFAULTWOTDFEEDAUTHOR),
+          '#description'   => t('The author name to be included in the feed entries.  
+               In this string %author will be replaced by the actual author information.  
+               Defaults to %author.'),
           );
         $form['wotd_feed']['wotd_feed_descr'] = array(
           '#type'          => 'textfield', 
@@ -685,10 +687,11 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
           '#size'          => 60,
           '#maxlength'     => 60, 
           '#required'      => TRUE, 
-          '#default_value' => t(variable_get(G2VARWOTDFEEDDESCR, G2DEFAULTWOTDFEEDDESCR)),
-          '#description'   => t('The description for the feed itself. This will typically be used by aggregators when describing the feed prior to subscription. '
-            . 'It may contain %site, which will dynamically be replaced by the site base URL. '
-            . 'If nulled, G2 will reset it to a default description.'),
+          '#default_value' => variable_get(G2VARWOTDFEEDDESCR, G2DEFAULTWOTDFEEDDESCR),
+          '#description'   => t('The description for the feed itself. 
+               This will typically be used by aggregators when describing the feed prior to subscription. 
+               It may contain %site, which will dynamically be replaced by the site base URL. 
+               If nulled, G2 will reset it to a default description.'),
           );
           
         _g2_block_settings_show($form, 
@@ -1079,23 +1082,23 @@ function g2_help($section)
       $ret = 'g2';
       break;
     case 'admin/help#g2': 
-      $ret = t('<p>G2 defines a glossary service for Drupal sites. To compare it with the default Drupal glossary:'
-        . '<ul><li>G2 content is node-based, not term-based</li>'
-        . '  <li>G2 leverages existing code from glossary for input filtering and node marking</li>'
-        . '  <li>G2 RAM use does not significantly increase with larger entry counts, which makes is more suitable for larger glossaries</li>'
-        . '  <li>G2 requests much less from the database than the default glossary</li>'
-        . '  <li>G2 uses three taxonomy vcabularies: context, period, and grammatical nature.</li>'
-        . '  <li>G2 defines optional blocks</li>'
-        . '  <li>G2 is remotely usable via XML-RPC</li>'
-        . '  <li>G2 does not provide term feeds</li>'
-        . '  <li>G2 access control is simplistic, targeted to non-community sites</ul></p>'); 
+      $ret = t('<p>G2 defines a glossary service for Drupal sites. To compare it with the default Drupal glossary:
+           <ul><li>G2 content is node-based, not term-based</li> 
+             <li>G2 leverages existing code from glossary for input filtering and node marking</li> 
+             <li>G2 RAM use does not significantly increase with larger entry counts, which makes is more suitable for larger glossaries</li> 
+             <li>G2 requests much less from the database than the default glossary</li> 
+             <li>G2 uses three taxonomy vcabularies: context, period, and grammatical nature.</li> 
+             <li>G2 defines optional blocks</li> 
+             <li>G2 is remotely usable via XML-RPC</li> 
+             <li>G2 does not provide term feeds</li> 
+             <li>G2 access control is simplistic, targeted to non-community sites</ul></p>'); 
       break; 
     case 'admin/modules#description': 
       $ret = t('G2 manages a node-based glossary.'); 
       break; 
     case 'node/add#' . G2NODETYPE: 
-      $ret = t('A G2 entry is a term (usual sense, not drupal sense) for which a definition'
-        . ' and various additional information is provided, notably at the editorial level');
+      $ret = t('A G2 entry is a term (usual sense, not drupal sense) for which a definition
+            and various additional information is provided, notably at the editorial level');
       break ;
     case 'admin/block/configure/g2/0':
       $ret = t('This block displays a clickable list of initials from the G2 glossary.');
@@ -1369,7 +1372,7 @@ function g2_nodeapi(&$node, $op, $teaser = NULL, $page = NULL)
   if (($op == 'rss item') && ($node->type == G2NODETYPE) && ($_GET['q'] == G2PATHWOTDFEED))
     {
     $node->created = variable_get(G2VARWOTDDATE, time());
-    $node->name = t(variable_get(G2VARWOTDFEEDAUTHOR, '%author'), array('%author' => $node->name)) ;
+    $node->name = strtr(variable_get(G2VARWOTDFEEDAUTHOR, '%author'), array('%author' => $node->name)) ;
     }
   }
   
@@ -1423,8 +1426,8 @@ function g2_settings() {
     '#type'          => 'textfield', 
     '#title'         => t('Path for the main page of G2 on this site'),
     '#default_value' => variable_get(G2VARPATHMAIN, G2DEFAULTPATHMAIN), 
-    '#description'   => t('This setting allows site admins to modify the URL at which the home page will be found. '
-      . 'This will typically be done to replace the standard path ("g2") by a SEO-engineered path.'),
+    '#description'   => t('This setting allows site admins to modify the URL at which the home page will be found.  
+         This will typically be done to replace the standard path ("g2") by a SEO-engineered path.'),
     );
 
   $form['automation'] = array(
@@ -1436,14 +1439,16 @@ function g2_settings() {
     '#type'          => 'checkbox', 
     '#title'         => t('Embed a CSS-masked version of the definition titles in the node rendition'),
     '#default_value' => variable_get(G2VARHIDDENTITLE, TRUE), 
-    '#description'   => t('This setting enables search to work better on definition titles, but can be frowned upon by search engines.'), 
+    '#description'   => t('This setting enables search to work better on definition titles, 
+         but can be frowned upon by search engines.'), 
     ); 
   $form['automation'][G2VARNOFREETAGGING] = array
     ( 
     '#type'          => 'checkbox', 
     '#title'         => t('Hide terms from free-tagging vocabularies to users without G2 administrator permissions.'),
     '#default_value' => variable_get(G2VARNOFREETAGGING, TRUE), 
-    '#description'   => t('Terms bound to a G2 node belonging in a free tagging vocabulary are typically not meant for end-user consumption.'), 
+    '#description'   => t('Terms bound to a G2 node belonging in a free tagging vocabulary 
+         are typically not meant for end-user consumption.'), 
     );     
 
   $form['homonyms'] = array(
@@ -1454,14 +1459,18 @@ function g2_settings() {
     '#type'          => 'textfield', 
     '#title'         => t('Node used for the homonyms disambiguation page of G2 on this site'),
     '#default_value' => variable_get(G2VARHOMONYMS, 0), 
-    '#description'   => t('If this node is non-zero, this is the page used to build the disambiguation page for G2 entries at <code>&lt;drupal&gt;/g2/entries/&lt;someentry&gt;</code>. Otherwise, a default page is used.'),
+    '#description'   => t('If this node is non-zero, this is the page used to build the disambiguation 
+          page for G2 entries at <code>&lt;drupal&gt;/g2/entries/&lt;someentry&gt;</code>. 
+          Otherwise, a default page is used.'),
     );
   $form['homonyms'][G2VARGOTOSINGLE] = array
     ( 
     '#type'          => 'checkbox', 
     '#title'         => t('Enable auto-jump to single match on entry'),
     '#default_value' => variable_get(G2VARGOTOSINGLE, TRUE), 
-    '#description'   => t('This setting enables automatic redirection from <code>&lt;drupal&gt;/g2/entries/someeentry</code> to the entry page if only one match exists for "someentry". This is especially useful for links generated from content nodes.'), 
+    '#description'   => t('This setting enables automatic redirection from 
+          <code>&lt;drupal&gt;/g2/entries/someeentry</code> to the entry page if only one match exists for "someentry". 
+          This is especially useful for links generated from content nodes.'), 
     ); 
   $arVoc = array ('0'  => t('None'));
   foreach (taxonomy_get_vocabularies(G2NODETYPE) as $voc) 
@@ -1472,8 +1481,8 @@ function g2_settings() {
     '#type'          => 'select',
     '#title'         => t('Vocabulary to be used on the homonyms disambiguation page'),
     '#default_value' => variable_get(G2VARHOMONYMSVID, 0),
-    '#description'   => t('If a vocabulary is chosen here, the terms bound to ambiguous entries (homonyms) '
-                        . 'will be displayed on the defaut disambiguation page.'),
+    '#description'   => t('If a vocabulary is chosen here, the terms bound to ambiguous entries (homonyms) 
+          will be displayed on the defaut disambiguation page.'),
     '#options'       => $arVoc,
     );
 
@@ -1488,15 +1497,15 @@ function g2_settings() {
     '#type'          => 'checkbox', 
     '#title'         => t('Enable G2 remote XML-RPC services'),
     '#default_value' => variable_get(G2VARXMLRPC, FALSE), 
-    '#description'   => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC services. '
-      . 'Enabling it without additional access control is typically not a good idea. '
-      . 'Note that local XML-RPC is always enabled, which may need to be modified on shared hosts.'),
+    '#description'   => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC services. 
+         Enabling it without additional access control is typically not a good idea.  
+         Note that local XML-RPC is always enabled, which may need to be modified on shared hosts.'),
     );
     
   $form['advanced'][G2VERSION] = array
     (
-    '#value'         => '<p>' . t('This site is running G2 version %version. '
-      . 'See the <a href="%page" title="G2 Glossary project page">G2 project page</a> on Drupal.org.', 
+    '#value'         => '<p>' . t('This site is running G2 version %version. 
+          See the <a href="%page" title="G2 Glossary project page">G2 project page</a> on Drupal.org.', 
         array(
           '%version' => G2VERSION,
           '%page'    => 'http://drupal.org/node/41641',
@@ -1918,7 +1927,7 @@ function theme_g2_entries($entry)
 function theme_g2_initial($initial = NULL)
   {
   $initial = check_plain($initial);
-  drupal_set_title(t(G2TITLEINITIAL, array('%initial' => $initial)));
+  drupal_set_title(strtr(G2TITLEINITIAL, array('%initial' => $initial)));
   $ret .= _g2_initial($initial);
   return $ret;
   }
@@ -1943,8 +1952,8 @@ function _g2_referer_links()
       TRUE);
     }
   $ret = theme('item_list', $ar, '');
-  $ret .= t("WARNING: just because a click came from a node doesn't mean the node has a link. "
-    . "The click may have come from a block on the page. These stats are just a hint for editors.");
+  $ret .= t('WARNING: just because a click came from a node doesn\'t mean the node has a link. 
+        The click may have come from a block on the page. These stats are just a hint for editors.');
   $ret = theme('box', t('Local referers for this node'), $ret);
 
   $form = array();
