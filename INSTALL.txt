@@ -9,11 +9,15 @@ Documentation licensed under the Creative Commons BY-SA-2.0 for France
 Installation notes
 ------------------
 
-1. execute g2.mysql on your server to add the G2 schema extension
-2. copy the g2 directory to <drupal>/modules/g2
-3. activate the module in administer/modules
+1. copy the g2 directory to <drupal>/modules/g2
+2. activate the module in administer/modules
+
+Module installation should occur automatically thanks to the g2.install file.
 
 The module is ready.
+
+The g2.mysql file is normally not needed if you use a version of drupal 
+more recent than 2005-12-08 (first appearance of the .install mechanism).
 
 You are advised to define one or more vocabularies and their terms
 in taxonomy.module to classify your entries.

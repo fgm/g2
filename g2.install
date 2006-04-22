@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * Drupal install function for 4.7
+ * http://drupal.org/node/51220
+ * @return void
+ */
+function g2_install()
+  {
+  $required_table_names = array 
+    (
+    'g2_node', 
+    'g2_referer'
+    );
+  
+  $sq = "show tables like '{g2_%}'" ;
+  $q = db_query($sq);
+  while ($o = db_fetch_array($q))
+    {
+    $existing_table_names[] = array_pop($o);
+    }
+  $created_tables = array_diff($required_table_names, $existing_table_names);
+  watchdog ('g2 install', dprint_r($created_tables, true), WATCHDOG_NOTICE);
+  }
+  
+  
+/**
+ * Create tables necessary for G2.module 
+ * Pure creation, to keep it plain. No checks for existence or level
+ *
+ * @param array $tables
+ * @return void
+ */
+function g2_create_tables($table_names = array())
+  {
+  foreach ($table_names as $table_name) 
+    {
+    switch ($table_name)
+      {
+      case 'g2_referer':  
+        $sq = 'CREATE TABLE `g2_referer` '
+            . '  ( '
+            . "  `nid`      int(10) unsigned NOT NULL default '0', "
+            . "  `referer`  varchar(128) NOT NULL default '', "
+            . "  `incoming` int(10) NOT NULL default '0', "
+            . "   PRIMARY KEY (`nid`,`referer`), "
+            . "   KEY `referer` (`referer`) "
+            . "   ) "
+            . "DEFAULT CHARSET=utf8 "
+            . "COMMENT='G2 referer stats for link exchange' ";
+        break;
+      case 'g2_node':
+        $sq = 'CREATE TABLE `g2_node` '
+            . "  ( "
+            . "  `nid`        int(11)     NOT NULL default '0', "
+            . "  `period`     varchar(50) default NULL, "
+            . "  `complement` mediumtext "
+            . "  `origin`     mediumtext, "
+            . "  PRIMARY KEY  (`nid`) "
+            . "  ) "
+            . "ENGINE=MyISAM "
+            . "DEFAULT CHARSET=utf8 "
+            . "COMMENT='Extensions to node for g2 module' " ;
+        break;
+      default:
+        watchdog('g2', "g2_create_tables: trying to install unknown table $table_name", WATCHDOG_ERROR);
+        break;
+      }
+    $q = db_query($sq);
+    }  
+  }
