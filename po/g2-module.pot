@@ -1,12 +1,12 @@
 # LANGUAGE translation of Drupal (g2.module)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
-# Generated from file: g2.module,v 1.14 2006/04/06 03:07:47 unconed
+# Generated from file: g2.module,v 1.15 2006/04/11 22:00:55 fgm
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2006-04-11 23:08+0200\n"
+"POT-Creation-Date: 2006-05-08 22:47+0200\n"
 "PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
@@ -32,7 +32,7 @@ msgid "G2 glossary main page"
 msgstr ""
 
 #: g2.module:46
-msgid "G2 wotd of the day RSS feed"
+msgid "G2 word of the day RSS feed"
 msgstr ""
 
 #: g2.module:47
@@ -55,8 +55,8 @@ msgstr ""
 msgid "<p>Admin info: there are also %count unpublished matching entries from a total number of %total unpublished entries.</p>"
 msgstr ""
 
-#: g2.module:286;1748;1783;1868;1889
-msgid ": "
+#: g2.module:287;1748;1785;1873;1894
+msgid ": %teaser"
 msgstr ""
 
 #: g2.module:547;574
@@ -108,7 +108,7 @@ msgid "Store latest random entry"
 msgstr ""
 
 #: g2.module:583
-msgid "When this setting is true (default value), \r\n               the latest random value is kept in the DB to avoid showing the same pseudo-random \r\n               value on consecutive page displays. \r\n               For small sites, it is usually best to keep it saved. \r\n               For larger sites, unchecking this setting will remove one database write with locking."
+msgid "When this setting is true (default value), \n               the latest random value is kept in the DB to avoid showing the same pseudo-random \n               value on consecutive page displays. \n               For small sites, it is usually best to keep it saved. \n               For larger sites, unchecking this setting will remove one database write with locking."
 msgstr ""
 
 #: g2.module:591;647
@@ -116,7 +116,7 @@ msgid "Return taxonomy terms for the current entry"
 msgstr ""
 
 #: g2.module:593
-msgid "The taxonomy terms will be returned by XML-RPC and made available to the theme. \r\n               Default G2 themeing will display them."
+msgid "The taxonomy terms will be returned by XML-RPC and made available to the theme. \n               Default G2 themeing will display them."
 msgstr ""
 
 #: g2.module:598;750
@@ -152,7 +152,7 @@ msgid "This setting will only work if cron or poormanscron is used."
 msgstr ""
 
 #: g2.module:649
-msgid "The taxonomy terms will be returned by XML-RPC and made available to the theme.  \r\n               Default G2 themeing will display them."
+msgid "The taxonomy terms will be returned by XML-RPC and made available to the theme.  \n               Default G2 themeing will display them."
 msgstr ""
 
 #: g2.module:658
@@ -168,7 +168,7 @@ msgid "The feed title"
 msgstr ""
 
 #: g2.module:669
-msgid "The title for the feed itself.  \r\n               This will typically be used by aggregators to remind users of the feed and link to it.  \r\n               If nulled, G2 will reset it to the title of the block."
+msgid "The title for the feed itself.  \n               This will typically be used by aggregators to remind users of the feed and link to it.  \n               If nulled, G2 will reset it to the title of the block."
 msgstr ""
 
 #: g2.module:675
@@ -176,7 +176,7 @@ msgid "The feed item author"
 msgstr ""
 
 #: g2.module:680
-msgid "The author name to be included in the feed entries.  \r\n               In this string %author will be replaced by the actual author information.  \r\n               Defaults to %author."
+msgid "The author name to be included in the feed entries.  \n               In this string %author will be replaced by the actual author information.  \n               Defaults to %author."
 msgstr ""
 
 #: g2.module:686
@@ -184,7 +184,7 @@ msgid "The feed description"
 msgstr ""
 
 #: g2.module:691
-msgid "The description for the feed itself. \r\n               This will typically be used by aggregators when describing the feed prior to subscription. \r\n               It may contain %site, which will dynamically be replaced by the site base URL. \r\n               If nulled, G2 will reset it to a default description."
+msgid "The description for the feed itself. \n               This will typically be used by aggregators when describing the feed prior to subscription. \n               It may contain %site, which will dynamically be replaced by the site base URL. \n               If nulled, G2 will reset it to a default description."
 msgstr ""
 
 #: g2.module:901
@@ -240,7 +240,7 @@ msgid "Informations about the origin/IP licensing of the definition"
 msgstr ""
 
 #: g2.module:1085
-msgid "<p>G2 defines a glossary service for Drupal sites. To compare it with the default Drupal glossary:\r\n           <ul><li>G2 content is node-based, not term-based</li> \r\n             <li>G2 leverages existing code from glossary for input filtering and node marking</li> \r\n             <li>G2 RAM use does not significantly increase with larger entry counts, which makes is more suitable for larger glossaries</li> \r\n             <li>G2 requests much less from the database than the default glossary</li> \r\n             <li>G2 uses three taxonomy vcabularies: context, period, and grammatical nature.</li> \r\n             <li>G2 defines optional blocks</li> \r\n             <li>G2 is remotely usable via XML-RPC</li> \r\n             <li>G2 does not provide term feeds</li> \r\n             <li>G2 access control is simplistic, targeted to non-community sites</ul></p>"
+msgid "<p>G2 defines a glossary service for Drupal sites. To compare it with the default Drupal glossary:\n           <ul><li>G2 content is node-based, not term-based</li> \n             <li>G2 leverages existing code from glossary for input filtering and node marking</li> \n             <li>G2 RAM use does not significantly increase with larger entry counts, which makes is more suitable for larger glossaries</li> \n             <li>G2 requests much less from the database than the default glossary</li> \n             <li>G2 uses three taxonomy vcabularies: context, period, and grammatical nature.</li> \n             <li>G2 defines optional blocks</li> \n             <li>G2 is remotely usable via XML-RPC</li> \n             <li>G2 does not provide term feeds</li> \n             <li>G2 access control is simplistic, targeted to non-community sites</ul></p>"
 msgstr ""
 
 #: g2.module:1097
@@ -248,7 +248,7 @@ msgid "G2 manages a node-based glossary."
 msgstr ""
 
 #: g2.module:1100
-msgid "A G2 entry is a term (usual sense, not drupal sense) for which a definition\r\n            and various additional information is provided, notably at the editorial level"
+msgid "A G2 entry is a term (usual sense, not drupal sense) for which a definition\n            and various additional information is provided, notably at the editorial level"
 msgstr ""
 
 #: g2.module:1104
@@ -287,7 +287,7 @@ msgstr ""
 msgid "G2 entry"
 msgstr ""
 
-#: g2.module:1297;1963
+#: g2.module:1297;1967
 msgid "Wipe referer info for this entry"
 msgstr ""
 
@@ -308,7 +308,7 @@ msgid "Path for the main page of G2 on this site"
 msgstr ""
 
 #: g2.module:1429
-msgid "This setting allows site admins to modify the URL at which the home page will be found.  \r\n         This will typically be done to replace the standard path (\"g2\") by a SEO-engineered path."
+msgid "This setting allows site admins to modify the URL at which the home page will be found.  \n         This will typically be done to replace the standard path (\"g2\") by a SEO-engineered path."
 msgstr ""
 
 #: g2.module:1440
@@ -316,7 +316,7 @@ msgid "Embed a CSS-masked version of the definition titles in the node rendition
 msgstr ""
 
 #: g2.module:1442
-msgid "This setting enables search to work better on definition titles, \r\n         but can be frowned upon by search engines."
+msgid "This setting enables search to work better on definition titles, \n         but can be frowned upon by search engines."
 msgstr ""
 
 #: g2.module:1448
@@ -324,7 +324,7 @@ msgid "Hide terms from free-tagging vocabularies to users without G2 administrat
 msgstr ""
 
 #: g2.module:1450
-msgid "Terms bound to a G2 node belonging in a free tagging vocabulary \r\n         are typically not meant for end-user consumption."
+msgid "Terms bound to a G2 node belonging in a free tagging vocabulary \n         are typically not meant for end-user consumption."
 msgstr ""
 
 #: g2.module:1460
@@ -332,7 +332,7 @@ msgid "Node used for the homonyms disambiguation page of G2 on this site"
 msgstr ""
 
 #: g2.module:1462
-msgid "If this node is non-zero, this is the page used to build the disambiguation \r\n          page for G2 entries at <code>&lt;drupal&gt;/g2/entries/&lt;someentry&gt;</code>. \r\n          Otherwise, a default page is used."
+msgid "If this node is non-zero, this is the page used to build the disambiguation \n          page for G2 entries at <code>&lt;drupal&gt;/g2/entries/&lt;someentry&gt;</code>. \n          Otherwise, a default page is used."
 msgstr ""
 
 #: g2.module:1469
@@ -340,7 +340,7 @@ msgid "Enable auto-jump to single match on entry"
 msgstr ""
 
 #: g2.module:1471
-msgid "This setting enables automatic redirection from \r\n          <code>&lt;drupal&gt;/g2/entries/someeentry</code> to the entry page if only one match exists for \"someentry\". \r\n          This is especially useful for links generated from content nodes."
+msgid "This setting enables automatic redirection from \n          <code>&lt;drupal&gt;/g2/entries/someeentry</code> to the entry page if only one match exists for \"someentry\". \n          This is especially useful for links generated from content nodes."
 msgstr ""
 
 #: g2.module:1475
@@ -352,7 +352,7 @@ msgid "Vocabulary to be used on the homonyms disambiguation page"
 msgstr ""
 
 #: g2.module:1484
-msgid "If a vocabulary is chosen here, the terms bound to ambiguous entries (homonyms) \r\n          will be displayed on the defaut disambiguation page."
+msgid "If a vocabulary is chosen here, the terms bound to ambiguous entries (homonyms) \n          will be displayed on the defaut disambiguation page."
 msgstr ""
 
 #: g2.module:1491
@@ -364,11 +364,11 @@ msgid "Enable G2 remote XML-RPC services"
 msgstr ""
 
 #: g2.module:1500
-msgid "This setting enables remote anonymous use of the G2 glossary through its XML-RPC services. \r\n         Enabling it without additional access control is typically not a good idea.  \r\n         Note that local XML-RPC is always enabled, which may need to be modified on shared hosts."
+msgid "This setting enables remote anonymous use of the G2 glossary through its XML-RPC services. \n         Enabling it without additional access control is typically not a good idea.  \n         Note that local XML-RPC is always enabled, which may need to be modified on shared hosts."
 msgstr ""
 
 #: g2.module:1507
-msgid "This site is running G2 version %version. \r\n          See the <a href=\"%page\" title=\"G2 Glossary project page\">G2 project page</a> on Drupal.org."
+msgid "This site is running G2 version %version. \n          See the <a href=\"%page\" title=\"G2 Glossary project page\">G2 project page</a> on Drupal.org."
 msgstr ""
 
 #: g2.module:1568
@@ -387,7 +387,7 @@ msgstr ""
 msgid "Term time period"
 msgstr ""
 
-#: g2.module:1749;1792
+#: g2.module:1749;1796
 msgid " (+)"
 msgstr ""
 
@@ -395,31 +395,31 @@ msgstr ""
 msgid " [offline]"
 msgstr ""
 
-#: g2.module:1907
+#: g2.module:1911
 msgid "<p>There are currently no entries for \"%entry\".</p>"
 msgstr ""
 
-#: g2.module:1910
+#: g2.module:1914
 msgid "<p>Would you like to <a href=\"%url\" title=\"Create new entry for %entry\">create</a> one ?</p>"
 msgstr ""
 
-#: g2.module:1947
+#: g2.module:1951
 msgid "%link : %incoming incoming clicks"
 msgstr ""
 
-#: g2.module:1955
-msgid "WARNING: just because a click came from a node doesn't mean the node has a link. \r\n        The click may have come from a block on the page. These stats are just a hint for editors."
+#: g2.module:1959
+msgid "WARNING: just because a click came from a node doesn't mean the node has a link. \n        The click may have come from a block on the page. These stats are just a hint for editors."
 msgstr ""
 
-#: g2.module:1957
+#: g2.module:1961
 msgid "Local referers for this node"
 msgstr ""
 
-#: g2.module:2012
+#: g2.module:2016
 msgid "10 most recently changed only"
 msgstr ""
 
-#: g2.module:2014
+#: g2.module:2018
 msgid "Owned G2 nodes"
 msgstr ""
 

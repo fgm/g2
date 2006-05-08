@@ -282,9 +282,9 @@ function _g2_initial($initial)
   $ar = array();
   while ($result = db_fetch_object($q))
     {
-    $ar[] = l($result->title, "node/$result->nid") 
-      . t(': ') 
-      . strip_tags(($result->teaser)) 
+    $teaser = strip_tags($result->teaser);
+    $ar[] = l($result->title, "node/$result->nid")
+      . t(': %teaser', array('%teaser' => $teaser))
       . l(' (+)', "node/$result->nid", array('class' => 'read-more'));
     }
   $ret .= theme('item_list', $ar);
@@ -1745,7 +1745,7 @@ function theme_g2_block_random()
   
   $ret = l($o->title, "node/$o->nid");
   if ($o->teaser)
-    $ret .= t(': ') . $o->teaser ; // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
+    $ret .= t(': %teaser', array('%teaser' => $o->teaser)); // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
   $ret .= l(t(' (+)'), "node/$o->nid", array('class' => 'read-more'));
   $ret .= _g2_entry_terms($o); // No need to test: it won't change anything if a taxonomy has not been returned
   return '<div class="content">' . $ret . '</div>';
@@ -1780,7 +1780,11 @@ function theme_g2_block_wotd()
 
   $ret = l($o->title, "node/$o->nid");
   if (isset($o->teaser) and ($o->teaser <> ''))
-    $ret .= t(': ') . '<span id="g2_wotd_teaser">' . $o->teaser . '</span>';
+    {
+    $teaser = '<span id="g2_wotd_teaser">' . $o->teaser . '</span>';
+    $ret .= t(': %teaser', array('%teaser' => $teaser));
+    unset($teaser);
+    }
   if (isset($o->body) and ($o->body <> '')) // Won't be set if bodysize is 0
     {
     $strippedbody = strip_tags($o->body);
@@ -1865,8 +1869,8 @@ function theme_g2_entries($entry)
           {
           $ar[] = "</span>$row";
           $current_nid = $result->nid; 
-          $row = l($result->title, "node/$result->nid") . t(': ') 
-            . check_plain($result->teaser) 
+          $row = l($result->title, "node/$result->nid") 
+            . t(': %teaser', array('%teaser' => check_plain($result->teaser)))
             . l(' (+)', "node/$result->nid", array('class' => 'read-more'))
             . '<span class="taxonomy">';
           }
@@ -1886,8 +1890,8 @@ function theme_g2_entries($entry)
       $ar = array();
       while ($result = db_fetch_object($q))
         {
-        $ar[] = l($result->title, "node/$result->nid") . t(': ') 
-          . check_plain($result->teaser) 
+        $ar[] = l($result->title, "node/$result->nid") 
+          . t(': %teaser', array('%teaser' => check_plain($result->teaser)))
           . l(' (+)', "node/$result->nid", array('class' => 'read-more'));
         $current_nid = $result->nid;
         $count++;
