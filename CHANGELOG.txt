@@ -1,9 +1,17 @@
 $Id$
 $Name$
 
+2006-05-14
+  FIX   http://drupal.org/node/63469 RPC Throttle
+  FIX   http://drupal.org/node/63466 RPC Parameter ignored
+  FEAT  http://drupal.org/node/63461 "Latest" features for block and RPC
+  FEAT  http://drupal.org/node/63458 Themeability improvements
+  FIX   Added new strings to .POT for translations
+  FIX   Updated french translation with new strings
+  QUAL  Updated "Choosing G2" document
 2006-04-11
   FIX   http://drupal.org/node/58318 G2 WOTD feed icon not properly set up
-  FEAT  First version fully compatible with extractor.php. 
+  FEAT  First version fully compatible with extractor.php.
   FEAT  First version of french translation.
 2006-03-25
   FIX   http://drupal.org/node/47422 alphabar displayed twice

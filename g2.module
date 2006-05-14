@@ -56,6 +56,8 @@ define('G2VARGOTOSINGLE',     'g2_goto_single');    // Automatically go to the m
 define('G2VARHIDDENTITLE',    'g2_hidden_title');   // Does hook_view include a hidden version of title for hook_update_index
 define('G2VARHOMONYMS',       'g2_homonyms');       // disambiguation page for homonyms
 define('G2VARHOMONYMSVID',    'g2_homonyms_vid');   // disambiguation vocabulary id for homonyms
+define('G2VARLATESTITEMCOUNT','g2_latest_item_count');// Latest(x) block: value of x
+define('G2VARLATESTTITLE',    'g2_latest_title');   // Latest(x) block: title
 define('G2VARMAIN',           'g2_main');           // nid of the node used as main page for G2
 define('G2VARPATHMAIN',       'g2_pathmain');       // path for the G2 main page
 define('G2VARNOFREETAGGING',  'g2_nofreetagging');  // Hide information from freetagging vocabularies to non-G2 admin
@@ -63,6 +65,7 @@ define('G2VARRANDOMENTRY',    'g2_random_entry');   // Random block: latest pseu
 define('G2VARRANDOMSTORE',    'g2_random_store');   // Random block: store the latest random entry
 define('G2VARRANDOMTERMS',    'g2_random_terms');   // Random block: show terms bound to entry
 define('G2VARRANDOMTITLE',    'g2_random_title');   // Random block: title
+define('G2VARRPCTHROTTLE',    'g2_rpc_throttle');   // Coefficient limit for XML-RPC operations over block settings
 define('G2VARWOTDAUTOCHANGE', 'g2_wotd_autochange');// WOTD block: automatically change the WOTD once a day
 define('G2VARWOTDBODYSIZE',   'g2_wotd_bodysize');  // WOTD block: number of body characters to be displayed in the block
 define('G2VARWOTDDATE',       'g2_wotd_date');      // WOTD block: date for which this WOTD entry is current
@@ -82,6 +85,7 @@ define('G2VARXMLRPC',         'g2_xmlrpc');         // Is the XML-RPC server ena
  */
 define('G2DEFAULTALPHABAR',      '0123456789abcdefghijklmnopqrstuvwxyz');
 define('G2DEFAULTPATHMAIN',      'g2');
+define('G2DEFAULTRPCTHROTTLE',   10);
 define('G2DEFAULTWOTDTITLE',     t('Word of the day in the G2 glossary'));
 define('G2DEFAULTWOTDFEEDDESCR', t("A daily definition from the G2 Glossary at %site"));  // see _g2_wotd_feed()
 define('G2DEFAULTWOTDFEEDAUTHOR',"%author"); // This default will use the actual node author
@@ -291,6 +295,11 @@ function _g2_initial($initial)
   return $ret;
   }
 
+function _g2_ip_ban()
+  {
+  return xmlrpc_error();
+  }
+
 /**
  * Themeability wrapper around g2_initial
  *
@@ -300,6 +309,29 @@ function _g2_initial($initial)
 function _g2_initial_page($initial)
   {
   return theme('g2_initial', $initial)  ;
+  }
+  
+/**
+ * Returns a list of the latest n nodes
+ * as counted by time of update
+ * @return array
+ */
+function _g2_latest($max = null)
+  {
+  $defmax = variable_get (G2VARLATESTITEMCOUNT, 10); 
+  $rpcthrottle =  variable_get (G2VARRPCTHROTTLE, G2DEFAULTRPCTHROTTLE); 
+  if (empty($max) or ($max > $rpcthrottle*$defmax)) // Limit extraction
+    {
+    $max = $defmax;
+    }
+  $sq = "select n.title, n.nid, n.status from {node} n where (n.type = '" . G2NODETYPE . "') order by n.changed desc";
+  $q = db_query_range($sq, 0, $max);
+  $ret = array();
+  while ($row = db_fetch_object($q))
+    {
+    $ret[] = $row;
+    }
+  return $ret;
   }
   
 /**
@@ -363,6 +395,73 @@ function _g2_random()
  * Counts the number of entries matching two criteria:
  * @param int $tid Term Id (ignored if 0)
  * @param string $initial Start of entry (ignored if null)
+ * @return string HTML
+ */
+function _g2_referer_links()
+  {
+  $nid = arg(1);
+  $sq = "SELECT gr.referer, gr.incoming "
+      . "FROM {g2_referer} gr "
+      . "WHERE gr.nid = %d "
+      . "ORDER BY gr.incoming DESC";
+  $q = db_query($sq, $nid);
+  $ar = array();
+  while ($o = db_fetch_object($q))
+    {
+    $ar[] = l(
+      t("%link : %incoming incoming clicks", array('%link' => $o->referer, '%incoming' => $o->incoming)), 
+      $o->referer,
+      NULL,
+      NULL,
+      NULL,
+      TRUE);
+    }
+  $ret = theme('item_list', $ar, '');
+  $ret .= t('WARNING: just because a click came from a node doesn\'t mean the node has a link. 
+        The click may have come from a block on the page. These stats are just a hint for editors.');
+  $ret = theme('box', t('Local referers for this node'), $ret);
+
+  $form = array();
+  $form['#action'] = G2PATHREFERERWIPE . '/' . $nid;
+  $form['submit'] = array(
+    '#type'       => 'submit',
+    '#value'      => t('Wipe referer info for this entry'),
+    );
+  
+  $ret .= drupal_get_form('g2_referer_wipe', $form);
+  return $ret;
+  }
+
+/**
+ * Erase the referer counts on g2 entries
+ *
+ * @param int $nid Node from which to erase referers, or null to erase all g2 referers
+ * @return void
+ */
+function _g2_referer_wipe($nid = NULL)
+  {
+  if (isset($nid))
+    {  
+    $sq .= 'DELETE from {g2_referer} WHERE nid = %d';
+    db_query($sq, check_plain($nid));
+    drupal_goto(url("node/$nid"));
+    }
+  else
+    {
+    $sq .= 'DELETE from {g2_referer}';
+    db_query($sq);
+    drupal_goto(url('admin/settings/g2'));      
+    }
+  }
+  
+/**
+ * Extract statistics from the G2 glossary
+ * - g2 entries having chosen taxonomy term
+ * - g2 entries starting by chosen initial segment
+ *
+ * @param int $tid Taxonomy term id
+ * @param string $initial Initial segment
+ * @return array
  */
 function _g2_stats($tid = 0, $initial = NULL)
   {
@@ -401,11 +500,17 @@ function _g2_stats($tid = 0, $initial = NULL)
 /**
  * Returns a list of the top n nodes
  * as counted by statistics.module
+ * @param $max
  * @return array
  */
-function _g2_top()
+function _g2_top($max = null)
   {
-  $max = variable_get (G2VARTOPITEMCOUNT, 10);
+  $defmax = variable_get (G2VARTOPITEMCOUNT, 10); 
+  $rpcthrottle =  variable_get (G2VARRPCTHROTTLE, G2DEFAULTRPCTHROTTLE); 
+  if (empty($max) or ($max > $rpcthrottle*$defmax)) // Limit extraction
+    {
+    $max = $defmax;
+    }
   $sq = "select n.title, n.nid, n.status from {node} n inner join {node_counter} c on n.nid = c.nid where (n.type = '" . G2NODETYPE . "') and (c.totalcount is not null) order by c.totalcount desc, n.changed desc";
   $q = db_query_range($sq, 0, $max);
   $ret = array();
@@ -548,6 +653,7 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
     $blocks[1]['info'] = variable_get('g2_random_info',   t('G2 Random')); 
     $blocks[2]['info'] = variable_get('g2_top_info',      t('G2 Top')); 
     $blocks[3]['info'] = variable_get('g2_wotd_info',     t('G2 Word of the day')); 
+    $blocks[4]['info'] = variable_get('g2_latest_info',   t('G2 Latest')); 
     return $blocks; 
     } 
   elseif ($op == 'configure')
@@ -698,6 +804,19 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
           t('Name of the block in the block list'), 'wotd', t('G2 Word of the day'),
           t('Title of the block when displayed'),   'wotd', t('Word of the day in the G2 glossary'));
         break;
+      case 4: // Latest
+        $latestcount = variable_get(G2VARLATESTITEMCOUNT, 10);
+        $form['itemcount'] = array
+          ( 
+          '#type'          => 'select', 
+          '#title'         => t('Number of items'), 
+          '#default_value' => $latestcount, 
+          '#options'       => array('1' => '1', '2' => '2', '5' => '5', '10' => '10')
+          ); 
+        _g2_block_settings_show($form, 
+          t('Name of the block in the block list'), 'latest', sprintf (t('G2 Latest %d'), $latestcount),
+          t('Title of the block when displayed'),   'latest', t('%d most recently updated G2 glossary entries'));
+        break;
       default:
         break;
       } 
@@ -733,6 +852,9 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
         variable_set(G2VARWOTDFEEDDESCR,  $edit['wotd_feed_descr']);
         variable_set(G2VARWOTDFEEDAUTHOR, $edit['wotd_feed_author']);
         _g2_block_settings_save($edit, 'wotd');
+      case 4: // Top
+        variable_set(G2VARLATESTITEMCOUNT, $edit['itemcount']); 
+        _g2_block_settings_save($edit, 'latest');
       default:
         break;
       }
@@ -759,6 +881,12 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
       case 3: 
         $block['subject'] = variable_get(G2VARWOTDTITLE, G2DEFAULTWOTDTITLE); 
         $block['content'] = theme('g2_block_wotd'); 
+        break; 
+      case 4: 
+        $block['subject'] = sprintf (
+          variable_get(G2VARLATESTTITLE,     t('%d most recently updated G2 glossary entries')),
+          variable_get(G2VARLATESTITEMCOUNT, 10)); 
+        $block['content'] = theme('g2_block_latest'); 
         break; 
       } 
     return $block; 
@@ -1414,7 +1542,7 @@ function g2_perm() {
 function g2_settings() { 
   $form['main'] = array(
     '#type'          => 'fieldset',
-    '#title'         => 'Main page',
+    '#title'         => t('Main page'),
     );
   $form['main'][G2VARMAIN] = array( 
     '#type'          => 'textfield', 
@@ -1432,7 +1560,7 @@ function g2_settings() {
 
   $form['automation'] = array(
     '#type'          => 'fieldset',
-    '#title'         => 'Site automation'
+    '#title'         => t('Site automation')
     );    
   $form['automation'][G2VARHIDDENTITLE] = array
     ( 
@@ -1453,7 +1581,7 @@ function g2_settings() {
 
   $form['homonyms'] = array(
     '#type'          => 'fieldset',
-    '#title'         => 'Homonyms processing'
+    '#title'         => t('Homonyms processing')
     );    
   $form['homonyms'][G2VARHOMONYMS] = array(
     '#type'          => 'textfield', 
@@ -1502,10 +1630,19 @@ function g2_settings() {
          Note that local XML-RPC is always enabled, which may need to be modified on shared hosts.'),
     );
     
+  $form['advanced'][G2VARRPCTHROTTLE] = array
+    (
+    '#type'          => 'textfield',
+    '#title'         => t('RPC throttle'),
+    '#default_value' => variable_get(G2VARRPCTHROTTLE, G2DEFAULTRPCTHROTTLE),
+    '#description'   => t('This setting is a coefficient applied to the Top and Latest block for their XML-RPC services.
+        It defines the maximum number of entries an XML-RPC client is allowed to return
+        in just one call as the product of the block setting and this coefficient.'),
+    );
   $form['advanced'][G2VERSION] = array
     (
-    '#value'         => '<p>' . t('This site is running G2 version %version. 
-          See the <a href="%page" title="G2 Glossary project page">G2 project page</a> on Drupal.org.', 
+    '#value'         => '<p>' 
+      . t('This site is running G2 version %version. See the <a href="%page" title="G2 Glossary project page">G2 project page</a> on Drupal.org.', 
         array(
           '%version' => G2VERSION,
           '%page'    => 'http://drupal.org/node/41641',
@@ -1523,6 +1660,21 @@ function g2_settings() {
     );
   return $form; 
   } 
+
+/**
+ * hook_settings form validation: if "wipe referers" has been chosen, ask for confirmation
+ *
+ * @param string $form_id
+ * @param array $form
+ * @return void
+ */
+function g2_settings_form_validate($form_id, &$form) 
+  {
+  if ($_POST['op'] == G2TITLEREFERERWIPE) 
+    {
+    drupal_goto(G2PATHREFERERWIPE);
+    }
+  }
 
 /** 
  * Respond to node updating. 
@@ -1543,6 +1695,44 @@ function g2_update($node) {
   db_query("UPDATE {g2_node} SET period = '%s', complement = '%s', origin = '%s' WHERE nid = %d", 
     $node->period, $node->complement, $node->origin, $node->nid); 
 } 
+
+/**
+ * Implement hook_user
+ *
+ * @param string $op
+ * @param array $edit
+ * @param object $user
+ * @param string $category
+ * @return mixed
+ */
+function g2_user($op, &$edit, &$user, $category = NULL)
+  {
+  switch ($op) 
+    {
+  	case 'load':
+  	  $sq = "SELECT n.nid, n.title FROM {node} n WHERE n.type = '" 
+  	    . G2NODETYPE 
+  	    . "' AND n.uid = %d ORDER BY n.changed DESC, n.created DESC";
+  	  $q = db_query_range($sq, $user->uid, 0, 10); 
+  	  $user->nodes = array();
+  	  while ($o = db_fetch_object($q))
+  	    {
+  	    $user->nodes[] = array('value' => l($o->title, "node/$o->nid", NULL, NULL, NULL, TRUE));
+        }
+      break;
+  	case 'view':
+  	  if (isset($user->nodes))
+  	    {
+  	    $title = array('title' => t('10 most recently changed only'));
+  	    array_unshift($user->nodes, $title);
+  	    return array(t('Owned G2 nodes') => $user->nodes);
+  	    }
+      break;
+  	default:
+     //dprint_r($op)  ;
+  	  break;
+    }
+  }
 
 /** 
  * Verify a node editing form. 
@@ -1614,11 +1804,11 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE)
 
   //echo "<pre>In g2_view, node = " . print_r($node,TRUE) . "</pre>";
   $node = node_prepare($node, $teaser); 
-  $node->body = theme('box', t('Definition'), $node->body);
+  $node->body = theme('g2_body', t('Definition'), $node->body);
   if (isset ($node->teaser) && ($node->teaser <> ''))
-    $node->body = theme('box', t('In other words'), $node->teaser) . $node->body ;
+    $node->body = theme('g2_teaser', t('In other words'), $node->teaser) . $node->body ;
   if (isset ($node->period) && ($node->period <> ''))
-    $node->body .= theme('box', t('Term time period'), $node->period);
+    $node->body .= theme('g2_period', t('Term time period'), $node->period);
    
   // The following line adds invisible text that will be available to the default node update_index
   // It is prepended to the node in case some later search routine favors the beginning of the body 
@@ -1665,6 +1855,10 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE)
  * 
  * This hook lets a module register callback functions to be called when 
  * particular XML-RPC methods are invoked by a client. 
+ * WARNING: the default security method always allows local RPC. 
+ * In many low-cost shared hosting situations, this may not be safe
+ * (but sites using low-cost shared hosting are typically not expected
+ * to be needing g2)
  * 
  * @return array 
  *   An array which maps XML-RPC methods to Drupal functions. Each array 
@@ -1696,9 +1890,10 @@ function g2_xmlrpc()
   { 
   $ret = array( 
     'g2.alphabar'          => '_g2_alphabar', 
-    'g2.top'               => '_g2_top',
+    'g2.latest'            => '_g2_latest',
     'g2.random'            => '_g2_random',
     'g2.stats'             => '_g2_stats',
+    'g2.top'               => '_g2_top',
     'g2.wotd'              => '_g2_wotd',
   ); 
 
@@ -1714,7 +1909,7 @@ function g2_xmlrpc()
   } 
 
 /**
- * Ancillary function for to return a themed alphabar g2_block(view, 0)
+ * Ancillary function for g2_block to return a themed alphabar g2_block(view, 0)
  *
  * @return string HTML
  */
@@ -1731,8 +1926,26 @@ function theme_g2_block_alphabar()
       $ret .= '<br/>';     
     $i++;
     }
-  $ret = '<div class="content">' . $ret . '</div>';
   return $ret;  
+  }
+
+/**
+ * Ancillary function for g2_block to generate a themed "latest n" block
+ * @return string HTML
+ */
+function theme_g2_block_latest()
+  {
+  $arLatest = _g2_latest();
+  $ar = array();
+  foreach ($arLatest as $latest)
+    {
+    if ($latest->status == 1)
+      $ar[] = l($latest->title, "node/$latest->nid");
+    else 
+      $ar[] = $latest->title . t(' [offline]');
+    }
+  $ret = theme('item_list', $ar);
+  return $ret;
   }
 
 /**
@@ -1748,7 +1961,6 @@ function theme_g2_block_random()
     $ret .= t(': %teaser', array('%teaser' => $o->teaser)); // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
   $ret .= l(t(' (+)'), "node/$o->nid", array('class' => 'read-more'));
   $ret .= _g2_entry_terms($o); // No need to test: it won't change anything if a taxonomy has not been returned
-  return '<div class="content">' . $ret . '</div>';
   }
 
 /**
@@ -1766,7 +1978,7 @@ function theme_g2_block_top()
     else 
       $ar[] = $top->title . t(' [offline]');
     }
-  $ret = '<div class="content">' .theme('item_list', $ar) . '</div>';
+  $ret = theme('item_list', $ar);
   return $ret;
   }
 
@@ -1797,7 +2009,6 @@ function theme_g2_block_wotd()
   $ret .= _g2_entry_terms($o); // No need to test: it won't change anything if a taxonomy has not been returned    
   if (variable_get(G2VARWOTDFEED, TRUE))
     $ret .= theme('xml_icon', url(G2PATHWOTDFEED, NULL, NULL, TRUE));
-  $ret = '<div class="content">' . $ret . '</div>';
   return $ret;
   }
 
@@ -1935,96 +2146,41 @@ function theme_g2_initial($initial = NULL)
   $ret .= _g2_initial($initial);
   return $ret;
   }
-  
-function _g2_referer_links()
-  {
-  $nid = arg(1);
-  $sq = "SELECT gr.referer, gr.incoming "
-      . "FROM {g2_referer} gr "
-      . "WHERE gr.nid = %d "
-      . "ORDER BY gr.incoming DESC";
-  $q = db_query($sq, $nid);
-  $ar = array();
-  while ($o = db_fetch_object($q))
-    {
-    $ar[] = l(
-      t("%link : %incoming incoming clicks", array('%link' => $o->referer, '%incoming' => $o->incoming)), 
-      $o->referer,
-      NULL,
-      NULL,
-      NULL,
-      TRUE);
-    }
-  $ret = theme('item_list', $ar, '');
-  $ret .= t('WARNING: just because a click came from a node doesn\'t mean the node has a link. 
-        The click may have come from a block on the page. These stats are just a hint for editors.');
-  $ret = theme('box', t('Local referers for this node'), $ret);
 
-  $form = array();
-  $form['#action'] = G2PATHREFERERWIPE . '/' . $nid;
-  $form['submit'] = array(
-    '#type'       => 'submit',
-    '#value'      => t('Wipe referer info for this entry'),
-    );
-  
-  $ret .= drupal_get_form('g2_referer_wipe', $form);
-  return $ret;
-  }
-  
-function _g2_referer_wipe($nid = NULL)
+/**
+ * Return a themed g2 node body
+ *
+ * @param title $title The title for the body container
+ * @param body $body The body itself
+ * @return string HTML
+ */
+function theme_g2_body($title, $body)
   {
-  if (isset($nid))
-    {  
-    $sq .= 'DELETE from {g2_referer} WHERE nid = %d';
-    db_query($sq, check_plain($nid));
-    drupal_goto(url("node/$nid"));
-    }
-  else
-    {
-    $sq .= 'DELETE from {g2_referer}';
-    db_query($sq);
-    drupal_goto(url('admin/settings/g2'));      
-    }
-  }
-  
-function g2_settings_form_validate($form_id, &$form) 
-  {
-  if ($_POST['op'] == G2TITLEREFERERWIPE) 
-    {
-    drupal_goto(G2PATHREFERERWIPE);
-    }
+  return theme('box', $title, $body);
   }
 
-function g2_user($op, &$edit, &$user, $category = NULL)
+/**
+ * Return a themed g2 node teaser
+ * Teasers normally contain expansions for acronyms/initialisms,
+ * or translations for foreign terms
+ *
+ * @param title $title The title for the teaser container
+ * @param body $body The teaser itself
+ * @return string HTML
+ */
+function theme_g2_teaser($title, $teaser)
   {
-  switch ($op) 
-    {
-  	case 'load':
-  	  $sq = "SELECT n.nid, n.title FROM {node} n WHERE n.type = '" 
-  	    . G2NODETYPE 
-  	    . "' AND n.uid = %d ORDER BY n.changed DESC, n.created DESC";
-  	  $q = db_query_range($sq, $user->uid, 0, 10); 
-  	  $user->nodes = array();
-  	  while ($o = db_fetch_object($q))
-  	    {
-  	    $user->nodes[] = array('value' => l($o->title, "node/$o->nid", NULL, NULL, NULL, TRUE));
-        }
-      break;
-  	case 'view':
-  	  if (isset($user->nodes))
-  	    {
-  	    $title = array('title' => t('10 most recently changed only'));
-  	    array_unshift($user->nodes, $title);
-  	    return array(t('Owned G2 nodes') => $user->nodes);
-  	    }
-      break;
-  	default:
-     //dprint_r($op)  ;
-  	  break;
-    }
+  return theme('box', $title, "<p>$teaser</p>");    
   }
 
-function _g2_ip_ban()
+/**
+ * Return a themed g2 node time period
+ *
+ * @param title $title The title for the period container
+ * @param body $body The period itself
+ * @return string HTML
+ */
+function theme_g2_period($title, $period)
   {
-  return xmlrpc_error();
+  return theme('box', $title, "<p>$period</p>");        
   }
