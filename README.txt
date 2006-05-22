@@ -25,3 +25,11 @@ hosting plans.
 
 Project page on Drupal.org:
         http://drupal.org/node/41641
+
+==== VERSION WARNING ====
+
+As of 2006-05-22, the module is only maintained/evolved for the DRUPAL-4-7 branch.
+
+Tracking HEAD for the future 4.8 version is not expected to be considered 
+for several months until features for 4.8 start to stabilize.
+
