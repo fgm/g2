@@ -1,6 +1,8 @@
 $Id$
 $Name$
 
+2006-05-22
+  FIX   http://drupal.org/node/64819
 2006-05-14
   FIX   http://drupal.org/node/63469 RPC Throttle
   FIX   http://drupal.org/node/63466 RPC Parameter ignored
