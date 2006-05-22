@@ -20,7 +20,7 @@ function g2_install()
     $existing_table_names[] = array_pop($o);
     }
   $created_tables = array_diff($required_table_names, $existing_table_names);
-  watchdog ('g2 install', dprint_r($created_tables, true), WATCHDOG_NOTICE);
+  watchdog ('g2 install', print_r($created_tables, true), WATCHDOG_NOTICE);
   }
   
   
