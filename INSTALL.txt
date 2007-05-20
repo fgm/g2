@@ -3,14 +3,16 @@ G2 Glossary module for Drupal 4.7.x
 $Id$
 
 Copyright (C) 2005-2006 Frederic G. MARAND (fgm@osinet.fr)
-Code Licensed under the General Public License version 2
+Code Licensed under the CeCILL version 2
+  http://www.cecill.info/index.en.html
 Documentation licensed under the Creative Commons BY-SA-2.0 for France
 
 Installation notes
 ------------------
 
-1. copy the g2 directory to <drupal>/modules/g2
-2. activate the module in administer/modules
+1. make sure you have the prerequisites listes in README.txt
+2. copy the g2 directory to <drupal>/modules/g2
+3. activate the module in administer/modules
 
 Module installation should occur automatically thanks to the g2.install file.
 

@@ -7,25 +7,27 @@
  */
 function g2_install()
   {
-  $required_table_names = array 
+  $required_table_names = array
     (
-    'g2_node', 
+    'g2_node',
     'g2_referer'
     );
-  
+
   $sq = "show tables like '{g2_%}'" ;
   $q = db_query($sq);
+  $existing_table_names = array();
   while ($o = db_fetch_array($q))
     {
     $existing_table_names[] = array_pop($o);
     }
   $created_tables = array_diff($required_table_names, $existing_table_names);
+  g2_create_tables($created_tables);
   watchdog ('g2 install', print_r($created_tables, true), WATCHDOG_NOTICE);
   }
-  
-  
+
+
 /**
- * Create tables necessary for G2.module 
+ * Create tables necessary for G2.module
  * Pure creation, to keep it plain. No checks for existence or level
  *
  * @param array $tables
@@ -33,12 +35,12 @@ function g2_install()
  */
 function g2_create_tables($table_names = array())
   {
-  foreach ($table_names as $table_name) 
+  foreach ($table_names as $table_name)
     {
     switch ($table_name)
       {
-      case 'g2_referer':  
-        $sq = 'CREATE TABLE `g2_referer` '
+      case 'g2_referer':
+        $sq = 'CREATE TABLE {g2_referer} '
             . '  ( '
             . "  `nid`      int(10) unsigned NOT NULL default '0', "
             . "  `referer`  varchar(128) NOT NULL default '', "
@@ -46,15 +48,16 @@ function g2_create_tables($table_names = array())
             . "   PRIMARY KEY (`nid`,`referer`), "
             . "   KEY `referer` (`referer`) "
             . "   ) "
+            . "ENGINE=MyISAM "
             . "DEFAULT CHARSET=utf8 "
             . "COMMENT='G2 referer stats for link exchange' ";
         break;
       case 'g2_node':
-        $sq = 'CREATE TABLE `g2_node` '
+        $sq = 'CREATE TABLE {g2_node} '
             . "  ( "
             . "  `nid`        int(11)     NOT NULL default '0', "
             . "  `period`     varchar(50) default NULL, "
-            . "  `complement` mediumtext "
+            . "  `complement` mediumtext, "
             . "  `origin`     mediumtext, "
             . "  PRIMARY KEY  (`nid`) "
             . "  ) "
@@ -67,5 +70,10 @@ function g2_create_tables($table_names = array())
         break;
       }
     $q = db_query($sq);
-    }  
+    if ($q != 1)
+      {
+      watchdog('g2', t('g2 installer failed at creating table %table_name',
+        array('%table_name' => $table_name)));
+      }
+    }
   }

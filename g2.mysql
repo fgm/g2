@@ -1,5 +1,6 @@
 #-------------------------------------------------
 # New table for the G2 glossary module
+# Currently defined for MySQL 4.1.x
 # $Id$
 #-------------------------------------------------
 
@@ -9,9 +10,9 @@ CREATE TABLE `g2_node`
   `period`     VARCHAR( 50 ) ,
   `complement` MEDIUMTEXT,
   `origin`     MEDIUMTEXT,
-  PRIMARY KEY ( `nid` ) 
+  PRIMARY KEY ( `nid` )
   ) COMMENT = 'Extensions to node for g2 module';
-  
+
 CREATE TABLE `g2_referer` (
   `nid` int(10) unsigned NOT NULL default '0',
   `referer` varchar(128) NOT NULL default '',
