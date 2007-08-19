@@ -17,8 +17,6 @@ automatically link terms in other nodes to their entries in G2, but relies on
 and terms containing special characters like slashes or ampersands without
 specific markup.
 
-Buzzword-compliance: XML-RPC Web services, AJAX UI (term lookups)
-
 Its development to this date has been entirely sponsored by OSInet.fr
 
 A word of warning: due to G2 targeting high-volume glossaries and including
@@ -38,22 +36,18 @@ Sample implementation (over 5000 terms, localized to french)
 
 ==== PREREQUISITES ====
 
-  * Drupal 4.7.6
+  * Drupal 6.0 pre-beta
   * MySQL 4.1.x, configured for UTF-8 encoding (collating: utf8_general_ci)
-    MySQL 4.0.x might work in some configurations but is not supported.
-  * PHP version sufficient for Drupal. PHP 5.x recommended: a multi-byte problem
-    inherent to PHP4.3 has been described and is not fixed by the PHP Group.
-    (Drupal issue 109935, PHP issue 25670).
+  * PHP 5.1
 
-==== VERSION WARNING ====
+==== VERSION WARNINGS ====
 
-As of 2007-05-20:
+As of 2007-08-19:
 - sites not configured with clean URLs are no longer taken into account
-- the module is only maintained/evolved for the DRUPAL-4-7 branch.
-- A 5.0 version is not expected to be considered for several months, unless
-  someone writes the port or sponsors it (shouldn't cost much).
-- It is actually likely that the module will skip straight from 4.7 to 6.
-- the module now follows the "new release system"
+- the module is only maintained/evolved for the DRUPAL-4-7 and
+  DRUPAL-6--1 branches.
+- A 5.0 version will not be considered unless someone writes the
+  port or sponsors it (shouldn't cost much).
 
 ==== NOTICE ====
 
