@@ -1,4 +1,13 @@
 <?php
+/**
+ * Install file for G2 Glossary
+ *
+ * @copyright 2007 Ouest Systemes Informatiques
+ * @license CeCILL 2.0
+ * @version $Id$
+ *
+ */
+$_g2_install_er = error_reporting(E_ALL | E_STRICT);
 
 /**
  * Drupal install function for 4.7
@@ -22,7 +31,7 @@ function g2_install()
     }
   $created_tables = array_diff($required_table_names, $existing_table_names);
   g2_create_tables($created_tables);
-  watchdog ('g2 install', print_r($created_tables, true), WATCHDOG_NOTICE);
+  watchdog('g2 install', print_r($created_tables, true), WATCHDOG_NOTICE);
   }
 
 
@@ -72,8 +81,26 @@ function g2_create_tables($table_names = array())
     $q = db_query($sq);
     if ($q != 1)
       {
-      watchdog('g2', t('g2 installer failed at creating table %table_name',
-        array('%table_name' => $table_name)));
+      watchdog('g2', 'g2 installer failed at creating table %table_name',
+        array('%table_name' => $table_name),
+        WATCHDOG_ERROR
+        );
       }
     }
   }
+
+function g2_uninstall()
+  {
+  $variables = array();
+  $sq = "SELECT v.name FROM {variable} v WHERE v.name LIKE 'g2_%' or v.name LIKE 'g2/%' ";
+  $q = db_query($sq);
+  while ($o = db_fetch_object($q))
+    {
+    $variables[] = $o->name;
+    }
+  array_walk($variables, 'variable_del');
+  drupal_set_message(t('Removed G2 Glossary variables'), 'status');
+  }
+
+error_reporting($_g2_install_er);
+unset($_g2_install_er);

@@ -1,0 +1,11 @@
+; Information file for the G2 Glossary module
+; @version $Id$
+; @copyright 2007 Ouest Systemes Informatiques
+; @license CeCILL 2.0
+;
+name = G2 glossary
+description = Manage a node-based glossary
+dependencies[] = taxonomy
+package = Content
+core = 6.x
+php = 5.1
