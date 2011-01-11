@@ -1,0 +1,52 @@
+<?php
+/**
+ * Test suite for the G2 glossary module
+ *
+ * @author Frederic G. MARAND
+ * @copyright Ouest Systemes Informatiques (OSI)
+ * @license CeCILL 2.0
+ *
+ * License note: G2 is distributed by OSI to its customers
+ * under the CeCILL 2.0 license. OSI support services only
+ * apply to the module when distributed by OSI, not by any
+ * third-party further down the distribution chain.
+ *
+ * If you obtained G2 from drupal.org, that site received it under the
+ * GPLv2 license and can therefore distribute it under the GPLv2, and so
+ * can you and just anyone down the chain as long as the GPLv2 terms are
+ * abided by, the module distributor in that case being the drupal.org
+ * organization or the downstream distributor, not OSI.
+ *
+ */
+
+class G2AccessTest extends DrupalTestCase
+  {
+  function get_info()
+    {
+    $ret = array
+      (
+      'name'  => t('G2 tests'),
+      'desc'  => t('Make sure that G2 paths are adequately protected'),
+      'group' => t('G2 module tests'),
+      )  ;
+    return $ret;
+    }
+
+  /**
+   * Make sure anonymous users don't have access to the settings page
+   */
+  function testAdminSettingsAccess()
+    {
+    global $user;
+
+    $savedUid = $user->uid;
+
+    $user->uid = 0;
+    $arItems = g2_menu($may_cache = FALSE);
+    $this->assertEqual($arItems[G2::PATH_SETTINGS]['access'], FALSE, t('Anonymous uncached access to settings'));
+    $arItems = g2_menu($may_cache = TRUE);
+    $this->assertEqual($arItems[G2::PATH_SETTINGS]['access'], FALSE, t('Anonymous cached access to settings'));
+
+    $user->uid = $savedUid;
+    }
+  }

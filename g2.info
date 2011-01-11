@@ -1,10 +1,23 @@
 ; Information file for the G2 Glossary module
-; @version $Id$
-; @copyright 2007 Ouest Systemes Informatiques
-; @license CeCILL 2.0
 ;
-name = G2 glossary
-description = Manage a node-based glossary
+; @version $Id$
+; @copyright 2007-2010 Ouest Systemes Informatiques (OSInet)
+; @author Frederic G. MARAND
+; @license Licensed under the CeCILL, version 2
+;
+; License note: this software is distributed by OSInet to its customers
+; under the CeCILL 2.0 license. OSInet support services only apply to
+; the module when distributed by OSInet, not by any third-party further
+; down the distribution chain.
+;
+; If you obtained this software from drupal.org, that site received it
+; under the GPLv2 license and can therefore distribute it under the
+; GPLv2, and so can you and just anyone down the chain as long as the
+; GPLv2 terms are abided by, the module distributor in that case being
+; the drupal.org organization or the downstream distributor, not OSInet.
+
+name = "G2 glossary"
+description = "Manage a node-based glossary"
 dependencies[] = taxonomy
 package = Content
 core = 6.x

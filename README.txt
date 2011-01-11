@@ -1,8 +1,24 @@
 =============================================================================
 Glossary2 (G2)
 -----------------------------------------------------------------------------
-$Id$
+ (c) 2005-2011 Frederic G. MARAND
+ Licensed under the CeCILL version 2 and General Public License version 2 and later
+ $Id$
 =============================================================================
+0. Table of contents
+--------------------
+
+  0. Table of contents
+  1. Introduction
+  2. Prerequisites
+  3. Version warnings
+  4. Installing / upgrading / uninstalling
+  5. Notice
+
+// Interim HEAD being set up for Drupal 7 port from the latest D6 dev version. //
+
+1. Introduction
+---------------
 
 G2 is a glossary management module written for Drupal.
 
@@ -31,26 +47,59 @@ Project page on Drupal.org:
         http://drupal.org/project/g2
 Documentation wiki (contributions welcome)
         http://wiki.audean.com/g2/start
-Sample implementation (over 5000 terms, localized to french)
+Sample implementation (about 6000 terms, localized to french)
         http://www.riff.org/glossaire
 
-==== PREREQUISITES ====
+2. Prerequisites
+----------------
 
-  * Drupal 6.0 pre-beta
-  * MySQL 4.1.x, configured for UTF-8 encoding (collating: utf8_general_ci)
+  * Drupal 6.x
+  * MySQL 5.x, configured for UTF-8 encoding (collating: utf8_general_ci)
   * PHP 5.1
 
-==== VERSION WARNINGS ====
+3. VERSION WARNINGS
+-------------------
 
-As of 2007-08-19:
+Since 2009-09-27:
 - sites not configured with clean URLs are no longer taken into account
 - the module is only maintained/evolved for the DRUPAL-4-7 and
   DRUPAL-6--1 branches.
-- A 5.0 version will not be considered unless someone writes the
-  port or sponsors it (shouldn't cost much).
+- A 5.0 version exists, but only to ease upgrades from 4.7 to 6.
+- A 7.0 version is planned, but not developed yet.
 
-==== NOTICE ====
+4. Installing / upgrading / uninstalling
+----------------------------------------
 
+Installing and upgrading within the DRUPAL-6--1 branch is taken care of thanks
+to the standard Drupal install mechanisms.
+
+WARNING: Should you want to uninstall the module, take care to first remove
+all G2 nodes before removing the module. This includes:
+
+- your glossary definitions,
+- the unpublished page used for the glossary home page skeleton.
+- the unpublished page used for the disambiguation skeleton
+
+Unless you do this, you will have inconsistent nodes in your system, because
+Drupal will be missing the module to load G2 entries. If you do not modify
+any of these nodes, reinstalling the module will restore consistency and
+enable a clean noed deletion and uninstall later on.
+
+Upgrading from the 4.7 branch to the 6.1 branch is NOT INCLUDED, so it needs
+some manual help. Contact the maintainer if the need arises.
+
+5. Ruby XML-RPC client
+----------------------
+
+This version includes a Ruby client demonstrating how to use the G2
+XML-RPC services from non-Drupal code. Keep in mind this is basic demo
+code, that should probably not be used without extra care in production.
+
+6. NOTICE
+---------
+
+6.1 Statistics
+--------------
 The statistics displayed on the "entries starting by initial ..." page
 at URL <drupal>/g2/initial/<some initial segment> mention :
 
@@ -60,3 +109,9 @@ It must be understood that this "total number" is actually the total number
 a user without administrative permissions can see, that is, published entries.
 The "published" epithete is not used because site visitors are not expected
 to be aware of the publishing process.
+
+6.2 Random block
+----------------
+
+This block only works if the glossary has at least three visible entries.
+Since G2 is designed for large glossaries, this is not considered a bug.
