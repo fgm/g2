@@ -79,10 +79,10 @@ function g2_requirements($phase) {
   }
   $description = theme('item_list', $ar);
   $ret['statistics'] = array(
-    'title'       => t('G2 statistics'),
-    'value'       => $value,
+    'title' => t('G2 statistics'),
+    'value' => $value,
     'description' => $description,
-    'severity'    => $severity,
+    'severity' => $severity,
   );
   return $ret;
 }
@@ -102,46 +102,79 @@ function g2_schema() {
 
   /**
    * Additional fields in G2 entries
+   *
+   * G2 does not currently revision the additional information it stores
+   * its entries, so it does not need to keep the vid.
    */
-  $schema['g2_node'] = array
-    (
-    'fields' => array
-      (
-      /**
-       * G2 does not currently revision the additional information it stores
-       * about its entries, so it does not need to keep the vid
-       */
-      'nid'         => array('type' => 'int', 'unsigned' => TRUE,  'not null' => TRUE,  'default' => 0, 'description' => 'The node id for the current G2 entry'),
-      'period'      => array('type' => 'varchar', 'length' => 50,  'not null' => FALSE, 'description' => 'A time period during which the entity of concept described by the term was in use'),
-      'complement'  => array('type' => 'text', 'size' => 'medium', 'not null' => FALSE, 'description' => 'Editor-only general information about the item content'),
-      'origin'      => array('type' => 'text', 'size' => 'medium', 'not null' => FALSE, 'description' => 'Editor-only intellectual property-related information about the item content'),
+  $schema['g2_node'] = array(
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The node id for the current G2 entry',
       ),
+      'period' => array(
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => FALSE,
+        'description' => 'A time period during which the entity of concept described by the term was in use',
+      ),
+      'complement' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => FALSE,
+        'description' => 'Editor-only general information about the item content',
+      ),
+      'origin' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => FALSE,
+        'description' => 'Editor-only intellectual property-related information about the item content',
+      ),
+    ),
     'primary key' => array('nid'),
     'unique keys' => array(),
     'indexes' => array(),
-    'description' => 'The G2-specific, non-versioned, informations contained in G2 entry nodes in addition to default node content.'
-    );
+    'description' => 'The G2-specific, non-versioned, informations contained in G2 entry nodes in addition to default node content.',
+  );
 
   /**
    * G2 per-node referer stats
    */
-  $schema['g2_referer'] = array
-    (
-    'fields' => array
-      (
-      'nid'         => array('type' => 'int', 'unsigned' => TRUE,  'not null' => TRUE, 'default' => 0,  'description' => 'The node id for the current G2 entry'),
-      'referer'     => array('type' => 'varchar', 'length' => 128, 'not null' => TRUE, 'default' => '', 'description' => 'The URL on which a link was found to the current item'),
-      'incoming'    => array('type' => 'int', 'unsigned' => TRUE,  'not null' => TRUE, 'default' => 0,  'description' => 'The number of hits coming from this referer'),
+  $schema['g2_referer'] = array(
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The node id for the current G2 entry',
       ),
-    'indexes'     => array(),
+      'referer' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The URL on which a link was found to the current item',
+      ),
+      'incoming' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The number of hits coming from this referer',
+      ),
+    ),
+    'indexes' => array(),
     'primary key' => array('nid', 'referer'),
     'unique keys' => array(),
-    'indexes'     => array
-      (
-      'referer'     => array('referer'),
-      ),
+    'indexes' => array(
+      'referer' => array('referer'),
+    ),
     'description' => 'The referer tracking table for G2 entries',
-    );
+  );
 
   return $schema;
 }
@@ -236,7 +269,7 @@ function g2_update_6001() {
   if ($count) {
     drupal_set_message(t('Replaced @count occurrences of old "%" tokens by new "!" ones on the <a href="!link">WOTD block feed settings</a>.', array( // coder false positive: !link is filtered
       '@count' => $count,
-      '!link'  => url('admin/build/block/configure/g2/'. G2DELTAWOTD),
+      '!link' => url('admin/build/block/configure/g2/' . G2DELTAWOTD),
     )));
   }
   return array();

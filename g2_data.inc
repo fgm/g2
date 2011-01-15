@@ -39,7 +39,7 @@ define('G2DELTARANDOM',       'random');
 /**
  * Block: n most viewed
  */
-define('G2DELTATOP',           'top');
+define('G2DELTATOP',          'top');
 
 /**
  * Block: word of the day
