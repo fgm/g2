@@ -19,7 +19,7 @@ function g2_views_data() {
       'base' => array(
         'field' => 'nid',
         'title' => t('G2 Glossary'),
-        'help'  => t('G2 Views are node views limited to glossary entries.'),
+        'help' => t('G2 Views are node views limited to glossary entries.'),
       ),
       'join' => array(
         'node' => array(

@@ -4,7 +4,7 @@
  * @file
  * Install file for G2 Glossary
  *
- * @copyright Copyright (C) 2005-2010 Frédéric G. MARAND for Ouest Systèmes Informatiques (OSInet)
+ * @copyright Copyright (C) 2005-2011 Frédéric G. MARAND for Ouest Systèmes Informatiques (OSInet)
  *
  * @license Licensed under the CeCILL 2.0 and General Public License 2.0 and later
  *
@@ -18,24 +18,12 @@
  * so can you and just anyone down the chain as long as the GPLv2 terms
  * are abided by, the module distributor in that case being the
  * drupal.org organization or the downstream distributor, not OSInet.
- */
-
-$_g2_install_er = error_reporting(E_ALL | E_STRICT);
-
-/**
- * Implement hook_install().
  *
- * @return void
+ * - No hook_install: schema functions are called automatically in D7
  */
-function g2_install() {
-  // Create tables.
-  drupal_install_schema('g2');
-  $t = get_t();
-  drupal_set_message($t('Installed G2 schema'), 'status');
-}
 
 /**
- * Implement hook_requirements().
+ * Implements hook_requirements().
  *
  * @param string $phase
  * @return array
@@ -64,20 +52,20 @@ function g2_requirements($phase) {
   }
 
   $ar = array();
-  $stats_link = array('!link' => url('admin/build/modules/list'));
+  $stats_link = array('!link' => url('admin/modules/list'));
   $ar[] = $stats
     ? t('<a href="!link">Statistics module</a> installed and activated: OK.', $stats_link)
     : t('<a href="!link">Statistics module</a> not installed or not activated.', $stats_link);
   $link_text = $count ? t('ON') : t('OFF');
   if ($stats) {
-    $link = l($link_text, 'admin/reports/settings',
+    $link = l($link_text, 'admin/config/system/statistics',
         array('fragment' => 'statistics_count_content_views'));
     $ar[] = t('Count content views" setting is !link', array('!link' => $link));
   }
   else {
     $ar[] = t('G2 relies on statistics.module to provide data for the G2 "Top" block and XML-RPC service. If you do not use either block, you can leave statistics.module disabled.');
   }
-  $description = theme('item_list', $ar);
+  $description = theme('item_list', array('items' => $ar));
   $ret['statistics'] = array(
     'title' => t('G2 statistics'),
     'value' => $value,
@@ -88,7 +76,7 @@ function g2_requirements($phase) {
 }
 
 /**
- * Implement hook_schema().
+ * Implements hook_schema().
  *
  * Define the structure of the non-core tables used by G2.
  *
@@ -180,20 +168,19 @@ function g2_schema() {
 }
 
 /**
- * Implement hook_uninstall().
+ * Implements hook_uninstall().
+ * 
+ * No drupal_uninstall_schema(): automatic in D7.
  *
  * @return void
  */
 function g2_uninstall() {
-  // Remove tables.
-  drupal_uninstall_schema('g2');
-  drupal_set_message(st('Uninstalled G2 schema'), 'status');
-
   // Remove variables
   $variables = array();
   $sq = 'SELECT v.name '
       . 'FROM {variable} v '
       . "WHERE v.name LIKE 'g2_%%' OR v.name LIKE 'g2/%%' ";
+  // TODO DBTNG
   $q = db_query($sq);
   while ($o = db_fetch_object($q)) {
     $variables[] = $o->name;
@@ -217,6 +204,7 @@ function g2_update_6000() {
       . 'FROM {variable} v '
       . "WHERE v.name LIKE 'g2_%%info' OR v.name LIKE 'g2_%%title' "
       . "  OR v.name LIKE 'g2/%%' ";
+  // TODO DBTNG
   $q = db_query($sq);
   $count = 0;
   while (is_object($o = db_fetch_object($q))) {
@@ -229,7 +217,7 @@ function g2_update_6000() {
 
   // Convert obsolete block deltas
   module_load_include('inc', 'g2', 'g2_data');
-  $sq = "UPDATE {blocks} b SET delta = '%s' WHERE module = '%s' AND delta = %d ";
+  $sq = "UPDATE {block} b SET delta = '%s' WHERE module = '%s' AND delta = %d ";
   $delta_changes = array(
     0 => G2DELTAALPHABAR,
     1 => G2DELTARANDOM,
@@ -238,15 +226,15 @@ function g2_update_6000() {
     4 => G2DELTALATEST,
   );
   foreach ($delta_changes as $old => $new) {
+    // TODO DBTNG
     db_query($sq, $new, 'g2', $old);
   }
   $t = get_t();
-  drupal_set_message($t('Converted G2 block deltas to new format.'));
-  return array();
+  return $t('Converted G2 block deltas to new format.');
 }
 
 /**
- * Implement hook_update_N().
+ * Implements hook_update_N().
  *
  * - 6001: Convert old "%" tokens from 4.7.x and 5.1.[01] in the WOTD feed
  *   configuration to "!".
@@ -267,16 +255,19 @@ function g2_update_6001() {
   }
 
   if ($count) {
-    drupal_set_message(t('Replaced @count occurrences of old "%" tokens by new "!" ones on the <a href="!link">WOTD block feed settings</a>.', array( // coder false positive: !link is filtered
+    $message = t('Replaced @count occurrences of old "%" tokens by new "!" ones on the <a href="!link">WOTD block feed settings</a>.', array(// coder false positive: !link is filtered
       '@count' => $count,
-      '!link' => url('admin/build/block/configure/g2/' . G2DELTAWOTD),
-    )));
+      '!link' => url('admin/structure/block/configure/g2/' . G2DELTAWOTD),
+    ));
   }
-  return array();
+  else {
+    $message = NULL;
+  }
+  return $message;
 }
 
 /**
- * Implement hook_update_N().
+ * Implements hook_update_N().
  *
  * Temporarily restore the g2_referer table: unlike the D5 branch, the current
  * code in the D6 branch still uses it.
@@ -285,12 +276,12 @@ function g2_update_6002() {
   $ret = array();
   if (!db_table_exists('g2_referer')) {
     $t = get_t();
-    drupal_set_message($t("Temporarily reinstating g2_referer table for current version. In future versions, use an external tracking module instead."));
+    $message = $t("Temporarily reinstating g2_referer table for current version. In future versions, use an external tracking module instead.");
     $schema = g2_schema();
-    db_create_table($ret, 'g2_referer', $schema['g2_referer']);
+    db_create_table('g2_referer', $schema['g2_referer']);
   }
-  return $ret;
+  else {
+    $message = NULL;
+  }
+  return $message;
 }
-
-error_reporting($_g2_install_er);
-unset($_g2_install_er);

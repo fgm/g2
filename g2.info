@@ -20,5 +20,11 @@ name = "G2 glossary"
 description = "Manage a node-based glossary"
 dependencies[] = taxonomy
 package = Content
-core = 6.x
+core = 7.x
 php = 5.1
+
+files[] = g2.install
+files[] = g2.module
+files[] = g2_data.inc
+files[] = tests/access.test
+files[] = views/g2.views.inc
