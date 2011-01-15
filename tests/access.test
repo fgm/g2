@@ -1,5 +1,7 @@
 <?php
+// $Id$
 /**
+ * @file
  * Test suite for the G2 glossary module
  *
  * @author Frederic G. MARAND
@@ -54,5 +56,5 @@ class G2AccessTest extends DrupalWebTestCase {
     $this->drupalGet(G2PATHSETTINGS);
     $this->assertResponse(200, t('Access to settings granted to G2 admins'));
     $this->drupalLogout();
-    }
   }
+}
