@@ -1086,17 +1086,21 @@ function _g2_wotd_feed() {
  * @param $node int
  * @return boolean
  */
-function g2_node_access($op /* , $node, $account */) {
+function g2_node_access($node, $op, $account) {
   switch ($op) {
     case 'create':
     case 'delete':
     case 'update':
-      $ret = user_access(G2PERMADMIN);
+      $ret = user_access(G2PERMADMIN, $account);
       break;
 
     case 'view':
-      $ret = user_access(G2PERMVIEW);
+      $ret = user_access(G2PERMVIEW, $account);
       break;
+
+    default:
+      debug(get_defined_vars(), __FUNCTION__);
+      $ret = FALSE;
   }
 
   return $ret;

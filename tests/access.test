@@ -19,34 +19,40 @@
  *
  */
 
-class G2AccessTest extends DrupalTestCase
-  {
-  function get_info()
-    {
-    $ret = array
-      (
+class G2AccessTest extends DrupalWebTestCase {
+  public static function getInfo() {
+    $ret = array(
       'name'  => t('G2 tests'),
-      'desc'  => t('Make sure that G2 paths are adequately protected'),
+      'description'  => t('Make sure that G2 paths are adequately protected'),
       'group' => t('G2 module tests'),
-      )  ;
+    );
     return $ret;
-    }
+  }
+
+  public function setUp() {
+    parent::setUp('taxonomy', 'g2');
+  }
 
   /**
-   * Make sure anonymous users don't have access to the settings page
+   * Make sure only appropriate users have access to the settings page
    */
-  function testAdminSettingsAccess()
-    {
-    global $user;
+  public function testAdminSettingsAccess() {
+    $account = $this->drupalCreateUser(array('access content'));
+    $this->drupalLogin($account);
+    $this->drupalGet(G2PATHSETTINGS);
+    $this->assertResponse(403, t('Access to settings denied to normal users'));
+    $this->drupalLogout();
 
-    $savedUid = $user->uid;
+    $account = $this->drupalCreateUser(array(G2PERMVIEW));
+    $this->drupalLogin($account);
+    $this->drupalGet(G2PATHSETTINGS);
+    $this->assertResponse(403, t('Access to settings denied to users with G2 limited perms'));
+    $this->drupalLogout();
 
-    $user->uid = 0;
-    $arItems = g2_menu($may_cache = FALSE);
-    $this->assertEqual($arItems[G2::PATH_SETTINGS]['access'], FALSE, t('Anonymous uncached access to settings'));
-    $arItems = g2_menu($may_cache = TRUE);
-    $this->assertEqual($arItems[G2::PATH_SETTINGS]['access'], FALSE, t('Anonymous cached access to settings'));
-
-    $user->uid = $savedUid;
+    $account = $this->drupalCreateUser(array('administer site configuration'));
+    $this->drupalLogin($account);
+    $this->drupalGet(G2PATHSETTINGS);
+    $this->assertResponse(200, t('Access to settings granted to G2 admins'));
+    $this->drupalLogout();
     }
   }
