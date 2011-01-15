@@ -169,21 +169,21 @@ function g2_schema() {
 
 /**
  * Implements hook_uninstall().
- * 
- * No drupal_uninstall_schema(): automatic in D7.
  *
- * @return void
+ * No drupal_uninstall_schema(): automatic in D7. Just remove variables.
  */
 function g2_uninstall() {
-  // Remove variables
   $variables = array();
-  $sq = 'SELECT v.name '
-      . 'FROM {variable} v '
-      . "WHERE v.name LIKE 'g2_%%' OR v.name LIKE 'g2/%%' ";
-  // TODO DBTNG
-  $q = db_query($sq);
-  while ($o = db_fetch_object($q)) {
-    $variables[] = $o->name;
+
+  $q = db_select('variable', 'v');
+  $q->fields('v', array('name'))
+    ->condition(db_or()
+    ->condition('v.name', 'g2_%', 'LIKE')
+    ->condition('v.name', 'g2/%', 'LIKE')
+  );
+  $result = $q->execute();
+  foreach ($result as $row) {
+    $variables[] = $row->name;
   }
   array_walk($variables, 'variable_del');
   drupal_set_message(st('Removed G2 Glossary variables'), 'status');

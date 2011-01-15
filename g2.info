@@ -22,6 +22,7 @@ dependencies[] = taxonomy
 package = Content
 core = 7.x
 php = 5.1
+configure = admin/config/content/g2
 
 files[] = g2.install
 files[] = g2.module

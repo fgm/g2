@@ -21,7 +21,7 @@
  * drupal.org organization or the downstream distributor, not OSInet.
  *
  * @todo split settings form with local tabs or vertical tabs
- * 
+ *
  * @todo rename/remove constants
  *
  * @todo test wipes, rss
@@ -30,20 +30,6 @@
  */
 
 module_load_include('inc', 'g2', 'g2_data');
-
-/**
- * Constants missing from node.module versions (still missing from node.module 1.582, see http://drupal.org/node/43355)
- */
-if (!defined('NODE_PUBLISHED')) {
-  define('NODE_NOT_PUBLISHED', 0);
-  define('NODE_PUBLISHED', 1);
-  define('NODE_NOT_IN_MODERATION', 0); // moderate
-  define('NODE_IN_MODERATION', 1);
-  define('NODE_NOT_PROMOTED', 0); // promote
-  define('NODE_PROMOTED', 1);
-  define('NODE_NOT_STICKY', 0); // sticky
-  define('NODE_STICKY', 1);
-}
 
 // ==== Default values for the persistent variables ============================
 
@@ -245,7 +231,7 @@ define('G2PATHNODEADD',          'node/add/' . G2NODETYPE);
 /**
  * G2 admin UI path
  */
-define('G2PATHSETTINGS',         'admin/config/g2');
+define('G2PATHSETTINGS',         'admin/config/content/g2');
 
 /**
  * G2 path for the WOTD feed
@@ -482,7 +468,7 @@ function _g2_autocomplete($us_string = NULL) {
         . "  AND n.type = '%s' "
         . '  AND (n.status = 1)'
         . 'ORDER BY n.sticky DESC, LOWER(n.title) ASC';
-    $sq = db_rewrite_sql($sq);
+    // $sq = db_rewrite_sql($sq);
     // TODO DBTNG
     $q = db_query_range($sq, $us_string, G2NODETYPE);
     while (is_object($o = db_fetch_object($q))) {
@@ -687,7 +673,7 @@ function _g2_initial($initial) {
       . "WHERE (n.status = 1) AND (n.type = '%s') "
       . "  AND (v.title LIKE '%s%%') "
       . "ORDER BY 2 ";
-  $sq = db_rewrite_sql($sq);
+  // $sq = db_rewrite_sql($sq);
   // TODO DBTNG
   $q = db_query($sq, G2NODETYPE, $initial);
   $ar_entries = array();
@@ -731,7 +717,7 @@ function _g2_latest($max = NULL, $include_unpublished = FALSE) {
       . 'FROM {node} n '
       . "WHERE (n.type = '%s') AND (n.status >= %d) "
       . 'ORDER BY n.changed DESC ';
-  $sq = db_rewrite_sql($sq);
+  // $sq = db_rewrite_sql($sq);
   // TODO DBTNG
   $q = db_query_range($sq, G2NODETYPE, $status);
   $ret = array();
@@ -781,7 +767,7 @@ function _g2_random() {
       . 'FROM {node} n '
       . "WHERE n.type = '%s' AND (n.status = 1) "
       . "  AND NOT (n.title = '%s' OR n.nid = %d)";
-  $sq = db_rewrite_sql($sq);
+  // $sq = db_rewrite_sql($sq);
   // TODO DBTNG
   $q = db_query($sq, G2NODETYPE, $random, $wotd_nid);
   $n = $q->fetchField();
@@ -794,7 +780,7 @@ function _g2_random() {
       . '  INNER JOIN {node_revisions} v ON n.vid = v.vid '
       . "WHERE n.type = '%s' AND (n.status = 1) "
       . "  AND NOT (n.title = '%s' OR n.nid = %d) ";
-  $sq = db_rewrite_sql($sq);
+  // $sq = db_rewrite_sql($sq);
   // TODO DBTNG
   $q = db_query_range($sq, G2NODETYPE, $random, $wotd_nid);
   $nid = $q->fetchField();
@@ -846,7 +832,7 @@ function _g2_referer_links($form_state, $node) {
       . "  INNER JOIN {node} n ON gr.nid = n.nid "
       . "WHERE gr.nid = %d "
       . tablesort_sql($header);
-  $sq = db_rewrite_sql($sq);
+  // $sq = db_rewrite_sql($sq);
   // TODO DBTNG
   $q = db_query($sq, $nid);
   $rows = array();
@@ -966,7 +952,7 @@ function _g2_stats($tid = 0, $initial = NULL) {
     $sq_params[] = $initial;
   }
   $sq .= $sq_test . ' GROUP BY n.status';
-  $sq = db_rewrite_sql($sq);
+  // $sq = db_rewrite_sql($sq);
   // TODO DBTNG
   $q = db_query($sq, $sq_params);
 
@@ -1025,7 +1011,7 @@ function _g2_top($max = NULL, $daily_top = FALSE, $include_unpublished = FALSE) 
         . "WHERE (n.type = '%s') AND (n.status >= %d) "
         . '  AND (c.totalcount is not NULL) '
         . 'ORDER BY ' . $ordering . ', n.changed DESC';
-    $sq = db_rewrite_sql($sq);
+    // $sq = db_rewrite_sql($sq);
     // TODO DBTNG
     $q = db_query_range($sq, G2NODETYPE, $status);
     while (is_object($o = db_fetch_object($q))) {
@@ -1127,11 +1113,11 @@ function g2_block_info() {
   $blocks[G2DELTAWOTD    ]['info'] = variable_get('g2_wotd_info',      t('G2 Word of the day'));
   $blocks[G2DELTALATEST  ]['info'] = variable_get('g2_latest_info',    t('G2 Latest'));
 
-  $blocks[G2DELTAALPHABAR]['cache'] = BLOCK_CACHE_GLOBAL;
-  $blocks[G2DELTARANDOM  ]['cache'] = BLOCK_NO_CACHE; // Else it couldn't be random
-  $blocks[G2DELTATOP     ]['cache'] = BLOCK_CACHE_PER_ROLE; // Can contain unpublished nodes
-  $blocks[G2DELTAWOTD    ]['cache'] = BLOCK_CACHE_GLOBAL;
-  $blocks[G2DELTALATEST  ]['cache'] = BLOCK_CACHE_PER_ROLE; // Can contain unpublished nodes
+  $blocks[G2DELTAALPHABAR]['cache'] = DRUPAL_CACHE_GLOBAL;
+  $blocks[G2DELTARANDOM  ]['cache'] = DRUPAL_NO_CACHE; // Else it couldn't be random
+  $blocks[G2DELTATOP     ]['cache'] = DRUPAL_CACHE_PER_ROLE; // Can contain unpublished nodes
+  $blocks[G2DELTAWOTD    ]['cache'] = DRUPAL_CACHE_GLOBAL;
+  $blocks[G2DELTALATEST  ]['cache'] = DRUPAL_CACHE_PER_ROLE; // Can contain unpublished nodes
   return $blocks;
 }
 
@@ -1441,7 +1427,7 @@ function g2_entry_load($title) {
   $sq = 'SELECT n.nid '
       . 'FROM {node} n '
       . "WHERE n.type = '%s' AND n.status >= %d AND n.title LIKE '%s%%' ";
-  $sq = db_rewrite_sql($sq);
+  // $sq = db_rewrite_sql($sq);
 
   $min_status = user_access('administer nodes')
     ? NODE_NOT_PUBLISHED
@@ -2045,13 +2031,14 @@ function g2_update($node) {
 /**
  * Implements hook_user_load().
  */
-function g2_user_load() {
+function g2_user_load_FIXME() {
   // TODO make compatible with static caching introduced in D7
   $sq = 'SELECT n.nid, n.title '
       . 'FROM {node} n '
       . "WHERE n.type = '%s' AND n.status  = 1 AND n.uid = %d "
       . 'ORDER BY n.changed DESC, n.created DESC';
-  $sq = db_rewrite_sql($sq);
+  // TODO DBTNG
+  // $sq = db_rewrite_sql($sq);
   $q = db_query_range($sq, G2NODETYPE, $account->uid, 0, 10);
   $account->nodes = array();
   while (is_object($o = db_fetch_object($q))) {
@@ -2061,7 +2048,7 @@ function g2_user_load() {
   }
 }
 
-function g2_user_view() {
+function g2_user_view_FIXME() {
   // TODO make compatible with static caching introduced in D7
   if (count($account->nodes) >= 1) {
     $nodes = array();
@@ -2321,7 +2308,7 @@ function theme_g2_wotd($variables) {
       'url' => url(G2PATHWOTDFEED, array('absolute' => TRUE)),
       // TODO find a better title
       'title' => t('Glossary feed'),
-    );
+    ));
   }
   return $ret;
 }
@@ -2346,7 +2333,7 @@ function theme_g2_main() {
   $alphabar = theme('g2_alphabar', array(
     'alphabar' => _g2_alphabar(),
     'rowlen' => 2 << 16,
-  );
+  ));
   $node = node_load(variable_get(G2VARMAIN, G2DEFMAIN));
   if (is_object($node)) {
     drupal_set_title($node->title);
@@ -2531,7 +2518,7 @@ function theme_g2_teaser($variables) {
   $title = $variables['title'];
   $teaser = $variables['teaser'];
   return theme('g2_box', array(
-    'title' => $title, 
+    'title' => $title,
     'content' => "<p>$teaser</p>",
   ));
 }
@@ -2552,7 +2539,7 @@ function theme_g2_period($variables) {
   $title = $variables['title'];
   $period = $variables['period'];
   return theme('g2_box', array(
-    'title' => $title, 
+    'title' => $title,
     'content' => "<p>$period</p>",
   ));
 }
@@ -2579,7 +2566,7 @@ function _g2_terminal_encode($terminal) {
 
 /**
  * Implements hook_theme().
- * 
+ *
  * TODO kill g2_box
  */
 function g2_theme() {
