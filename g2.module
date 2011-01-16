@@ -20,11 +20,11 @@
  * as the GPLv2+ terms are abided by, the module distributor in that case being
  * the drupal.org organization or the downstream distributor, not OSInet.
  *
- * @todo split settings form with local tabs or vertical tabs
+ * TODO: split settings form with local tabs or vertical tabs
  *
- * @todo rename/remove constants
+ * TODO: rename/remove constants
  *
- * @todo test wipes, rss
+ * TODO: test wipes, rss
  *
  * @link http://wiki.audean.com/g2/choosing @endlink
  */
@@ -603,6 +603,64 @@ function _g2_filter_tips($delta, $format, $long = FALSE) {
   $ret = $long
     ? t('Wrap &lt;dfn&gt; elements around the terms for which you want a link to the available G2 definition(s).')
     : t('You may link to G2 definitions using &lt;dfn&gt; elements.');
+  return $ret;
+}
+
+/**
+ * Return a list of words starting with an initial segment.
+ *
+ * Segments are typically one letter, but can be any starting substring.
+ *
+ * The logic is different from the one in _g2_entries() because we don't care
+ * for the special case of "/" as an initial segment.
+ *
+ * XXX abstract to EntityFieldQuery
+ *
+ * @param string $initial
+ * @return string HTML
+ */
+function _g2_initial($initial) {
+  $initial = check_plain($initial);
+  $ar_total   = _g2_stats();
+  $ar_initial = _g2_stats(0, $initial);
+  $ret = t("<p>Displaying @count entries starting with '%initial' from a total number of @total entries.</p>",
+    array(
+    // Since _g2_stats() does not return empty arrays, we do not need to check values
+    '@count' => $ar_initial[NODE_PUBLISHED],
+    '%initial' => $initial,
+    '@total' => $ar_total  [NODE_PUBLISHED],
+  )
+  );
+
+  if (user_access(G2PERMADMIN)) {
+    $ret .= t('<p>Admin info: there are also @count unpublished matching entries from a total number of @total unpublished entries.</p>',
+      array(
+      '@count' => $ar_initial[NODE_NOT_PUBLISHED],
+      '@total' => $ar_total  [NODE_NOT_PUBLISHED],
+    )
+    );
+  }
+
+  unset($ar_initial);
+  unset($ar_total);
+
+  $q = db_select('node', 'n');
+  $q->innerJoin('node_revision', 'v', 'n.vid = v.vid');
+  $q->fields('n', array('nid'))
+    // ->fields('v', array('title'))
+    ->condition('n.status', 1)
+    ->condition('n.type', G2NODETYPE)
+    ->condition('v.title', $initial . '%', 'LIKE')
+    ->orderBy('v.title')
+    ->addTag('node_access');
+
+  $nids = array();
+  $result = $q->execute();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
+  }
+
+  $ret = node_view_multiple(node_load_multiple($nids), 'g2_entry_list');
   return $ret;
 }
 
@@ -1237,6 +1295,51 @@ function g2_delete($node) {
 }
 
 /**
+ * Implements hook_entity_info_alter().
+ */
+function g2_entity_info_alter(&$info) {
+  // Add the 'Entry list' view mode for nodes.
+  $info['node']['view modes'] += array(
+    'g2_entry_list' => array(
+      'label' => t('G2 Entry list'),
+      'custom settings' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function g2_field_extra_fields() {
+  $period = array(
+    'label' => t('Life period'),
+    'description' => t('This is the period of time during which the entity described by the term was actually alive, not the lifetime of the term itself, since any term is immortal to some extent.'),
+    'weight' => 1,
+  );
+
+  $extra['node'][G2NODETYPE] = array(
+    'form' => array(
+      'period' => $period,
+      'complement' => array(
+        'label' => t('Complement'),
+        'description' => t('Additional non-versioned editor-only meta-information about the definition'),
+        'weight' => 2,
+      ),
+      'origin' => array(
+        'label' => t('IP/Origin'),
+        'description' => t('Additional non-versioned editor-only Intellectual Property/Origin information about the definition'),
+        'weight' => 3,
+      ),
+    ),
+    'display' => array(
+      'period' => $period,
+    ),
+  );
+
+  return $extra;
+}
+
+/**
  * Implements hook_filter_info().
  */
 function g2_filter_info() {
@@ -1371,7 +1474,7 @@ function g2_help($path, $arg) {
 /**
  * Implements hook_insert().
  *
- * @XXX New feature to add: make extra node info revision-aware
+ * XXX: New feature to add: make extra node info revision-aware
  */
 function g2_insert($node) {
   drupal_write_record('g2_node', $node);
@@ -1382,7 +1485,7 @@ function g2_insert($node) {
  *
  * Access control was performed earlier by core: no need to perform it again here.
  *
- * @XXX New feature to add: make extra node info revision-aware
+ * XXX New feature to add: make extra node info revision-aware
  */
 function g2_load($nodes) {
   $q = db_select('g2_node', 'gn');
@@ -1662,7 +1765,7 @@ function g2_title_load($title) {
   $q->fields('n', array('nid'))
     ->condition('n.type', G2NODETYPE)
     ->condition('n.status', $min_status, '>=')
-    ->condition('n.title', $title . '%%', 'LIKE')
+    ->condition('n.title', $title . '%', 'LIKE')
     ->addTag('node_access');
   // dsm($q->__toString());
   $result = $q->execute();
@@ -1756,66 +1859,25 @@ function g2_xmlrpc() {
   return $mapping;
 }
 
-// ================================= Port until here ===========================
-function ________PORTING_LIMIT___________() {};
-
 /**
- * Return a list of words starting with an initial segment.
+ * Return a themed page listing entries by initial segment.
  *
- * Segments are typically one letter, but can be any starting substring.
+ * This page is less information-rich than the disambiguation page,
+ * because it is expected to have much more content.
  *
- * The logic is different from the one in _g2_entries() because we don't care
- * for the special case of "/" as an initial segment.
- *
- * @param string $initial
+ * @param string $initial Set from hook_menu
  * @return string HTML
  */
-function _g2_initial($initial) {
-  $initial = check_plain($initial);
-  $ar_total   = _g2_stats();
-  $ar_initial = _g2_stats(0, $initial);
-  $ret = t("<p>Displaying @count entries starting with '%initial' from a total number of @total entries.</p>",
-    array(
-    // Since _g2_stats() does not return empty arrays, we do not need to check values
-    '@count' => $ar_initial[NODE_PUBLISHED],
-    '%initial' => $initial,
-    '@total' => $ar_total  [NODE_PUBLISHED],
-  )
-  );
-
-  if (user_access(G2PERMADMIN)) {
-    $ret .= t('<p>Admin info: there are also @count unpublished matching entries from a total number of @total unpublished entries.</p>',
-      array(
-      '@count' => $ar_initial[NODE_NOT_PUBLISHED],
-      '@total' => $ar_total  [NODE_NOT_PUBLISHED],
-    )
-    );
-  }
-
-  unset($ar_initial);
-  unset($ar_total);
-
-  $sq = 'SELECT n.nid, '
-      . '  v.title, v.teaser, v.format '
-      . 'FROM {node} n '
-      . '  INNER JOIN {node_revisions} v ON n.vid = v.vid '
-      . "WHERE (n.status = 1) AND (n.type = '%s') "
-      . "  AND (v.title LIKE '%s%%') "
-      . "ORDER BY 2 ";
-  // $sq = db_rewrite_sql($sq);
-  // TODO DBTNG
-  $q = db_query($sq, G2NODETYPE, $initial);
-  $ar_entries = array();
-  while (is_object($o = db_fetch_object($q))) {
-    $ar_entries[] = t('!link: !teaser', array(
-      '!link' => l($o->title, 'node/' . $o->nid), // l() filters
-      '!teaser' => strip_tags(check_markup($o->teaser, $o->format, $langcode = '' /* TODO Set this variable. */, FALSE)),
-    )
-    );
-  }
-  $ret .= theme('item_list', array('items' => $ar_entries));
+function theme_g2_initial($variables) {
+  $initial = $variables['initial'];
+  $initial = filter_xss($initial);
+  drupal_set_title(strtr(G2TITLEINITIAL, array('%initial' => $initial))); // coder false positive: filter_xss'ed
+  $ret = _g2_initial($initial);
   return $ret;
 }
+
+// ================================= Port until here ===========================
+function ________PORTING_LIMIT___________() {};
 
 /**
  * Ancillary function for g2_block to return a pseudo-random entry.
@@ -1841,7 +1903,7 @@ function _g2_random() {
       . "WHERE n.type = '%s' AND (n.status = 1) "
       . "  AND NOT (n.title = '%s' OR n.nid = %d)";
   // $sq = db_rewrite_sql($sq);
-  // TODO DBTNG
+  // TODO: DBTNG
   $q = db_query($sq, G2NODETYPE, $random, $wotd_nid);
   $n = $q->fetchField();
 
@@ -1872,7 +1934,7 @@ function _g2_random() {
 /**
  * Counts the number of G2 referer entries.
  *
- * @todo check referer wipe: it may have been damaged in the D6 port
+ * TODO: check referer wipe: it may have been damaged in the D6 port
  *
  * @param object $node
  * @return string HTML
@@ -1906,7 +1968,7 @@ function _g2_referer_links($form_state, $node) {
       . "WHERE gr.nid = %d "
       . tablesort_sql($header);
   // $sq = db_rewrite_sql($sq);
-  // TODO DBTNG
+  // TODO: DBTNG
   $q = db_query($sq, $nid);
   $rows = array();
   while (is_object($o = db_fetch_object($q))) {
@@ -1968,13 +2030,13 @@ function _g2_referer_links($form_state, $node) {
 function _g2_referer_wipe($nid = NULL) {
   if (isset($nid)) {
     $sq = 'DELETE from {g2_referer} WHERE nid = %d';
-    // TODO DBTNG
+    // TODO: DBTNG
     db_query($sq, $nid);
     drupal_goto('node/' . $nid);
   }
   else {
     $sq = 'DELETE from {g2_referer}';
-    // TODO DBTNG
+    // TODO: DBTNG
     db_query($sq);
   }
 }
@@ -1991,6 +2053,8 @@ function _g2_referer_wipe($nid = NULL) {
  *   - g2 entries starting with chosen initial segment
  */
 function _g2_stats($tid = 0, $initial = NULL) {
+  // FIXME 20110116 taxonomy as field
+  return NULL;
   $sq = 'SELECT COUNT(distinct n.nid) cnt, n.status '
       . 'FROM {node} n ';
   $sq_params = array();
@@ -1999,7 +2063,7 @@ function _g2_stats($tid = 0, $initial = NULL) {
   $sq_params[] = G2NODETYPE;
 
   if (isset($tid) && is_int($tid) && $tid > 0) {
-    // TODO migrate from taxonomy_term_node to field storage taxonomy_update_7005()
+    // TODO: migrate from taxonomy_term_node to field storage taxonomy_update_7005()
     $sq .= 'INNER JOIN {taxonomy_term_node} tn ON n.nid = tn.nid ';
     $sq_test .= ' AND tn.tid = %d ';
     $sq_params[] = $tid;
@@ -2011,7 +2075,7 @@ function _g2_stats($tid = 0, $initial = NULL) {
   }
   $sq .= $sq_test . ' GROUP BY n.status';
   // $sq = db_rewrite_sql($sq);
-  // TODO DBTNG
+  // TODO: DBTNG
   $q = db_query($sq, $sq_params);
 
   // Avoid empty returns
@@ -2070,7 +2134,7 @@ function _g2_top($max = NULL, $daily_top = FALSE, $include_unpublished = FALSE) 
         . '  AND (c.totalcount is not NULL) '
         . 'ORDER BY ' . $ordering . ', n.changed DESC';
     // $sq = db_rewrite_sql($sq);
-    // TODO DBTNG
+    // TODO: DBTNG
     $q = db_query_range($sq, G2NODETYPE, $status);
     while (is_object($o = db_fetch_object($q))) {
       $ret[(int) $o->nid] = $o;
@@ -2218,13 +2282,13 @@ return $node;
     $sq = 'UPDATE {g2_referer} '
         . 'SET incoming = incoming + 1 '
         . "WHERE nid = %d AND referer = '%s'";
-    // TODO DBTNG
+    // TODO: DBTNG
     db_query($sq, $node->nid, $referer);
     if (!db_affected_rows()) {
       $sq = 'INSERT INTO {g2_referer} '
           . '  (nid, referer, incoming) '
           . "VALUES (%d, '%s', 1) ";
-      // TODO DBTNG
+      // TODO: DBTNG
       db_query($sq, $node->nid, $referer);
     }
   }
@@ -2290,7 +2354,7 @@ function theme_g2_node_list($variables) {
  * This is actually a short view for just about any single node, but it
  * is even shorter than node_view($node, TRUE).
  *
- * TODO replace with just a node rendered with a specific view_mode
+ * TODO: replace with just a node rendered with a specific view_mode
  *
  * @return string HTML
  */
@@ -2314,7 +2378,7 @@ function theme_g2_random($variables) {
 /**
  * Theme a WOTD block.
  *
- * TODO replace with just a node rendered with a specific view_mode
+ * TODO: replace with just a node rendered with a specific view_mode
  *
  * @param object $wotd
  *   The node for the word of the day. teaser and body are already
@@ -2359,7 +2423,7 @@ function theme_g2_wotd($variables) {
   if (variable_get(G2VARWOTDFEEDLINK, G2DEFWOTDFEEDLINK)) {
     $ret .= theme('feed_icon', array(
       'url' => url(G2PATHWOTDFEED, array('absolute' => TRUE)),
-      // TODO find a better title
+      // TODO: find a better title
       'title' => t('Glossary feed'),
     ));
   }
@@ -2519,23 +2583,6 @@ function theme_g2_entries($variables) {
 }
 
 /**
- * Return a themed page listing entries by initial segment.
- *
- * This page is less information-rich than the disambiguation page,
- * because it is expected to have much more content.
- *
- * @param string $initial Set from hook_menu
- * @return string HTML
- */
-function theme_g2_initial($variables) {
-  $initial = $variables['initial'];
-  $initial = filter_xss($initial);
-  drupal_set_title(strtr(G2TITLEINITIAL, array('%initial' => $initial))); // coder false positive: filter_xss'ed
-  $ret = _g2_initial($initial);
-  return $ret;
-}
-
-/**
  * Return a themed g2 node body.
  *
  * Title and body are filtered prior to invoking this theme function
@@ -2604,7 +2651,7 @@ function theme_g2_period($variables) {
 /**
  * Implements hook_theme().
  *
- * TODO kill g2_box
+ * TODO: kill g2_box
  */
 function g2_theme() {
   $ret = array(
