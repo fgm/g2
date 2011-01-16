@@ -1732,16 +1732,19 @@ function _g2_latest($max = NULL, $include_unpublished = FALSE) {
     ? NODE_NOT_PUBLISHED
     : NODE_PUBLISHED;
 
-  $sq = 'SELECT n.nid, n.title, n.status '
-      . 'FROM {node} n '
-      . "WHERE (n.type = '%s') AND (n.status >= %d) "
-      . 'ORDER BY n.changed DESC ';
-  // $sq = db_rewrite_sql($sq);
-  // TODO DBTNG
-  $q = db_query_range($sq, G2NODETYPE, $status);
+  $q = db_select('node', 'n');
+  $q->fields('n', array('nid', 'title', 'status'))
+    ->condition('n.type', G2NODETYPE)
+    ->condition('n.status', $status, '>=')
+    ->orderBy('n.changed', 'DESC')
+    ->addTag('node_access')
+    ->range(0, $max);
+  // dsm($q->__toString());
+  $result = $q->execute();
+
   $ret = array();
-  while (is_object($o = db_fetch_object($q))) {
-    $ret[] = $o;
+  foreach ($result as $row) {
+    $ret[] = $row;
   }
 
   return $ret;
