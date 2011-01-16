@@ -724,6 +724,68 @@ function _g2_override_site_name() {
 }
 
 /**
+ * Ancillary function for g2_block to return a pseudo-random entry.
+ *
+ * Entry is selected to be different from the current WOTD and, in the default
+ * setting, from the latest pseudo-random result returned.
+ *
+ * Only works for glossaries with 3 entries or more.
+ *
+ * XXX Lkiely possible to do better (2 or more) using a $rand,2 range and removing the wotd from there
+ * XXX Lkiely possible to do better (2 or more) using an ORDER BY RAND()
+ *
+ * @return object
+ *   Title / nid / teaser. Unfiltered contents.
+ */
+function _g2_random() {
+  $wotd_nid = variable_get(G2VARWOTDENTRY, G2DEFWOTDENTRY);
+
+  // Do we have a stored previous random to exclude ?
+  $random = variable_get(G2VARRANDOMSTORE, G2DEFRANDOMSTORE)
+    ? variable_get(G2VARRANDOMENTRY, G2DEFRANDOMENTRY)
+    : ''; // We don't, so just avoid untitled nodes, which should not exist anyway.
+
+  $q = db_select('node', 'n');
+  $q->addExpression('COUNT(*)', 'cnt');
+  $q->condition('n.type', G2NODETYPE)
+    ->condition('n.status', 1)
+    ->condition('n.title', $random, '!=')
+    ->condition('n.nid', $wotd_nid, '!=')
+    ->addTag('node_access');
+  // dsm((string) $q);
+
+  $result = $q->execute();
+  $count = $result->fetchField();
+  $rand = mt_rand(0, $count - 1); // no need to mt_srand() since PHP 4.2
+
+  // Select from the exact same list of nodes, assuming none was inserted/deleted in the meantime
+  $q = db_select('node', 'n');
+  $q->innerJoin('node_revision', 'v', 'n.vid = v.vid');
+  $q->fields('n', array('nid'))
+    ->condition('n.type', G2NODETYPE)
+    ->condition('n.status', 1)
+    ->condition('n.title', $random, '!=')
+    ->condition('n.nid', $wotd_nid, '!=')
+    ->addTag('node_access')
+    ->range($rand, 1);
+  // dsm((string) $q);
+
+  $result = $q->execute();
+  $nid = $result->fetchField();
+
+  $node = node_load($nid);
+  $node->taxonomy = (variable_get(G2VARRANDOMTERMS, G2DEFRANDOMTERMS) && isset($node->taxonomy))
+    ? $node->taxonomy
+    : array();
+
+  if (variable_get(G2VARRANDOMSTORE, G2DEFRANDOMSTORE)) {
+    variable_set(G2VARRANDOMENTRY, $node->title); // unfiltered
+  }
+
+  return $node;
+}
+
+/**
  * Submit handler for _g2_referer_links().
  *
  * Use the wipe target to redirect to the wipe confirmation form. If we
@@ -758,6 +820,73 @@ function _g2_terminal_encode($terminal) {
     '+' => '%2B',
   ));
   return $terminal;
+}
+
+/**
+ * Returns a structure for the WOTD.
+ *
+ * TODO replace by a node with a specific build mode
+ *
+ * @param int $bodysize
+ *
+ * @return object title / nid / teaser
+ *   Teaser and Body are returned already filtered, not stripped.
+ */
+function _g2_wotd($bodysize = 0) {
+  // No need for a static: this function is normally never called twice
+  $nid = variable_get(G2VARWOTDENTRY, G2DEFWOTDENTRY);
+  $node = node_load($nid);
+  if (empty($node)) {
+    return NULL;
+  }
+
+  if (variable_get(G2VARWOTDTERMS, G2DEFWOTDTERMS)) {
+    $node->taxonomy = taxonomy_node_get_terms($node);
+  }
+
+  if (!empty($node->teaser)) {
+    $node->teaser = check_markup($node->teaser, $node->format);
+  }
+
+  $node->truncated = FALSE;
+  if ($bodysize > 0 && !empty($node->body)) {
+    $node->raw_body = $node->body; // save the raw version
+    if (drupal_strlen($node->body) > $bodysize) {
+      $node->truncated = TRUE;
+      $body = drupal_substr($node->body, 0, $bodysize);
+      $node->body =  check_markup($body, $node->format);
+    }
+  }
+
+  return $node;
+}
+
+/**
+ * Generate an RSS feed containing the latest WOTD.
+ *
+ * TODO check the Language to use in D7
+ *
+ * @return string XML in UTF-8 encoding
+ */
+function _g2_wotd_feed() {
+  global $base_url;
+
+  $channelinfo = array(
+    // Link element:  Drupal 4.7->6 defaults to $base url
+    // Language: Drupal 6 defaults to to $language->language
+    // Title: Drupal 6 defaults to site name
+    'title' => variable_get(G2VARWOTDFEEDTITLE, variable_get(G2VARWOTDTITLE, G2DEFWOTDTITLE)),
+    // Description: Drupal defaults to $site_mission
+    'description' => strtr(variable_get(G2VARWOTDFEEDDESCR, G2DEFWOTDFEEDDESCR), array('!site' => $base_url)),
+    'managingEditor' => variable_get('site_mail', 'nobody@example.com'),
+  );
+
+  $items = array(variable_get(G2VARWOTDENTRY, G2DEFWOTDENTRY));
+  $ret = node_feed($items, $channelinfo); // Adds the XML content-type + encoding header
+
+  $ret = check_plain($ret);
+  echo $ret;
+  exit();
 }
 
 /**
@@ -1749,6 +1878,37 @@ function g2_referer_wipe_confirm_form_submit($form, &$form_state) {
 }
 
 /**
+ * Implements hook_theme().
+ *
+ * TODO: kill g2_box
+ */
+function g2_theme() {
+  $ret = array(
+    'g2_alphabar' => array('variables' => array('alphabar' => array(), 'rowlen' => 0)),
+    'g2_box' => array('variables' => array('title' => NULL, 'content' => NULL)),
+    'g2_node_list' => array('variables' => array('nodes' => array())),
+    'g2_random' => array('variables' => array('node' => NULL)),
+    'g2_wotd' => array('variables' => array('node' => NULL)),
+    'g2_body' => array('variables' => array(
+        'title' => '',
+        'body' => '',
+      )),
+    'g2_entries' => array('variables' => array('entry' => '')),
+    'g2_initial' => array('variables' => array('initial' => NULL)),
+    'g2_main' => array('variables' => array()),
+    'g2_period' => array('variables' => array(
+        'title' => '',
+        'period' => '',
+      )),
+    'g2_teaser' => array('variables' => array(
+        'title' => '',
+        'teaser' => '',
+      )),
+  );
+  return $ret;
+}
+
+/**
  * Menu loader for %g2_title.
  *
  * Only returns unpublished nodes to users with "administer nodes".
@@ -1776,6 +1936,63 @@ function g2_title_load($title) {
   $nodes = node_load_multiple($nids);
   // dsm($nodes);
   return $nodes;
+}
+
+/**
+ * Returns a list of the top n nodes as counted by statistics.module.
+ *
+ * - Unpublished nodes are not listed.
+ * - Stickyness is ignored for ordering, but returned in the results for
+ *   client-side ordering if needed.
+ *
+ * @param $max
+ *   Number or entries to return.
+ * @param $daily_top
+ *   Order by daily views if TRUE, otherwise by total views (default).
+ * @return array|NULL
+ *   Statistics will be empty without statistics module.
+ *   Note that the title of the nodes is NOT filtered.
+ */
+function _g2_top($max = NULL, $daily_top = FALSE, $include_unpublished = FALSE) {
+  $def_max      = variable_get(G2VARTOPITEMCOUNT, G2DEFTOPITEMCOUNT);
+  $rpc_throttle = variable_get(G2VARRPCTHROTTLE,  G2DEFRPCTHROTTLE);
+
+  // Limit extraction
+  if (empty($max) or ($max > $rpc_throttle * $def_max)) {
+    $max = $def_max;
+  }
+
+  // Only list unpublished nodes if requested and allowed
+  $status = ($include_unpublished && user_access('administer nodes'))
+    ? NODE_NOT_PUBLISHED
+    : NODE_PUBLISHED;
+
+  $ret = array();
+  if (function_exists('statistics_node_view')) {
+    $q = db_select('node', 'n');
+    $q->innerJoin('node_counter', 'nc', 'n.nid = nc.nid');
+    $q->fields('n', array('nid', 'title', 'status', 'sticky'))
+      ->fields('nc', array('daycount', 'totalcount'))
+      ->condition('n.type', G2NODETYPE)
+      ->condition('n.status', $status, '>=')
+      ->isNotNull('nc.totalcount');
+    if ($daily_top) {
+      $q->orderBy('nc.daycount', 'DESC');
+    }
+    else {
+      $q->orderBy('nc.totalcount', 'DESC');
+    }
+    $q->orderBy('n.changed', 'DESC')
+      ->addTag('node_access')
+      ->range(0, $max);
+
+    $result = $q->execute();
+    foreach ($result as $row) {
+      $ret[(int) $row->nid] = $row;
+    }
+  }
+
+  return $ret;
 }
 
 /**
@@ -1860,6 +2077,153 @@ function g2_xmlrpc() {
 }
 
 /**
+ * Theme an alphabar for g2_block(view, G2DELTAALPHABAR)
+ *
+ * @param array $alphabar
+ * @return string HTML
+ */
+function theme_g2_alphabar($variables) {
+  $alphabar = $variables['alphabar'];
+  $rowlen = $variables['rowlen'];
+  if (empty($rowlen)) {
+    $rowlen = variable_get(G2VARALPHABARROWLEN, G2DEFALPHABARROWLEN);
+  }
+  $ret = '';
+  $i = 0;
+  foreach ($alphabar as $initial) {
+    $ret .= $initial . '&nbsp;';
+    if ($i % $rowlen == $rowlen - 1) {
+      $ret .= '<br />';
+    }
+    $i++;
+  }
+  return $ret;
+}
+
+/**
+ * Implements theme('g2_box').
+ *
+ * TODO kill it along with theme_g2_teaser(), theme_g2_body() and theme_g2_period() (Fields !)
+ */
+function theme_g2_box($variables) {
+  dsm($variables);
+  $ret = '<h2 class="title">'
+       . $variables['title']
+       . '</h2>'
+       . '<div>'
+       . $variables['content']
+       . '</div>';
+  return $ret;
+
+}
+
+/**
+ * Return a homonyms disambiguation page for homonym entries.
+ *
+ * The page is built:
+ * - either by this module
+ * - either from a site node (typically in PHP input format)
+ *
+ * When examining the code to build $entry, remember that
+ * we need to obtain slashes, which drupal preprocesses.
+ *
+ * Note that we query and use n.title instead of using $entry2
+ * in the results to obtain mixed case results when they exist.
+ *
+ * FIXME handle taxonomy properly, likely by just ignoring it and relying on the view mode
+ *
+ * @return string
+ */
+function theme_g2_entries($variables) {
+  $entries = $variables['entries'];
+  $entry = filter_xss(arg(2));
+
+  drupal_set_title(t('G2 Entries for %entry', array('%entry' => $entry)), PASS_THROUGH);
+
+  // The nid for the disambiguation page
+  $page_nid = variable_get(G2VARHOMONYMS, G2DEFHOMONYMS);
+
+  if ($page_nid) {
+    $page_node = node_load($page_nid);
+    $ret = node_view($page_node);
+  }
+  else {
+
+    $count = count($entries);
+    switch ($count) {
+      case 0:
+        $ret = t('<p>There are currently no entries for %entry.</p>',
+          array('%entry' => $entry));
+        if (node_access('create', G2NODETYPE)) {
+          $ret .= t('<p>Would you like to <a href="!url" title="Create new entry for %entry">create</a> one ?</p>',
+            array(
+            '!url' => url(str_replace('_', '-', G2PATHNODEADD) . '/' . $entry),
+            '%entry' => $entry,
+          )
+          );
+        }
+        break;
+
+      case 1:
+        $next = 'node/' . reset($entries)->nid;
+        // Does the webmaster want us to jump ?
+        if (variable_get(G2VARGOTOSINGLE, G2DEFGOTOSINGLE)) {
+          $redirect_type = variable_get(G2VARHOMONYMSREDIRECT, G2DEFHOMONYMSREDIRECT);
+          drupal_goto($next, array(), $redirect_type);
+          // Never returns
+        }
+        // Do not break: we continue with default processing in this case.
+
+      default:
+        // Style more-link specifically
+        drupal_add_css(drupal_get_path('module', 'g2') . '/g2.css', array('preprocess' => FALSE));
+
+        $vid = variable_get(G2VARHOMONYMSVID, G2DEFHOMONYMSVID);
+        $rows = array();
+        foreach ($entries as $nid => $node) {
+          $path = 'node/' . $nid;
+          $terms = array();
+          if (!isset($node->taxonomy)) {
+            $node->taxonomy = array();
+          }
+          foreach ($node->taxonomy as $tid => $term) {
+            if ($vid && $term->vid == $vid) {
+              $terms[] = l($term->name, taxonomy_term_path($term));
+            }
+          }
+          $taxonomy = empty($terms)
+            ? NULL
+          : ' <span class="inline">(' . implode(', ', $terms) . ')</span>';
+          $teaser = isset($node->teaser)
+            ? strip_tags(check_markup($node->teaser, $node->format))
+            : NULL;
+          $rows[] = t('!link!taxonomy: !teaser!more', array(
+            '!link' => l($node->title, $path),
+            '!taxonomy' => $taxonomy, // safe by construction
+            '!teaser' => $teaser,
+            '!more' => theme('more_link', array(
+                'url' => url($path),
+                'title' => t('Full definition for @name: !teaser', array(
+                  '@name' => $entry,
+                  '!teaser' => $teaser,
+                )),
+              )
+            ),
+          ));
+        }
+        $ret = theme('item_list', array(
+          'items' => $rows,
+          'title' => NULL,
+          'type' => 'ul',
+          'attributes' => array('class' => 'g2-entries'),
+        ));
+      // no break; in final default clause
+    }
+    return $ret;
+  }
+}
+
+/**
  * Return a themed page listing entries by initial segment.
  *
  * This page is less information-rich than the disambiguation page,
@@ -1876,60 +2240,161 @@ function theme_g2_initial($variables) {
   return $ret;
 }
 
-// ================================= Port until here ===========================
-function ________PORTING_LIMIT___________() {};
-
 /**
- * Ancillary function for g2_block to return a pseudo-random entry.
+ * Theme the main G2 page, using an unpublished node and the alphabar.
  *
- * Entry is selected to be different from the current WOTD and, in the default
- * setting, from the latest pseudo-random result returned.
+ * Return a simple nodepage built with alphabars wrapping a node
+ * to serve as the main page for the G2 glossary. If no node
+ * is set, just return an alphabar.
  *
- * Only works for glossaries with 3 entries or more.
+ * TODO port the D5 feature allowing a function name instead of a node.
+ * XXX Find a better way to build that page
  *
- * @return object
- *   Title / nid / teaser. Unfiltered contents.
+ * The node is supposed to be an unpublished node, to avoid its
+ * appearing in normal situations, and it will be used as if it was
+ * published by this function.
+ *
+ * @see _g2_main()
+ *
+ * @return string HTML
  */
-function _g2_random() {
-  $wotd_nid = variable_get(G2VARWOTDENTRY, G2DEFWOTDENTRY);
+function theme_g2_main() {
+  // rowlen == 2 << 16 so that only an extremely long alphabar would wrap
+  $alphabar = theme('g2_alphabar', array(
+    'alphabar' => _g2_alphabar(),
+    'rowlen' => 2 << 16,
+  ));
 
-  // Do we have a stored previous random to exclude ?
-  $random = variable_get(G2VARRANDOMSTORE, G2DEFRANDOMSTORE)
-    ? variable_get(G2VARRANDOMENTRY, G2DEFRANDOMENTRY)
-    : ''; // We don't, so just avoid untitled nodes, which should not exist anyway.
-
-  $sq = 'SELECT COUNT(*) cnt '
-      . 'FROM {node} n '
-      . "WHERE n.type = '%s' AND (n.status = 1) "
-      . "  AND NOT (n.title = '%s' OR n.nid = %d)";
-  // $sq = db_rewrite_sql($sq);
-  // TODO: DBTNG
-  $q = db_query($sq, G2NODETYPE, $random, $wotd_nid);
-  $n = $q->fetchField();
-
-  $rand = mt_rand(0, $n - 1); // no need to mt_srand() since PHP 4.2
-
-  // Select from the exact same list of nodes, assuming none was inserted/deleted in the meantime
-  $sq = 'SELECT n.nid '
-      . 'FROM {node} n '
-      . '  INNER JOIN {node_revisions} v ON n.vid = v.vid '
-      . "WHERE n.type = '%s' AND (n.status = 1) "
-      . "  AND NOT (n.title = '%s' OR n.nid = %d) ";
-  // $sq = db_rewrite_sql($sq);
-  // TODO DBTNG
-  $q = db_query_range($sq, G2NODETYPE, $random, $wotd_nid);
-  $nid = $q->fetchField();
-  $node = node_load($nid);
-  $node->taxonomy = variable_get(G2VARRANDOMTERMS, G2DEFRANDOMTERMS)
-    ? $node->taxonomy
-    : array();
-
-  if (variable_get(G2VARRANDOMSTORE, G2DEFRANDOMSTORE)) {
-    variable_set(G2VARRANDOMENTRY, $node->title); // unfiltered
+  $node = node_load(variable_get(G2VARMAIN, G2DEFMAIN));
+  if (is_object($node)) {
+    drupal_set_title($node->title);
+    if (!empty($node->body)) {
+      $node->status = NODE_PUBLISHED; // Simulate publishing
+    }
+    $ret = node_view($node); // 'full', lang == NULL
+    if (!empty($ret['body'])) {
+      $weight = isset($ret['body']['#weight']) ? $ret['body']['#weight'] : 0;
+      $ret['alphatop'] = array('#markup' => $alphabar, '#weight' => $weight - 1);
+      $ret['alphabot'] = array('#markup' => $alphabar, '#weight' => $weight + 1);
+    }
+    else {
+      $ret['alphabar'] = array('#markup' => $alphabar);
+    }
+    _g2_override_site_name();
+  }
+  else {
+    $ret = $alphabar;
   }
 
-  return $node;
+  return $ret;
 }
+
+/**
+ * Theme a G2 entries list, as used by the "latest" and "top" blocks.
+ *
+ * Node access control is the responsibility of the caller passing the
+ * node list.
+ *
+ * @return string HTML
+ */
+function theme_g2_node_list($variables) {
+  $nodes = $variables['nodes'];
+  $ar = array();
+  foreach ($nodes as $node) {
+    $class = ($node->status == NODE_PUBLISHED)
+      ? NULL
+      : 'node-unpublished';
+    $ar[] = l($node->title, 'node/' . $node->nid, array('attributes' => array('class' => $class)));
+  }
+  $ret = theme('item_list', array('items' => $ar));
+  return $ret;
+}
+
+/**
+ * Theme a random entry.
+ *
+ * This is actually a short view for just about any single node, but it
+ * is even shorter than node_view($node, TRUE).
+ *
+ * TODO: replace with just a node rendered with a specific view_mode
+ *
+ * @return string HTML
+ */
+function theme_g2_random($variables) {
+  $node = $variables['node'];
+  $ret = l($node->title, 'node/' . $node->nid);
+  // FIXME $node->teaser is no longer a given in D7
+  if (!empty($node->teaser)) {
+    // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
+    $ret .= t(': @teaser', array('@teaser' => $node->teaser));
+  }
+  // No longer hard coded: use a view_mode instead
+  // $ret .= _g2_entry_terms($node); // No need to test: also works on missing taxonomy
+  $ret .= theme('more_link', array(
+      'url' => url('node/' . $node->nid),
+      'title' => t('&nbsp;(+)'),
+    )
+  );
+  return $ret;
+}
+
+/**
+ * Theme a WOTD block.
+ *
+ * TODO: replace with just a node rendered with a specific view_mode
+ *
+ * @param object $wotd
+ *   The node for the word of the day. teaser and body are already
+ *   filtered and truncated if needed.
+ * @return object title / nid / teaser / [body]
+ */
+function theme_g2_wotd($variables) {
+  $node = $variables['node'];
+  if (empty($node)) {
+    return NULL;
+  }
+
+  $link = l($node->title, 'node/' . $node->nid); // l() check_plain's text
+  if (isset($node->teaser) and !empty($node->teaser)) {
+    // teaser already filtered by _g2_wotd(), don't filter twice.
+    $teaser = '<span id="g2_wotd_teaser">' . strip_tags($node->teaser) . '</span>';
+    $ret = t('!link: !teaser', array(
+      '!link' => $link,
+      '!teaser' => $teaser,
+    ));
+    unset($teaser);
+  }
+  else {
+    $ret = $link;
+  }
+
+  if (!empty($node->body)) {
+    // already filtered by _g2_wotd(), don't filter twice, just strip.
+    $body = strip_tags($node->body);
+    if ($node->truncated) {
+      $body .= '&hellip;';
+    }
+    $ret .= '<div id="g2_wotd_body">' . $body . '</div>';
+  }
+  // No longer needed: use a view_mode instead
+  // $ret .= _g2_entry_terms($node); // No need to test: it won't change anything if a taxonomy has not been returned
+  $ret .= theme('more_link', array(
+      'url' => url('node/' . $node->nid),
+      'title' => t('&nbsp;(+)'),
+    )
+  );
+  if (variable_get(G2VARWOTDFEEDLINK, G2DEFWOTDFEEDLINK)) {
+    $ret .= theme('feed_icon', array(
+      'url' => url(G2PATHWOTDFEED, array('absolute' => TRUE)),
+      // TODO: find a better title
+      'title' => t('Glossary feed'),
+    ));
+  }
+  return $ret;
+}
+
+// ================================= Port until here ===========================
+function ________PORTING_LIMIT___________() {};
 
 /**
  * Counts the number of G2 referer entries.
@@ -2054,7 +2519,7 @@ function _g2_referer_wipe($nid = NULL) {
  */
 function _g2_stats($tid = 0, $initial = NULL) {
   // FIXME 20110116 taxonomy as field
-  return NULL;
+  return array(0, 0);
   $sq = 'SELECT COUNT(distinct n.nid) cnt, n.status '
       . 'FROM {node} n ';
   $sq_params = array();
@@ -2088,118 +2553,6 @@ function _g2_stats($tid = 0, $initial = NULL) {
     $ret[$o->status] = (int) $o->cnt;
   }
 
-  return $ret;
-}
-
-/**
- * Returns a list of the top n nodes as counted by statistics.module.
- *
- * - Unpublished nodes are not listed.
- * - Stickyness is ignored for ordering, but returned in the results for
- *   client-side ordering if needed.
- *
- * @param $max
- *   Number or entries to return.
- * @param $daily_top
- *   Order by daily views if TRUE, otherwise by total views (default).
- * @return array|NULL
- *   Statistics will empty without statistics module.
- *   Note that the title of the nodes is NOT filtered.
- */
-function _g2_top($max = NULL, $daily_top = FALSE, $include_unpublished = FALSE) {
-  $def_max      = variable_get(G2VARTOPITEMCOUNT, G2DEFTOPITEMCOUNT);
-  $rpc_throttle = variable_get(G2VARRPCTHROTTLE,  G2DEFRPCTHROTTLE);
-
-  // Limit extraction
-  if (empty($max) or ($max > $rpc_throttle * $def_max)) {
-    $max = $def_max;
-  }
-
-  // Only list unpublished nodes if requested and allowed
-  $status = ($include_unpublished && user_access('administer nodes'))
-    ? NODE_NOT_PUBLISHED
-    : NODE_PUBLISHED;
-
-  $ret = array();
-  if (function_exists('statistics_nodeapi')) {
-    $ordering = $daily_top
-      ? 'c.daycount DESC'
-      : 'c.totalcount DESC';
-
-    $sq = 'SELECT n.nid, n.title, n.status, n.sticky, '
-        . '  c.daycount, c.totalcount '
-        . 'FROM {node} n '
-        . '  INNER JOIN {node_counter} c ON n.nid = c.nid '
-        . "WHERE (n.type = '%s') AND (n.status >= %d) "
-        . '  AND (c.totalcount is not NULL) '
-        . 'ORDER BY ' . $ordering . ', n.changed DESC';
-    // $sq = db_rewrite_sql($sq);
-    // TODO: DBTNG
-    $q = db_query_range($sq, G2NODETYPE, $status);
-    while (is_object($o = db_fetch_object($q))) {
-      $ret[(int) $o->nid] = $o;
-    }
-  }
-
-  return $ret;
-}
-
-/**
- * Returns a structure for the WOTD.
- *
- * @param int $bodysize
- * @return object title / nid / teaser
- *   Teaser and Body are returned already filtered, not stripped.
- */
-function _g2_wotd($bodysize = 0) {
-  // No need for a static: this function is normally never called twice
-  $nid = variable_get(G2VARWOTDENTRY, G2DEFWOTDENTRY);
-  $node = node_load($nid);
-  if (empty($node)) {
-    return NULL;
-  }
-
-  if (variable_get(G2VARWOTDTERMS, G2DEFWOTDTERMS)) {
-    $node->taxonomy = taxonomy_node_get_terms($node);
-  }
-
-  $node->teaser = check_markup($node->teaser, $node->format);
-
-  $node->truncated = FALSE;
-  if ($bodysize > 0) {
-    $node->raw_body = $node->body; // save the raw version
-    if (drupal_strlen($node->body) > $bodysize) {
-      $node->truncated = TRUE;
-      $body = drupal_substr($node->body, 0, $bodysize);
-      $node->body =  check_markup($body, $node->format);
-    }
-  }
-
-  return $node;
-}
-
-/**
- * Generate an RSS feed containing the latest WOTD.
- *
- * @return string XML in UTF-8 encoding
- */
-function _g2_wotd_feed() {
-  global $base_url;
-
-  $channelinfo = array(
-    // Link element:  Drupal 4.7->6 defaults to $base url
-    // Language: Drupal 6 defaults to to $language->language
-    // Title: Drupal 6 defaults to site name
-    'title' => variable_get(G2VARWOTDFEEDTITLE, variable_get(G2VARWOTDTITLE, G2DEFWOTDTITLE)),
-    // Description: Drupal defaults to $site_mission
-    'description' => strtr(variable_get(G2VARWOTDFEEDDESCR, G2DEFWOTDFEEDDESCR), array('!site' => $base_url)),
-    'managingEditor' => variable_get('site_mail', 'nobody@example.com'),
-  );
-
-  $items = array(variable_get(G2VARWOTDENTRY, G2DEFWOTDENTRY));
-  $ret = node_feed($items, $channelinfo);
-  dvm($ret);
-  $ret = check_plain($ret);
   return $ret;
 }
 
@@ -2304,285 +2657,6 @@ return $node;
 }
 
 /**
- * Theme an alphabar for g2_block(view, G2DELTAALPHABAR)
- *
- * @param array $alphabar
- * @return string HTML
- */
-function theme_g2_alphabar($variables) {
-  $alphabar = $variables['alphabar'];
-  $rowlen = $variables['rowlen'];
-  if (is_null($rowlen)) {
-    $rowlen = variable_get(G2VARALPHABARROWLEN, G2DEFALPHABARROWLEN);
-  }
-  $ret = '';
-  $i = 0;
-  foreach ($alphabar as $initial) {
-    $ret .= $initial . '&nbsp;';
-    if ($i % $rowlen == $rowlen - 1) {
-      $ret .= '<br />';
-    }
-    $i++;
-  }
-  return $ret;
-}
-
-/**
- * Theme a G2 entries list, as used by the "latest" and "top" blocks.
- *
- * Node access control is the responsibility of the caller passing the
- * node list.
- *
- * @return string HTML
- */
-function theme_g2_node_list($variables) {
-  $nodes = $variables['nodes'];
-  $ar = array();
-  foreach ($nodes as $node) {
-    $class = ($node->status == NODE_PUBLISHED)
-      ? NULL
-      : 'node-unpublished';
-    $ar[] = l($node->title, 'node/' . $node->nid, array('attributes' => array('class' => $class)));
-  }
-  $ret = theme('item_list', array('items' => $ar));
-  return $ret;
-}
-
-/**
- * Theme a random entry.
- *
- * This is actually a short view for just about any single node, but it
- * is even shorter than node_view($node, TRUE).
- *
- * TODO: replace with just a node rendered with a specific view_mode
- *
- * @return string HTML
- */
-function theme_g2_random($variables) {
-  $node = $variables['node'];
-  $ret = l($node->title, 'node/' . $node->nid);
-  if ($node->teaser) {
-    // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
-    $ret .= t(': @teaser', array('@teaser' => $node->teaser));
-  }
-  // No longer hard coded: use a view_mode instead
-  // $ret .= _g2_entry_terms($node); // No need to test: also works on missing taxonomy
-  $ret .= theme('more_link', array(
-      'url' => url('node/' . $node->nid),
-      'title' => t('&nbsp;(+)'),
-    )
-  );
-  return $ret;
-}
-
-/**
- * Theme a WOTD block.
- *
- * TODO: replace with just a node rendered with a specific view_mode
- *
- * @param object $wotd
- *   The node for the word of the day. teaser and body are already
- *   filtered and truncated if needed.
- * @return object title / nid / teaser / [body]
- */
-function theme_g2_wotd($variables) {
-  $node = $variables['node'];
-  if (empty($node)) {
-    return NULL;
-  }
-
-  $link = l($node->title, 'node/' . $node->nid); // l() check_plain's text
-  if (isset($node->teaser) and !empty($node->teaser)) {
-    // teaser already filtered by _g2_wotd(), don't filter twice.
-    $teaser = '<span id="g2_wotd_teaser">' . strip_tags($node->teaser) . '</span>';
-    $ret = t('!link: !teaser', array(
-      '!link' => $link,
-      '!teaser' => $teaser,
-    ));
-    unset($teaser);
-  }
-  else {
-    $ret = $link;
-  }
-
-  if (!empty($node->body)) {
-    // already filtered by _g2_wotd(), don't filter twice, just strip.
-    $body = strip_tags($node->body);
-    if ($node->truncated) {
-      $body .= '&hellip;';
-    }
-    $ret .= '<div id="g2_wotd_body">' . $body . '</div>';
-  }
-  // No longer needed: use a view_mode instead
-  // $ret .= _g2_entry_terms($node); // No need to test: it won't change anything if a taxonomy has not been returned
-  $ret .= theme('more_link', array(
-      'url' => url('node/' . $node->nid),
-      'title' => t('&nbsp;(+)'),
-    )
-  );
-  if (variable_get(G2VARWOTDFEEDLINK, G2DEFWOTDFEEDLINK)) {
-    $ret .= theme('feed_icon', array(
-      'url' => url(G2PATHWOTDFEED, array('absolute' => TRUE)),
-      // TODO: find a better title
-      'title' => t('Glossary feed'),
-    ));
-  }
-  return $ret;
-}
-
-/**
- * Theme the main G2 page, using an unpublished node and the alphabar.
- *
- * Return a simple nodepage built with alphabars wrapping a node
- * to serve as the main page for the G2 glossary. If no node
- * is set, just return an alphabar.
- *
- * The node is supposed to be an unpublished node, to avoid its
- * appearing in normal situations, and it will be used as if it was
- * published by this function.
- *
- * @see _g2_main()
- *
- * @return string HTML
- */
-function theme_g2_main() {
-  // rowlen == 2 << 16 so that only an extremely long alphabar would wrap
-  $alphabar = theme('g2_alphabar', array(
-    'alphabar' => _g2_alphabar(),
-    'rowlen' => 2 << 16,
-  ));
-  $node = node_load(variable_get(G2VARMAIN, G2DEFMAIN));
-  if (is_object($node)) {
-    drupal_set_title($node->title);
-    if (isset($node->body)) {
-      $node->status = NODE_PUBLISHED; // Simulate publishing
-      $node->content['alphatop'] = array(
-        '#value' => $alphabar,
-        '#weight' => -15,
-      );
-      $node->content['alphabot'] = array(
-        '#value' => $alphabar,
-        '#weight' => 15,
-      );
-    }
-    else {
-      $node->body = $alphabar;
-    }
-    $ret = node_view($node, FALSE, TRUE);
-    _g2_override_site_name();
-  }
-  else {
-    $ret = $alphabar;
-  }
-
-  return $ret;
-}
-
-/**
- * Return a homonyms disambiguation page for homonym entries.
- *
- * The page is built:
- * - either by this module
- * - either from a site node (typically in PHP input format)
- *
- * When examining the code to build $entry, remember that
- * we need to obtain slashes, which drupal preprocesses.
- *
- * Note that we query and use n.title instead of using $entry2
- * in the results to obtain mixed case results when they exist.
- *
- * @return string
- */
-function theme_g2_entries($variables) {
-  $entries = $variables['entries'];
-  $entry = filter_xss(arg(2));
-
-  drupal_set_title(t('G2 Entries for %entry', array('%entry' => $entry)), PASS_THROUGH);
-
-  // The nid for the disambiguation page
-  $page_nid = variable_get(G2VARHOMONYMS, G2DEFHOMONYMS);
-
-  if ($page_nid) {
-    $page_node = node_load($page_nid);
-    $ret = node_view($page_node);
-  }
-  else {
-
-    $count = count($entries);
-    switch ($count) {
-      case 0:
-        $ret = t('<p>There are currently no entries for %entry.</p>',
-          array('%entry' => $entry));
-        if (node_access('create', G2NODETYPE)) {
-          $ret .= t('<p>Would you like to <a href="!url" title="Create new entry for %entry">create</a> one ?</p>',
-            array(
-            '!url' => url(str_replace('_', '-', G2PATHNODEADD) . '/' . $entry),
-            '%entry' => $entry,
-          )
-          );
-        }
-        break;
-
-      case 1:
-        $next = 'node/' . reset($entries)->nid;
-        // Does the webmaster want us to jump ?
-        if (variable_get(G2VARGOTOSINGLE, G2DEFGOTOSINGLE)) {
-          $redirect_type = variable_get(G2VARHOMONYMSREDIRECT, G2DEFHOMONYMSREDIRECT);
-          drupal_goto($next, array(), $redirect_type);
-          // Never returns
-        }
-        // Do not break: we continue with default processing in this case.
-
-      default:
-        // Style more-link specifically
-        drupal_add_css(drupal_get_path('module', 'g2') . '/g2.css', array('preprocess' => FALSE));
-
-        $vid = variable_get(G2VARHOMONYMSVID, G2DEFHOMONYMSVID);
-        $rows = array();
-        foreach ($entries as $nid => $node) {
-          $path = 'node/' . $nid;
-          $terms = array();
-          if (!isset($node->taxonomy)) {
-            $node->taxonomy = array();
-          }
-          foreach ($node->taxonomy as $tid => $term) {
-            if ($vid && $term->vid == $vid) {
-              $terms[] = l($term->name, taxonomy_term_path($term));
-            }
-          }
-          $taxonomy = empty($terms)
-            ? NULL
-          : ' <span class="inline">(' . implode(', ', $terms) . ')</span>';
-          $teaser = isset($node->teaser)
-            ? strip_tags(check_markup($node->teaser, $node->format))
-            : NULL;
-          $rows[] = t('!link!taxonomy: !teaser!more', array(
-            '!link' => l($node->title, $path),
-            '!taxonomy' => $taxonomy, // safe by construction
-            '!teaser' => $teaser,
-            '!more' => theme('more_link', array(
-                'url' => url($path),
-                'title' => t('Full definition for @name: !teaser', array(
-                  '@name' => $entry,
-                  '!teaser' => $teaser,
-                )),
-              )
-            ),
-          ));
-        }
-        $ret = theme('item_list', array(
-          'items' => $rows,
-          'title' => NULL,
-          'type' => 'ul',
-          'attributes' => array('class' => 'g2-entries'),
-        ));
-      // no break; in final default clause
-    }
-    return $ret;
-  }
-}
-
-/**
  * Return a themed g2 node body.
  *
  * Title and body are filtered prior to invoking this theme function
@@ -2646,36 +2720,5 @@ function theme_g2_period($variables) {
     'title' => $title,
     'content' => "<p>$period</p>",
   ));
-}
-
-/**
- * Implements hook_theme().
- *
- * TODO: kill g2_box
- */
-function g2_theme() {
-  $ret = array(
-    'g2_alphabar' => array('variables' => array('alphabar' => array(), 'rowlen' => 0)),
-    'g2_box' => array('variables' => array('title' => NULL, 'content' => NULL)),
-    'g2_node_list' => array('variables' => array('nodes' => array())),
-    'g2_random' => array('variables' => array('node' => NULL)),
-    'g2_wotd' => array('variables' => array('node' => NULL)),
-    'g2_body' => array('variables' => array(
-        'title' => '',
-        'body' => '',
-      )),
-    'g2_entries' => array('variables' => array('entry' => '')),
-    'g2_initial' => array('variables' => array('initial' => NULL)),
-    'g2_main' => array('variables' => array()),
-    'g2_period' => array('variables' => array(
-        'title' => '',
-        'period' => '',
-      )),
-    'g2_teaser' => array('variables' => array(
-        'title' => '',
-        'teaser' => '',
-      )),
-  );
-  return $ret;
 }
 
