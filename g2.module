@@ -607,6 +607,49 @@ function _g2_filter_tips($delta, $format, $long = FALSE) {
 }
 
 /**
+ * Returns a list of the latest n nodes.
+ *
+ * "Latest" nodes are identified by time of latest update.
+ *
+ * @param int $max
+ *   The maximum number of entries to return
+ * @param boolean $include_unpublished
+ *   Include unpublished nodes in that list
+ * @return array
+ *   Note that the results are NOT filtered, and must be filtered when used.
+ */
+function _g2_latest($max = NULL, $include_unpublished = FALSE) {
+  $def_max      = variable_get(G2VARLATESTITEMCOUNT, G2DEFLATESTITEMCOUNT);
+  $rpc_throttle = variable_get(G2VARRPCTHROTTLE,     G2DEFRPCTHROTTLE);
+  // Limit extraction
+  if (empty($max) || ($max > $rpc_throttle * $def_max)) {
+    $max = $def_max;
+  }
+
+  // Only list unpublished nodes if requested and allowed
+  $status = ($include_unpublished && user_access('administer nodes'))
+    ? NODE_NOT_PUBLISHED
+    : NODE_PUBLISHED;
+
+  $q = db_select('node', 'n');
+  $q->fields('n', array('nid', 'title', 'status'))
+    ->condition('n.type', G2NODETYPE)
+    ->condition('n.status', $status, '>=')
+    ->orderBy('n.changed', 'DESC')
+    ->addTag('node_access')
+    ->range(0, $max);
+  // dsm($q->__toString());
+  $result = $q->execute();
+
+  $ret = array();
+  foreach ($result as $row) {
+    $ret[] = $row;
+  }
+
+  return $ret;
+}
+
+/**
  * Modify the default page title as built by Drupal.
  *
  * Tweaking $conf only modifies the live copy used by Drupal, and does not touch
@@ -635,6 +678,28 @@ function _g2_override_site_name() {
  */
 function _g2_referer_links_submit(&$form, &$form_state) {
   $form_state['redirect'] = 'g2/wipe/' . $form_state['values']['wipe_target'];
+}
+
+/**
+ * Encodes terminal path portions for G2. This allows linking to
+ * things containing #, + or '.', like C++, C# or the . initial
+ *
+ * Warning: this is NOT a generic replacement for urlencode, but
+ * covers a very specific glossary-related need.
+ *
+ * @param string $terminal
+ *
+ * @return string
+ */
+function _g2_terminal_encode($terminal) {
+  $terminal = strtr($terminal, array(
+    '.' => '%2E',
+    '/' => '%2F',
+    '#' => '%23',
+    '&' => '%26',
+    '+' => '%2B',
+  ));
+  return $terminal;
 }
 
 /**
@@ -1361,8 +1426,8 @@ function g2_menu() {
 
   $items[G2PATHENTRIES . '/%g2_title'] = array(
     'title' => G2TITLEENTRIES,
-    'page callback' => 'theme',
-    'page arguments' => array('g2_entries', 2),
+    'page callback' => 'g2_page_entries',
+    'page arguments' => array(2),
     'access arguments' => array(G2PERMVIEW),
     'type' => MENU_CALLBACK,
   );
@@ -1489,6 +1554,21 @@ function g2_node_view($node, $view_mode = 'rss', $langcode) {
 }
 
 /**
+ * Page callback for G2PATHENTRIES/%g2_entry
+ *
+ * TODO convert to render array format.
+ *
+ * @param array $nodes
+ *
+ * @return string
+ */
+function g2_page_entries($nodes) {
+
+  $ret = theme('g2_entries', array('entries' => $nodes));
+  return $ret;
+}
+
+/**
  * Implements hook_permission().
  */
 function g2_permission() {
@@ -1563,6 +1643,36 @@ function g2_referer_wipe_confirm_form_submit($form, &$form_state) {
   drupal_set_message(t('Referer information has been erased on all G2 entries'));
   $form_state['redirect'] = G2PATHSETTINGS;
   return;
+}
+
+/**
+ * Menu loader for %g2_title.
+ *
+ * Only returns unpublished nodes to users with "administer nodes".
+ *
+ * @param string$title
+ * @return object
+ */
+function g2_title_load($title) {
+  $min_status = user_access('administer nodes')
+    ? NODE_NOT_PUBLISHED
+    : NODE_PUBLISHED;
+
+  $q = db_select('node', 'n');
+  $q->fields('n', array('nid'))
+    ->condition('n.type', G2NODETYPE)
+    ->condition('n.status', $min_status, '>=')
+    ->condition('n.title', $title . '%%', 'LIKE')
+    ->addTag('node_access');
+  // dsm($q->__toString());
+  $result = $q->execute();
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
+  }
+  $nodes = node_load_multiple($nids);
+  // dsm($nodes);
+  return $nodes;
 }
 
 /**
@@ -1704,49 +1814,6 @@ function _g2_initial($initial) {
     );
   }
   $ret .= theme('item_list', array('items' => $ar_entries));
-  return $ret;
-}
-
-/**
- * Returns a list of the latest n nodes.
- *
- * "Latest" nodes are identified by time of latest update.
- *
- * @param int $max
- *   The maximum number of entries to return
- * @param boolean $include_unpublished
- *   Include unpublished nodes in that list
- * @return array
- *   Note that the results are NOT filtered, and must be filtered when used.
- */
-function _g2_latest($max = NULL, $include_unpublished = FALSE) {
-  $def_max      = variable_get(G2VARLATESTITEMCOUNT, G2DEFLATESTITEMCOUNT);
-  $rpc_throttle = variable_get(G2VARRPCTHROTTLE,     G2DEFRPCTHROTTLE);
-  // Limit extraction
-  if (empty($max) || ($max > $rpc_throttle * $def_max)) {
-    $max = $def_max;
-  }
-
-  // Only list unpublished nodes if requested and allowed
-  $status = ($include_unpublished && user_access('administer nodes'))
-    ? NODE_NOT_PUBLISHED
-    : NODE_PUBLISHED;
-
-  $q = db_select('node', 'n');
-  $q->fields('n', array('nid', 'title', 'status'))
-    ->condition('n.type', G2NODETYPE)
-    ->condition('n.status', $status, '>=')
-    ->orderBy('n.changed', 'DESC')
-    ->addTag('node_access')
-    ->range(0, $max);
-  // dsm($q->__toString());
-  $result = $q->execute();
-
-  $ret = array();
-  foreach ($result as $row) {
-    $ret[] = $row;
-  }
-
   return $ret;
 }
 
@@ -1961,26 +2028,6 @@ function _g2_stats($tid = 0, $initial = NULL) {
 }
 
 /**
- * Encodes terminal path portions for G2. This allows linking to
- * things containing #, + or '.', like C++, C# or the . initial
- *
- * Warning: this is NOT a generic replacement for urlencode, but
- * covers a very specific glossary-related need.
- *
- * @param string $terminal
- */
-function _g2_terminal_encode($terminal) {
-  $terminal = strtr($terminal, array(
-    '.' => '%2E',
-    '/' => '%2F',
-    '#' => '%23',
-    '&' => '%26',
-    '+' => '%2B',
-  ));
-  return $terminal;
-}
-
-/**
  * Returns a list of the top n nodes as counted by statistics.module.
  *
  * - Unpublished nodes are not listed.
@@ -2090,32 +2137,6 @@ function _g2_wotd_feed() {
   dvm($ret);
   $ret = check_plain($ret);
   return $ret;
-}
-
-/**
- * Menu loader for %g2_title.
- *
- * Only returns unpublished nodes to users with "administer nodes".
- *
- * @param string$title
- * @return object
- */
-function g2_title_load($title) {
-  $sq = 'SELECT n.nid '
-      . 'FROM {node} n '
-      . "WHERE n.type = '%s' AND n.status >= %d AND n.title LIKE '%s%%' ";
-  // $sq = db_rewrite_sql($sq);
-
-  $min_status = user_access('administer nodes')
-    ? NODE_NOT_PUBLISHED
-    : NODE_PUBLISHED;
-  // TODO DBTNG
-  $q = db_query($sq, G2NODETYPE, $min_status, $title);
-  $nodes = array();
-  while (is_object($node = db_fetch_object($q))) {
-    $nodes[$node->nid] = node_load($node->nid);
-  }
-  return $nodes;
 }
 
 /**
@@ -2409,9 +2430,9 @@ function theme_g2_main() {
  * @return string
  */
 function theme_g2_entries($variables) {
-  $entries = $variables['entry'];
-
+  $entries = $variables['entries'];
   $entry = filter_xss(arg(2));
+
   drupal_set_title(t('G2 Entries for %entry', array('%entry' => $entry)), PASS_THROUGH);
 
   // The nid for the disambiguation page
@@ -2457,16 +2478,20 @@ function theme_g2_entries($variables) {
         foreach ($entries as $nid => $node) {
           $path = 'node/' . $nid;
           $terms = array();
+          if (!isset($node->taxonomy)) {
+            $node->taxonomy = array();
+          }
           foreach ($node->taxonomy as $tid => $term) {
             if ($vid && $term->vid == $vid) {
               $terms[] = l($term->name, taxonomy_term_path($term));
             }
-            $taxonomy = empty($terms)
-            ? NULL
-            : ' <span class="inline">(' . implode(', ', $terms) . ')</span>';
-
           }
-          $teaser = strip_tags(check_markup($node->teaser, $node->format));
+          $taxonomy = empty($terms)
+            ? NULL
+          : ' <span class="inline">(' . implode(', ', $terms) . ')</span>';
+          $teaser = isset($node->teaser)
+            ? strip_tags(check_markup($node->teaser, $node->format))
+            : NULL;
           $rows[] = t('!link!taxonomy: !teaser!more', array(
             '!link' => l($node->title, $path),
             '!taxonomy' => $taxonomy, // safe by construction
