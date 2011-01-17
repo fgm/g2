@@ -1492,6 +1492,15 @@ function g2_filter_info() {
  * @return array
  */
 function g2_form(&$node, $form_state) {
+
+  $admin = user_access('bypass node access')
+    || user_access('edit any g2_entry content')
+    || (user_access('edit own g2_entry content') && $user->uid == $node->uid);
+
+  $type = node_type_get_type($node);
+//dsm(get_defined_vars());
+
+  // Pre-fill title information on URL-based node creation
   if (!isset($node->title)) {
     $node->title = check_plain(drupal_substr($_GET['q'],
       drupal_strlen(G2PATHNODEADD) + 1));
@@ -1506,19 +1515,24 @@ function g2_form(&$node, $form_state) {
     '#collapsed' => FALSE,
     '#weight' => -10,
   );
-  // TODO use hook_node_info information
   $form['content']['title'] = array(
     '#type' => 'textfield',
-    '#title' => t('Title'),
+    '#title' => check_plain($type->title_label),
     '#required' => TRUE,
     '#default_value' => $node->title,
+    '#weight' => -5,
   );
+
+
+  // FIXME 20110117 use a text field instead
   $form['content']['teaser'] = array(
     '#type' => 'textfield',
     '#title' => t('Entry expansion (for acronyms) or translation'),
     '#required' => FALSE,
     '#default_value' => isset($node->teaser) ? $node->teaser : NULL,
   );
+
+  // FIXME 20110117 use a text + summary field instead
   $form['content']['body'] = array(
     '#type' => 'textarea',
     '#title' => t('Entry definition'),
@@ -1544,6 +1558,10 @@ function g2_form(&$node, $form_state) {
     '#description' => 'Information in this box is not published in view mode, only during node edition.',
     '#group' => 'additional_settings',
     '#weight' => -5,
+    '#access' => $admin,
+    '#attached' => array(
+      'js' => array(drupal_get_path('module', 'g2') . '/g2.js'),
+    ),
   );
   $form['publishing']['complement'] = array(
     '#type' => 'textarea',
@@ -1552,6 +1570,7 @@ function g2_form(&$node, $form_state) {
     '#required' => FALSE,
     '#description' => t('Information not pertaining to origin of document: comments, notes...'),
     '#default_value' => isset($node->complement) ? $node->complement : NULL,
+    '#access' => $admin,
   );
   $form['publishing']['origin'] = array(
     '#type' => 'textarea',
@@ -1560,6 +1579,7 @@ function g2_form(&$node, $form_state) {
     '#required' => FALSE,
     '#description' => t('Informations about the origin/IP licensing of the definition'),
     '#default_value' => isset($node->origin) ? $node->origin : NULL,
+    '#access' => $admin,
   );
 
   return $form;
