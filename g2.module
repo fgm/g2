@@ -786,6 +786,91 @@ function _g2_random() {
 }
 
 /**
+ * Counts the number of G2 referer entries.
+ *
+ * TODO: check referer wipe: it may have been damaged in the D6, then D7 ports
+ *
+ * @param object $node
+ * @return string HTML
+ */
+function _g2_referer_links($form, $form_state, $node) {
+  // Build list of referers
+  $nid = $node->nid;
+
+  $header = array(
+    array(
+      'data' => t('Clicks'),
+      'field' => 'incoming',
+      'sort' => 'desc',
+    ),
+    array(
+      'data' => t('Referer'),
+      'field' => 'referer',
+    ),
+    array('data' => t('Related node')),
+  );
+
+  // Can be generated for unpublished nodes by author or admin, so don't
+  // filter on node.status = 1
+  // The join is needed to avoid showing info about forbidden nodes, and
+  // to allow some modules to interfere without breaking because they
+  // assume "nid" only exists in {node}.
+  $q = db_select('g2_referer', 'gr')
+     ->extend('TableSort');
+  $q->innerJoin('node', 'n', 'gr.nid = n.nid');
+  $q->fields('gr', array('referer', 'incoming'))
+    ->condition('gr.nid', $nid)
+    ->addTag('node_access')
+    ->orderByHeader($header); // TableSort
+
+  // dsm((string) $q);
+  $result = $q->execute();
+
+  $rows = array();
+  $matches = array();
+  foreach ($result as $row) {
+    $sts = preg_match('/node\/(\d+)/', $row->referer, $matches);
+    if ($sts) {
+      $node = node_load($matches[1]);
+      $title = l($node->title, 'node/' . $node->nid);
+    }
+    else {
+      $title = NULL;
+    }
+    $rows[] = empty($row->referer)
+      ? array($row->incoming, t('<empty>'), $title) // should never happen
+      : array($row->incoming, l($row->referer, $row->referer, array('absolute' => TRUE)), $title);
+  }
+  $message = empty($rows)
+    ? t('No referer found. Maybe you just cleaned the list ?')
+    : theme('table', array('header' => $header, 'rows' => $rows));
+
+  // Build form from results
+  $form = array();
+  $form['links'] = array(
+    '#type' => 'markup',
+    '#prefix' => t('<h3>Local referers for this node</h3>'),
+    '#markup' => $message,
+  );
+
+  if (!empty($rows)) {
+    $form['links']['#suffix'] = t('<p>WARNING: just because a click came from a node doesn\'t mean the node has a link.
+        The click may have come from a block on the page. These stats are just a hint for editors.</p>');
+
+    $form['wipe_target'] = array(
+      '#type' => 'value',
+      '#value' => $nid,
+    );
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Wipe referer info for this entry'),
+    );
+  }
+
+  return $form;
+}
+
+/**
  * Submit handler for _g2_referer_links().
  *
  * Use the wipe target to redirect to the wipe confirmation form. If we
@@ -798,6 +883,32 @@ function _g2_random() {
  */
 function _g2_referer_links_submit(&$form, &$form_state) {
   $form_state['redirect'] = 'g2/wipe/' . $form_state['values']['wipe_target'];
+}
+
+/**
+ * Erase the referer counts on g2 entries
+ *
+ * @param int $nid
+ *   Node from which to erase referers, or NULL to erase all g2 referers
+ *
+ * @return void
+ */
+function _g2_referer_wipe($nid = NULL) {
+  if (isset($nid)) {
+    $deleted = db_delete('g2_referer')
+      ->condition('nid', $nid)
+      ->execute();
+    drupal_goto('node/' . $nid);
+  }
+  else {
+    $deleted = db_delete('g2_referer')
+      ->execute();
+    // Redirection occurs in the submit handler
+  }
+  $message = $deleted
+    ? format_plural($deleted, 'Deleted 1 G2 referer link', 'Deleted @count G2 referer links', array('@count' => $deleted))
+    : t('No G2 referer link found for deletion.');
+  drupal_set_message($message);
 }
 
 /**
@@ -820,6 +931,63 @@ function _g2_terminal_encode($terminal) {
     '+' => '%2B',
   ));
   return $terminal;
+}
+
+/**
+ * Returns a list of the top n nodes as counted by statistics.module.
+ *
+ * - Unpublished nodes are not listed.
+ * - Stickyness is ignored for ordering, but returned in the results for
+ *   client-side ordering if needed.
+ *
+ * @param $max
+ *   Number or entries to return.
+ * @param $daily_top
+ *   Order by daily views if TRUE, otherwise by total views (default).
+ * @return array|NULL
+ *   Statistics will be empty without statistics module.
+ *   Note that the title of the nodes is NOT filtered.
+ */
+function _g2_top($max = NULL, $daily_top = FALSE, $include_unpublished = FALSE) {
+  $def_max      = variable_get(G2VARTOPITEMCOUNT, G2DEFTOPITEMCOUNT);
+  $rpc_throttle = variable_get(G2VARRPCTHROTTLE,  G2DEFRPCTHROTTLE);
+
+  // Limit extraction
+  if (empty($max) or ($max > $rpc_throttle * $def_max)) {
+    $max = $def_max;
+  }
+
+  // Only list unpublished nodes if requested and allowed
+  $status = ($include_unpublished && user_access('administer nodes'))
+    ? NODE_NOT_PUBLISHED
+    : NODE_PUBLISHED;
+
+  $ret = array();
+  if (function_exists('statistics_node_view')) {
+    $q = db_select('node', 'n');
+    $q->innerJoin('node_counter', 'nc', 'n.nid = nc.nid');
+    $q->fields('n', array('nid', 'title', 'status', 'sticky'))
+      ->fields('nc', array('daycount', 'totalcount'))
+      ->condition('n.type', G2NODETYPE)
+      ->condition('n.status', $status, '>=')
+      ->isNotNull('nc.totalcount');
+    if ($daily_top) {
+      $q->orderBy('nc.daycount', 'DESC');
+    }
+    else {
+      $q->orderBy('nc.totalcount', 'DESC');
+    }
+    $q->orderBy('n.changed', 'DESC')
+      ->addTag('node_access')
+      ->range(0, $max);
+
+    $result = $q->execute();
+    foreach ($result as $row) {
+      $ret[(int) $row->nid] = $row;
+    }
+  }
+
+  return $ret;
 }
 
 /**
@@ -1856,7 +2024,8 @@ function g2_referer_wipe_button_submit($form, &$form_state) {
  *
  * @param $form_state
  * @param $node
- * @return unknown_type
+ *
+ * @return array
  */
 function g2_referer_wipe_confirm_form($form, &$form_state, $node = NULL) {
   if (is_object($node) && isset($node->nid)) {
@@ -1885,10 +2054,6 @@ function g2_referer_wipe_confirm_form($form, &$form_state, $node = NULL) {
 
 /**
  * Submit handler for referer wipe confirmation.
- *
- * @param array $form
- * @param array $form
- * @param array $form_state
  */
 function g2_referer_wipe_confirm_form_submit($form, &$form_state) {
   _g2_referer_wipe();
@@ -1956,63 +2121,6 @@ function g2_title_load($title) {
   $nodes = node_load_multiple($nids);
   // dsm($nodes);
   return $nodes;
-}
-
-/**
- * Returns a list of the top n nodes as counted by statistics.module.
- *
- * - Unpublished nodes are not listed.
- * - Stickyness is ignored for ordering, but returned in the results for
- *   client-side ordering if needed.
- *
- * @param $max
- *   Number or entries to return.
- * @param $daily_top
- *   Order by daily views if TRUE, otherwise by total views (default).
- * @return array|NULL
- *   Statistics will be empty without statistics module.
- *   Note that the title of the nodes is NOT filtered.
- */
-function _g2_top($max = NULL, $daily_top = FALSE, $include_unpublished = FALSE) {
-  $def_max      = variable_get(G2VARTOPITEMCOUNT, G2DEFTOPITEMCOUNT);
-  $rpc_throttle = variable_get(G2VARRPCTHROTTLE,  G2DEFRPCTHROTTLE);
-
-  // Limit extraction
-  if (empty($max) or ($max > $rpc_throttle * $def_max)) {
-    $max = $def_max;
-  }
-
-  // Only list unpublished nodes if requested and allowed
-  $status = ($include_unpublished && user_access('administer nodes'))
-    ? NODE_NOT_PUBLISHED
-    : NODE_PUBLISHED;
-
-  $ret = array();
-  if (function_exists('statistics_node_view')) {
-    $q = db_select('node', 'n');
-    $q->innerJoin('node_counter', 'nc', 'n.nid = nc.nid');
-    $q->fields('n', array('nid', 'title', 'status', 'sticky'))
-      ->fields('nc', array('daycount', 'totalcount'))
-      ->condition('n.type', G2NODETYPE)
-      ->condition('n.status', $status, '>=')
-      ->isNotNull('nc.totalcount');
-    if ($daily_top) {
-      $q->orderBy('nc.daycount', 'DESC');
-    }
-    else {
-      $q->orderBy('nc.totalcount', 'DESC');
-    }
-    $q->orderBy('n.changed', 'DESC')
-      ->addTag('node_access')
-      ->range(0, $max);
-
-    $result = $q->execute();
-    foreach ($result as $row) {
-      $ret[(int) $row->nid] = $row;
-    }
-  }
-
-  return $ret;
 }
 
 /**
@@ -2416,115 +2524,6 @@ function theme_g2_wotd($variables) {
 // ================================= Port until here ===========================
 function ________PORTING_LIMIT___________() {};
 
-/**
- * Counts the number of G2 referer entries.
- *
- * TODO: check referer wipe: it may have been damaged in the D6 port
- *
- * @param object $node
- * @return string HTML
- */
-function _g2_referer_links($form_state, $node) {
-
-  // Build list of referers
-  $nid = $node->nid;
-
-  $header = array(
-    array(
-      'data' => t('Clicks'),
-      'field' => 'incoming',
-      'sort' => 'desc',
-    ),
-    array(
-      'data' => t('Referer'),
-      'field' => 'referer',
-    ),
-    array('data' => t('Related node')),
-  );
-
-  // Can be generated for unpublished nodes by author or admin, so don't
-  // filter on node.status = 1
-  // The join is needed to avoid showing info about forbidden nodes, and
-  // to allow some modules to interfere without breaking because they
-  // assume "nid" only exists in {node}.
-  $sq = "SELECT gr.referer, gr.incoming "
-      . "FROM {g2_referer} gr "
-      . "  INNER JOIN {node} n ON gr.nid = n.nid "
-      . "WHERE gr.nid = %d "
-      . tablesort_sql($header);
-  // $sq = db_rewrite_sql($sq);
-  // TODO: DBTNG
-  $q = db_query($sq, $nid);
-  $rows = array();
-  while (is_object($o = db_fetch_object($q))) {
-    $sts = preg_match('/node\/(\d+)/', $o->referer, $matches);
-    if ($sts) {
-      $node = node_load($matches[1]);
-      $title = l($node->title, 'node/' . $node->nid);
-    }
-    else {
-      $title = NULL;
-    }
-    $rows[] = empty($o->referer)
-      ? array($o->incoming, t('<empty>'), $title) // should never happen
-      : array($o->incoming, l($o->referer, $o->referer, array('absolute' => TRUE)), $title);
-  }
-  if (empty($rows)) {
-    $message = t('No referer found. Maybe you just cleaned the list ?');
-  }
-  else {
-    $message = theme('table', array('header' => $header, 'rows' => $rows));
-  }
-
-
-  // Build form from results
-  $form = array();
-  $form['links'] = array(
-    '#type' => 'markup',
-    '#prefix' => t('<h3>Local referers for this node</h3>'),
-    '#value' => $message,
-  );
-
-  if (!empty($rows)) {
-    $form['links']['#suffix'] = t('<p>WARNING: just because a click came from a node doesn\'t mean the node has a link.
-        The click may have come from a block on the page. These stats are just a hint for editors.</p>');
-
-    $form['wipe_target'] = array(
-      '#type' => 'value',
-      '#value' => $nid,
-    );
-    $form['submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Wipe referer info for this entry'),
-    );
-  }
-
-  return $form;
-}
-
-/**
- * Erase the referer counts on g2 entries
- *
- * Difference from the 4.7 version: it no longer includes a goto when erasing all
- *
- * @FIXME 20090928 recheck
- * @param int $nid
- *   Node from which to erase referers, or NULL to erase all g2 referers
- * @return void
- */
-function _g2_referer_wipe($nid = NULL) {
-  if (isset($nid)) {
-    $sq = 'DELETE from {g2_referer} WHERE nid = %d';
-    // TODO: DBTNG
-    db_query($sq, $nid);
-    drupal_goto('node/' . $nid);
-  }
-  else {
-    $sq = 'DELETE from {g2_referer}';
-    // TODO: DBTNG
-    db_query($sq);
-  }
-}
 
 /**
  * Extract statistics from the G2 glossary.
@@ -2584,11 +2583,12 @@ function _g2_stats($tid = 0, $initial = NULL) {
  * @param boolean $page
  * @return void
  */
-function g2_view(&$node, $teaser = FALSE, $page = FALSE) {
-return $node;
+function g2_view($node, $view_mode) { // $teaser = FALSE, $page = FALSE
   $title = check_plain($node->title);
 
-  if ($page) {
+  // FIXME 20110117 $page is no longer available in this hook in D7.
+  // @see node_page_view()
+  if (!empty($page)) {
     $bc = drupal_get_breadcrumb();
     $bc[] = l(G2TITLEMAIN, $g2_home = variable_get(G2VARPATHMAIN, G2DEFPATHMAIN));
     $initial = drupal_substr($title, 0, 1);
@@ -2597,6 +2597,7 @@ return $node;
     drupal_set_breadcrumb($bc);
     _g2_override_site_name();
   }
+return $node;
 
   // Build more link, apply input format, including sanitizing.
   $node = node_prepare($node, $teaser);
