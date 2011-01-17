@@ -22,7 +22,9 @@ description = "Manage a node-based glossary"
 dependencies[] = taxonomy
 package = Content
 core = 7.x
-php = 5.1
+; closures require 5.3
+; see _g2_stats()
+php = 5.3
 configure = admin/config/content/g2
 
 files[] = g2.install
