@@ -2538,33 +2538,36 @@ function ________PORTING_LIMIT___________() {};
  *   - g2 entries starting with chosen initial segment
  */
 function _g2_stats($tid = 0, $initial = NULL) {
+
+  // Count entries matching given tid only if one is given. The same tid:
+  // - can be present for a given node in instances of more than one field
+  // - can not be present on multiple instances of one field
+  // ...so any count summing should also be deduplicated on a by-node basis.
   $fields = field_info_fields();
-  $raw_stats = array();
-  foreach ($fields as $field_name => $field) {
-    if (empty($field['type']) || $field['type'] != 'taxonomy_term_reference') {
-      continue;
+  $instances = field_info_instances('node', G2NODETYPE);
+  if (!empty($tid)) {
+    $field_type = 'taxonomy_term_reference';
+    $counts = array();
+    foreach ($fields as $field_name => $field) {
+      if (empty($field['type']) || $field['type'] != $field_type) {
+        continue;
+      }
+
+      $q = new EntityFieldQuery();
+      $q->fieldCondition($field, 'tid', $tid)
+        ->entityCondition('bundle', G2NODETYPE)
+        ->age(FIELD_LOAD_CURRENT)
+        ->count();
+      $counts[$field_name] = array_merge($instances[$field_name], array('g2_node_count' => $q->execute()));
     }
-
-    $q = new EntityFieldQuery();
-    $q->fieldCondition($field, 'tid', $tid)
-      ->entityCondition('entity_type', 'node')
-      ->entityCondition('bundle', 'g2_entry')
-      ->age(FIELD_LOAD_CURRENT);
-    $raw_stats[$field_name] = $q->execute();
   }
-  // dsm($raw_stats);
-  $nids = array();
-  array_walk_recursive($raw_stats,
-    function ($node, $nid) use (&$nids) { $nids[] = $nid; }
-  );
-  // dsm($nids, __FUNCTION__);
-  return array(
-    NODE_NOT_PUBLISHED => 0,
-    NODE_PUBLISHED => count($nids),
-  );
+  return $counts;
 
-  // FIXME 20110116 taxonomy as field
-  return array(0, 0);
+  // FIXME 20110116 taxonomy as field:
+  // 1. if $tid, same EFQ without count() and propertyCondition('n.title', $initial . '%', 'LIKE')
+  //    ... and propertyCondition('n.status', 0|1), so it runs twice. Silly.
+  // 2. else just db_select('node', 'n')...
+
   $sq = 'SELECT COUNT(distinct n.nid) cnt, n.status '
       . 'FROM {node} n ';
   $sq_params = array();
