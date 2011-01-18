@@ -913,6 +913,85 @@ function _g2_referer_wipe($nid = NULL) {
 }
 
 /**
+ * Extract statistics from the G2 glossary.
+ *
+ * @param int $tid
+ *   Taxonomy term id
+ * @param string $initial
+ *   Initial segment
+ * @param boolean $fields
+ *   Return by status (FALSE) or by field (TRUE)
+ *
+ * @return array
+ *   - count of g2 entries having chosen taxonomy term
+ *   - count of g2 entries starting with chosen initial segment
+ *   Either sorted by node.status or by field name.
+ */
+function _g2_stats($tid = 0, $initial = NULL, $fields = FALSE) {
+
+  if ($fields) {
+    // Count entries matching given tid only if one is given. The same tid:
+    // - can be present for a given node in instances of more than one field
+    // - can not be present on multiple instances of one field
+    // ...so any count summing should also be deduplicated on a by-node basis.
+    $fields = field_info_fields();
+    $instances = field_info_instances('node', G2NODETYPE);
+    if (!empty($tid)) {
+      $field_type = 'taxonomy_term_reference';
+      $ret = array();
+      foreach ($fields as $field_name => $field) {
+        if (empty($field['type']) || $field['type'] != $field_type) {
+          continue;
+        }
+
+        $q = new EntityFieldQuery();
+        $q->fieldCondition($field, 'tid', $tid)
+          ->entityCondition('bundle', G2NODETYPE)
+          ->age(FIELD_LOAD_CURRENT)
+          ->count();
+        $ret[$field_name] = array_merge($instances[$field_name], array('g2_node_count' => $q->execute()));
+      }
+    }
+  }
+  else {
+    // XXX 20110118 also support taxonomy_maintain_index_table == TRUE
+    // 1. if $tid, same EFQ without count() and propertyCondition('n.title', $initial . '%', 'LIKE')
+    //    ... and propertyCondition('n.status', 0|1), so it runs twice. Silly.
+    // 2. or just use taxonomy_index
+
+    $q = db_select('node', 'n');
+    $q->addExpression('COUNT(DISTINCT n.nid)', 'cnt');
+    $q->fields('n', array('status'))
+      ->condition('n.type', G2NODETYPE)
+      ->groupBy('n.status')
+      ->addTag('node_access');
+
+    if (isset($tid) && is_int($tid) && $tid > 0) {
+      // TODO: migrate from taxonomy_index to field storage taxonomy_update_7005()
+      $q->innerJoin('taxonomy_index', 'ti', 'n.nid = ti.nid');
+      $q->condition('ti.tid', $tid);
+    }
+
+    if (isset($initial) && !empty($initial)) {
+      $q->condition('n.title', $initial . '%', 'LIKE');
+    }
+
+    // Avoid empty returns
+    $ret = array(
+      NODE_NOT_PUBLISHED => 0,
+      NODE_PUBLISHED => 0,
+    );
+
+    $result = $q->execute();
+    foreach ($result as $row) {
+      $ret[$row->status] = (int) $row->cnt;
+    }
+  }
+
+  return $ret;
+}
+
+/**
  * Encodes terminal path portions for G2. This allows linking to
  * things containing #, + or '.', like C++, C# or the . initial
  *
@@ -2525,81 +2604,6 @@ function theme_g2_wotd($variables) {
 // ================================= Port until here ===========================
 function ________PORTING_LIMIT___________() {};
 
-
-/**
- * Extract statistics from the G2 glossary.
- *
- * @param int $tid
- *   Taxonomy term id
- * @param string $initial
- *   Initial segment
- * @return array
- *   - g2 entries having chosen taxonomy term
- *   - g2 entries starting with chosen initial segment
- */
-function _g2_stats($tid = 0, $initial = NULL, $fields = FALSE) {
-
-  if ($fields) {
-    // Count entries matching given tid only if one is given. The same tid:
-    // - can be present for a given node in instances of more than one field
-    // - can not be present on multiple instances of one field
-    // ...so any count summing should also be deduplicated on a by-node basis.
-    $fields = field_info_fields();
-    $instances = field_info_instances('node', G2NODETYPE);
-    if (!empty($tid)) {
-      $field_type = 'taxonomy_term_reference';
-      $ret = array();
-      foreach ($fields as $field_name => $field) {
-        if (empty($field['type']) || $field['type'] != $field_type) {
-          continue;
-        }
-
-        $q = new EntityFieldQuery();
-        $q->fieldCondition($field, 'tid', $tid)
-          ->entityCondition('bundle', G2NODETYPE)
-          ->age(FIELD_LOAD_CURRENT)
-          ->count();
-        $ret[$field_name] = array_merge($instances[$field_name], array('g2_node_count' => $q->execute()));
-      }
-    }
-  }
-  else {
-    // XXX 20110118 also support taxonomy_maintain_index_table == TRUE
-    // 1. if $tid, same EFQ without count() and propertyCondition('n.title', $initial . '%', 'LIKE')
-    //    ... and propertyCondition('n.status', 0|1), so it runs twice. Silly.
-    // 2. or just use taxonomy_index
-
-    $q = db_select('node', 'n');
-    $q->addExpression('COUNT(DISTINCT n.nid)', 'cnt');
-    $q->fields('n', array('status'))
-      ->condition('n.type', G2NODETYPE)
-      ->groupBy('n.status')
-      ->addTag('node_access');
-
-    if (isset($tid) && is_int($tid) && $tid > 0) {
-      // TODO: migrate from taxonomy_index to field storage taxonomy_update_7005()
-      $q->innerJoin('taxonomy_index', 'ti', 'n.nid = ti.nid');
-      $q->condition('ti.tid', $tid);
-    }
-
-    if (isset($initial) && !empty($initial)) {
-      $q->condition('n.title', $initial . '%', 'LIKE');
-    }
-
-    // Avoid empty returns
-    $ret = array(
-      NODE_NOT_PUBLISHED => 0,
-      NODE_PUBLISHED => 0,
-    );
-
-    $result = $q->execute();
-    foreach ($result as $row) {
-      $ret[$row->status] = (int) $row->cnt;
-    }
-  }
-
-  return $ret;
-}
 
 /**
  * Implements hook_view().
