@@ -2537,68 +2537,65 @@ function ________PORTING_LIMIT___________() {};
  *   - g2 entries having chosen taxonomy term
  *   - g2 entries starting with chosen initial segment
  */
-function _g2_stats($tid = 0, $initial = NULL) {
+function _g2_stats($tid = 0, $initial = NULL, $fields = FALSE) {
 
-  // Count entries matching given tid only if one is given. The same tid:
-  // - can be present for a given node in instances of more than one field
-  // - can not be present on multiple instances of one field
-  // ...so any count summing should also be deduplicated on a by-node basis.
-  $fields = field_info_fields();
-  $instances = field_info_instances('node', G2NODETYPE);
-  if (!empty($tid)) {
-    $field_type = 'taxonomy_term_reference';
-    $counts = array();
-    foreach ($fields as $field_name => $field) {
-      if (empty($field['type']) || $field['type'] != $field_type) {
-        continue;
+  if ($fields) {
+    // Count entries matching given tid only if one is given. The same tid:
+    // - can be present for a given node in instances of more than one field
+    // - can not be present on multiple instances of one field
+    // ...so any count summing should also be deduplicated on a by-node basis.
+    $fields = field_info_fields();
+    $instances = field_info_instances('node', G2NODETYPE);
+    if (!empty($tid)) {
+      $field_type = 'taxonomy_term_reference';
+      $ret = array();
+      foreach ($fields as $field_name => $field) {
+        if (empty($field['type']) || $field['type'] != $field_type) {
+          continue;
+        }
+
+        $q = new EntityFieldQuery();
+        $q->fieldCondition($field, 'tid', $tid)
+          ->entityCondition('bundle', G2NODETYPE)
+          ->age(FIELD_LOAD_CURRENT)
+          ->count();
+        $ret[$field_name] = array_merge($instances[$field_name], array('g2_node_count' => $q->execute()));
       }
-
-      $q = new EntityFieldQuery();
-      $q->fieldCondition($field, 'tid', $tid)
-        ->entityCondition('bundle', G2NODETYPE)
-        ->age(FIELD_LOAD_CURRENT)
-        ->count();
-      $counts[$field_name] = array_merge($instances[$field_name], array('g2_node_count' => $q->execute()));
     }
   }
-  return $counts;
+  else {
+    // XXX 20110118 also support taxonomy_maintain_index_table == TRUE
+    // 1. if $tid, same EFQ without count() and propertyCondition('n.title', $initial . '%', 'LIKE')
+    //    ... and propertyCondition('n.status', 0|1), so it runs twice. Silly.
+    // 2. or just use taxonomy_index
 
-  // FIXME 20110116 taxonomy as field:
-  // 1. if $tid, same EFQ without count() and propertyCondition('n.title', $initial . '%', 'LIKE')
-  //    ... and propertyCondition('n.status', 0|1), so it runs twice. Silly.
-  // 2. else just db_select('node', 'n')...
+    $q = db_select('node', 'n');
+    $q->addExpression('COUNT(DISTINCT n.nid)', 'cnt');
+    $q->fields('n', array('status'))
+      ->condition('n.type', G2NODETYPE)
+      ->groupBy('n.status')
+      ->addTag('node_access');
 
-  $sq = 'SELECT COUNT(distinct n.nid) cnt, n.status '
-      . 'FROM {node} n ';
-  $sq_params = array();
+    if (isset($tid) && is_int($tid) && $tid > 0) {
+      // TODO: migrate from taxonomy_index to field storage taxonomy_update_7005()
+      $q->innerJoin('taxonomy_index', 'ti', 'n.nid = ti.nid');
+      $q->condition('ti.tid', $tid);
+    }
 
-  $sq_test = "WHERE n.type = '%s' ";
-  $sq_params[] = G2NODETYPE;
+    if (isset($initial) && !empty($initial)) {
+      $q->condition('n.title', $initial . '%', 'LIKE');
+    }
 
-  if (isset($tid) && is_int($tid) && $tid > 0) {
-    // TODO: migrate from taxonomy_term_node to field storage taxonomy_update_7005()
-    $sq .= 'INNER JOIN {taxonomy_term_node} tn ON n.nid = tn.nid ';
-    $sq_test .= ' AND tn.tid = %d ';
-    $sq_params[] = $tid;
-  }
+    // Avoid empty returns
+    $ret = array(
+      NODE_NOT_PUBLISHED => 0,
+      NODE_PUBLISHED => 0,
+    );
 
-  if (isset($initial) && !empty($initial)) {
-    $sq_test .= " AND n.title like '%s%%' ";
-    $sq_params[] = $initial;
-  }
-  $sq .= $sq_test . ' GROUP BY n.status';
-  // $sq = db_rewrite_sql($sq);
-  // TODO: DBTNG
-  $q = db_query($sq, $sq_params);
-
-  // Avoid empty returns
-  $ret = array(
-    NODE_NOT_PUBLISHED => 0,
-    NODE_PUBLISHED => 0,
-  );
-
-  while (is_object($o = db_fetch_object($q))) {
-    $ret[$o->status] = (int) $o->cnt;
+    $result = $q->execute();
+    foreach ($result as $row) {
+      $ret[$row->status] = (int) $row->cnt;
+    }
   }
 
   return $ret;
