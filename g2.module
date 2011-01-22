@@ -1780,16 +1780,6 @@ function g2_form(&$node, $form_state) {
     '#default_value' => isset($node->teaser) ? $node->teaser : NULL,
   );
 
-  // FIXME 20110117 use a text + summary field instead
-  $form['content']['body'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Entry definition'),
-    '#rows' => 10,
-    '#required' => TRUE,
-    '#default_value' => isset($node->body) ? $node->body : NULL,
-  );
-//  $form['content']['format'] = filter_form($node->format);
-
   $form['content']['period'] = array(
     '#type' => 'textfield',
     '#title' => t('Life period of this entry'),
