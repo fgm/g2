@@ -237,7 +237,7 @@ function g2_update_7000() {
   $t = get_t();
   if ($count) {
     $message = $t('Removed @count G2 obsolete 4.7.x/5.x variables', array('@count' => $count));
-    cache_clear_all('variables', 'bootstrap');
+    cache_clear_all('variables', 'cache_bootstrap');
   }
   else {
     $message = $t('No obsolete variable to clean.');
@@ -335,4 +335,13 @@ function g2_update_7003() {
     $message = $t('g2_referer table was there. No need to recreate it.');
   }
   return $message;
+}
+
+/**
+ * Remove obsolete variable g2_nofreetagging.
+ */
+function g2_update_7004() {
+  variable_del('g2_nofreetagging');
+  $t = get_t();
+  return $t('Removed obsolete variable g2_nofreetagging');
 }
