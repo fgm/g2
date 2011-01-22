@@ -526,7 +526,7 @@ namespace g2 {
           . 'ORDER BY n.sticky DESC, LOWER(n.title) ASC';
       $q = db_select('node', 'n');
       $q->fields('n', array('nid', 'title', 'sticky'))
-        ->condition('LOWER(n.title)', $us_string, 'LIKE')
+        ->where('LOWER(n.title) LIKE :title', array(':title' => $us_string . '%'))
         ->condition('n.type', NODETYPE)
         ->condition('n.status', 1)
         ->orderBy('n.sticky', 'DESC')
@@ -1325,7 +1325,7 @@ namespace {
         array(
         '!see302' => '<a href="http://tools.ietf.org/html/rfc2616#section-10.3.3">RFC 2616 §10.3.3</a>',
         '!see301' => '<a href="http://tools.ietf.org/html/rfc2616#section-10.3.2">RFC 2616 §10.3.2</a>',
-      )
+        )
       ),
     );
 
