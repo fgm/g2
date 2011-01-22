@@ -15,33 +15,26 @@ Glossary2 (G2)
   4. Installing / upgrading / uninstalling
   5. Notice
 
-// Interim HEAD being set up for Drupal 7 port from the latest D6 dev version. //
-
 1. Introduction
 ---------------
 
 G2 is a glossary management module written for Drupal.
 
-It is not intended as a direct replacement for glossary.module
-which has been already available with drupal for quite some time now,
-but as an alternative for sites needing a glossary for a large number of entries,
-or a different feature set.
+It is not intended as a direct replacement for glossary.module, which has been 
+available with drupal for a number of years, but as an alternative for sites 
+needing a glossary for a large number of entries, or a different feature set.
 
-Unlike glossary.module, it uses nodes for its definitions, and does not
-automatically link terms in other nodes to their entries in G2, but relies on
-<dfn> markup in definitions, and can link to terms in multi-byte character sets
-and terms containing special characters like slashes or ampersands without
-specific markup.
+Unlike glossary.module, it uses nodes instead of terms to hold  definitions, and 
+does not automatically link terms in other nodes to their entries in G2, but 
+relies on <dfn> markup in definitions, and can link to terms in multi-byte 
+character sets and terms containing special characters like slashes or 
+ampersands without specific markup.
+
+It has been designed to handle glossaries with many thousands of nodes without 
+slowing or increasing its memory requirements significantly.
 
 Its development to this date has been entirely sponsored by OSInet.fr
 
-A word of warning: due to G2 targeting high-volume glossaries and including
-its own APIs and features, the code is heavier than glossary.module: the base
-version source for G2 is more than twice the volume of the base version
-source for glossary.module. It may be too heavy for sites on very limited
-hosting plans or unable to use clean URLs. On the other hand, it handles
-glossaries with thousands of nodes without slowing or increasing its memory
-requirements significantly.
 
 Project page on Drupal.org:
         http://drupal.org/project/g2
@@ -53,25 +46,46 @@ Sample implementation (about 6000 terms, localized to french)
 2. Prerequisites
 ----------------
 
-  * Drupal 6.x
+  * Any Drupal versions from 4.7.x to 7.0
   * MySQL 5.x, configured for UTF-8 encoding (collating: utf8_general_ci)
-  * PHP 5.1
+  * PHP 5.3 for 7.x versions, PHP 5.1 before
 
 3. VERSION WARNINGS
 -------------------
 
 Since 2009-09-27:
 - sites not configured with clean URLs are no longer taken into account
-- the module is only maintained/evolved for the DRUPAL-4-7 and
-  DRUPAL-6--1 branches.
+- the module is only maintained/evolved for the Drupal 6.x and 7.x branches.
 - A 5.0 version exists, but only to ease upgrades from 4.7 to 6.
-- A 7.0 version is planned, but not developed yet.
 
 4. Installing / upgrading / uninstalling
 ----------------------------------------
+4.1 Installing
+--------------
 
-Installing and upgrading within the DRUPAL-6--1 branch is taken care of thanks
-to the standard Drupal install mechanisms.
+Installing is Drupal standard: just copy the module, enable it and configure it:
+- module configuration is at admin/config/content/g2
+- module blocks are individually configurable at
+  - admin/structure/block/manage/g2/alphabar
+  - admin/structure/block/manage/g2/latest
+  - admin/structure/block/manage/g2/random
+  - admin/structure/block/manage/g2/top
+  - admin/structure/block/manage/g2/wotd
+  
+4.2 Upgrading
+-------------
+ 
+- 4.7 -> 5, 5 -> 5, 5 -> 6, 7 -> 7: standard Drupal updates
+- 5 -> 7, 6 -> 7: the configuration upgrade is in place; however, there is
+  currently no upgrade path for data, due to the switch from node module fields 
+  to Field API. This is expected to be resolved by the time the first stable 
+  version for Drupal 7 is released.
+- 4.7 -> 6: no direct update: update to the latest 5, then 5 -> 6
+- 4.7 -> 7: no direct update: update to the latest 5, then 5 -> 6, then 6 -> 7, 
+  but see limitations regarding 6.x -> 7.x above.
+
+4.3 Uninstalling
+----------------
 
 WARNING: Should you want to uninstall the module, take care to first remove
 all G2 nodes before removing the module. This includes:
@@ -84,9 +98,6 @@ Unless you do this, you will have inconsistent nodes in your system, because
 Drupal will be missing the module to load G2 entries. If you do not modify
 any of these nodes, reinstalling the module will restore consistency and
 enable a clean noed deletion and uninstall later on.
-
-Upgrading from the 4.7 branch to the 6.1 branch is NOT INCLUDED, so it needs
-some manual help. Contact the maintainer if the need arises.
 
 5. Ruby XML-RPC client
 ----------------------
