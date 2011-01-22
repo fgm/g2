@@ -29,7 +29,7 @@ function g2_install() {
   node_types_rebuild();
   $types = node_type_get_types();
   $t = get_t();
-  node_add_body_field($types[G2NODETYPE], $t('Definition'));
+  node_add_body_field($types[G2\NODETYPE], $t('Definition'));
 }
 
 /**
@@ -204,7 +204,7 @@ function g2_uninstall() {
   array_walk($variables, 'variable_del');
   drupal_set_message(st('Removed G2 Glossary variables'), 'status');
 
-  node_type_delete(G2NODETYPE);
+  node_type_delete(G2\NODETYPE);
 }
 
 /**
@@ -255,11 +255,11 @@ function g2_update_7000() {
 function g2_update_7001() {
   module_load_include('inc', 'g2', 'g2_data');
   $delta_changes = array(
-    0 => G2DELTAALPHABAR,
-    1 => G2DELTARANDOM,
-    2 => G2DELTATOP,
-    3 => G2DELTAWOTD,
-    4 => G2DELTALATEST,
+    0 => G2\DELTAALPHABAR,
+    1 => G2\DELTARANDOM,
+    2 => G2\DELTATOP,
+    3 => G2\DELTAWOTD,
+    4 => G2\DELTALATEST,
   );
   $count = 0;
   foreach ($delta_changes as $old => $new) {
@@ -290,14 +290,14 @@ function g2_update_7001() {
  */
 function g2_update_7002() {
   $count = 0;
-  $wotd_author = variable_get(G2VARWOTDFEEDAUTHOR, G2DEFWOTDFEEDAUTHOR);
+  $wotd_author = variable_get(G2\VARWOTDFEEDAUTHOR, G2\DEFWOTDFEEDAUTHOR);
   if (strpos($wotd_author, '%author') !== FALSE) {
-    variable_set(G2VARWOTDFEEDAUTHOR, str_replace('%author', '!author', $wotd_author));
+    variable_set(G2\VARWOTDFEEDAUTHOR, str_replace('%author', '!author', $wotd_author));
     $count++;
   }
-  $wotd_descr = variable_get(G2VARWOTDFEEDDESCR, G2DEFWOTDFEEDDESCR);
+  $wotd_descr = variable_get(G2\VARWOTDFEEDDESCR, G2\DEFWOTDFEEDDESCR);
   if (strpos($wotd_descr, '%site') !== FALSE) {
-    variable_set(G2VARWOTDFEEDDESCR, str_replace('%site', '!site', $wotd_descr));
+    variable_set(G2\VARWOTDFEEDDESCR, str_replace('%site', '!site', $wotd_descr));
     $count++;
   }
 
@@ -305,7 +305,7 @@ function g2_update_7002() {
   if ($count) {
     $message = $t('Replaced @count occurrences of old "%" tokens by new "!" ones on the <a href="!link">WOTD block feed settings</a>.', array(// coder false positive: !link is filtered
       '@count' => $count,
-      '!link' => url('admin/structure/block/configure/g2/' . G2DELTAWOTD),
+      '!link' => url('admin/structure/block/configure/g2/' . G2\DELTAWOTD),
     ));
   }
   else {
