@@ -314,7 +314,7 @@ namespace g2 {
   define('G2\VARGOTOSINGLE',        'g2_goto_single');
 
   /**
-   * Does hook_view include a hidden version of title for hook_update_index ?
+   * Does node view include a hidden version of title for h._update_index ?
    * @ingroup g2vars
    */
   define('G2\VARHIDDENTITLE',       'g2_hidden_title');
@@ -546,7 +546,7 @@ namespace g2 {
   }
 
   /**
-   * Implements hook_filter_FILTER_prepare()
+   * Prepare callback for filter_g2().
    *
    * @link http://drupal.org/node/267484 @endlink
    * @link http://drupal.org/node/209715 @endlink
@@ -557,7 +557,7 @@ namespace g2 {
   }
 
   /**
-   * Callback for hook_filter_FILTER_process().
+   * Callback for G2\filter_process().
    *
    * Translate glossary linking elements (<dfn>) to actual links)
    *
@@ -616,7 +616,7 @@ namespace g2 {
   }
 
   /**
-   * Implements hook_filter_FILTER_process().
+   * Process callback for filter_g2.
    *
    * @link http://drupal.org/node/267484 @endlink
    * @link http://drupal.org/node/209715 @endlink
@@ -627,7 +627,7 @@ namespace g2 {
   }
 
   /**
-   * Implements hook_filter_FILTER_tips().
+   * Tips callback for filter_g2.
    */
   function filter_tips($delta, $format, $long = FALSE) {
     $ret = $long
@@ -721,7 +721,7 @@ namespace g2 {
       : NODE_PUBLISHED;
 
     $q = db_select('node', 'n');
-    $q->fields('n', array('nid', 'title', 'status'))
+    $q->fields('n', array('nid', 'title', 'status', 'type'))
       ->condition('n.type', NODETYPE)
       ->condition('n.status', $status, '>=')
       ->orderBy('n.changed', 'DESC')
@@ -800,8 +800,8 @@ namespace g2 {
    *
    * Only works for glossaries with 3 entries or more.
    *
-   * XXX Lkiely possible to do better (2 or more) using a $rand,2 range and removing the wotd from there
-   * XXX Lkiely possible to do better (2 or more) using an ORDER BY RAND()
+   * XXX Likely possible to do better (2 or more) using a $rand,2 range and removing the wotd from there
+   * XXX Likely possible to do better (2 or more) using an ORDER BY RAND()
    *
    * @return object
    *   Title / nid / teaser. Unfiltered contents.
@@ -885,7 +885,7 @@ namespace g2 {
     // to allow some modules to interfere without breaking because they
     // assume "nid" only exists in {node}.
     $q = db_select('g2_referer', 'gr')
-       ->extend('TableSort');
+      ->extend('TableSort');
     $q->innerJoin('node', 'n', 'gr.nid = n.nid');
     $q->fields('gr', array('referer', 'incoming'))
       ->condition('gr.nid', $nid)
@@ -901,14 +901,16 @@ namespace g2 {
       $sts = preg_match('/node\/(\d+)/', $row->referer, $matches);
       if ($sts) {
         $node = node_load($matches[1]);
-        $title = l($node->title, 'node/' . $node->nid);
+        $uri = entity_uri('node', $node);
+        $title_link = l($node->title, $uri['path'], $uri['options']);
       }
       else {
-        $title = NULL;
+        $title_link = NULL;
       }
+      // FIXME 20110122: l() call makes no sense currently
       $rows[] = empty($row->referer)
         ? array($row->incoming, t('<empty>'), $title) // should never happen
-        : array($row->incoming, l($row->referer, $row->referer, array('absolute' => TRUE)), $title);
+        : array($row->incoming, l($row->referer, $row->referer, array('absolute' => TRUE)), $title_link);
     }
     $message = empty($rows)
       ? t('No referer found. Maybe you just cleaned the list ?')
@@ -967,7 +969,9 @@ namespace g2 {
       $deleted = db_delete('g2_referer')
         ->condition('nid', $nid)
         ->execute();
-      drupal_goto('node/' . $nid);
+      $node = node_load($nid);
+      $uri = entity_uri('node', $node);
+      drupal_goto($uri['path'], $uri['options']);
     }
     else {
       $deleted = db_delete('g2_referer')
@@ -977,7 +981,7 @@ namespace g2 {
     $message = $deleted
       ? format_plural($deleted, 'Deleted 1 G2 referer link', 'Deleted @count G2 referer links', array('@count' => $deleted))
       : t('No G2 referer link found for deletion.');
-    drupal_set_message($message);
+    drupal_set_message(check_plain($message)); // check_plain is actually useless here.
   }
 
   /**
@@ -1114,7 +1118,7 @@ namespace g2 {
     if (function_exists('statistics_node_view')) {
       $q = db_select('node', 'n');
       $q->innerJoin('node_counter', 'nc', 'n.nid = nc.nid');
-      $q->fields('n', array('nid', 'title', 'status', 'sticky'))
+      $q->fields('n', array('nid', 'title', 'status', 'sticky', 'type'))
         ->fields('nc', array('daycount', 'totalcount'))
         ->condition('n.type', NODETYPE)
         ->condition('n.status', $status, '>=')
@@ -1141,7 +1145,7 @@ namespace g2 {
   /**
    * Returns a structure for the WOTD.
    *
-   * TODO replace by a node with a specific build mode
+   * TODO 20110122 replace by a node with a specific build mode
    *
    * @param int $bodysize
    *
@@ -1165,7 +1169,9 @@ namespace g2 {
     }
 
     $node->truncated = FALSE;
-    if ($bodysize > 0 && !empty($node->body)) {
+
+    // use a node view instead
+    if (FALSE && $bodysize > 0 && !empty($node->body)) {
       $node->raw_body = $node->body; // save the raw version
       if (drupal_strlen($node->body) > $bodysize) {
         $node->truncated = TRUE;
@@ -1208,9 +1214,7 @@ namespace g2 {
 
 namespace {
   /**
-   * Implement the former hook_settings().
-   *
-   * @return array
+   * Implements hook_settings().
    */
   function g2_admin_settings($form, &$form_state) {
     $form['main'] = array(
@@ -1492,7 +1496,8 @@ namespace {
 
       case G2\DELTAWOTD:
         /**
-         * Convert nid to "title [<nid>]" even if missing
+         * Convert nid to "title [<nid>]" even if missing.
+         *
          * @see G2\autocomplete()
          */
         $nid = variable_get(G2\VARWOTDENTRY, G2\DEFWOTDENTRY);
@@ -2089,7 +2094,10 @@ namespace {
         break;
 
       default:
-        watchdog('g2', 'Node access for invalid op %op', array('%op' => $op), 'node/' . $node->nid);
+        $uri = entity_uri('node', $node);
+        watchdog('g2', 'Node access for invalid op %op', array('%op' => $op),
+          WATCHDOG_NOTICE,
+          l($node->title, $uri['path'], $uri['options']));
         $ret = FALSE;
     }
 
@@ -2188,6 +2196,7 @@ namespace {
   function g2_referer_wipe_confirm_form($form, &$form_state, $node = NULL) {
     if (is_object($node) && isset($node->nid)) {
       $question = t('Are you sure to want to erase the referer information on this G2 entry ?');
+      // TODO 20110122 entity_uri() or not ?
       $cancel = 'node/' . $node->nid . '/referers';
       $form['node'] = array(
         '#prefix' => '<p><em>',
@@ -2284,7 +2293,7 @@ namespace {
    */
   function g2_user_load($users) {
     $q = db_select('node', 'n');
-    $result = $q->fields('n', array('nid', 'title', 'uid'))
+    $result = $q->fields('n', array('nid', 'title', 'uid', 'type'))
       ->condition('n.type', G2\NODETYPE)
       ->condition('n.status', 1)
       ->condition('n.uid', array_keys($users), 'IN')
@@ -2294,8 +2303,10 @@ namespace {
       ->range(0, 10)
       ->execute();
     foreach ($result as $row) {
+      $uri = entity_uri('node', $row);
+      $uri['options']['absolute'] = TRUE;
       $users[$row->uid]->nodes[] = array(
-        'value' => l($row->title, 'node/' . $row->nid, array('absolute' => TRUE)),
+        'value' => l($row->title, $uri['path'], $uri['options']),
       );
     }
   }
@@ -2328,10 +2339,7 @@ namespace {
   function g2_view($node, $view_mode) {
     $title = check_plain($node->title);
 
-    // FIXME 20110117 $page is no longer available in this hook in D7. Probably
-    // use hook_page_alter().
-    // @see node_page_view()
-    if (!empty($page)) {
+    if (node_is_page($node)) {
       $bc = drupal_get_breadcrumb();
       $bc[] = l(G2\TITLEMAIN, $g2_home = variable_get(G2\VARPATHMAIN, G2\DEFPATHMAIN));
       $initial = drupal_substr($title, 0, 1);
@@ -2468,7 +2476,7 @@ namespace {
 
     if ($page_nid) {
       $page_node = node_load($page_nid);
-      $ret = node_view($page_node);
+      $ret = node_view($page_node); // Coder false positive: http://drupal.org/node/224333#node_view
     }
     else {
 
@@ -2488,11 +2496,11 @@ namespace {
           break;
 
         case 1:
-          $next = 'node/' . reset($entries)->nid;
+          $next = entity_uri('node', reset($entries));
           // Does the webmaster want us to jump ?
           if (variable_get(G2\VARGOTOSINGLE, G2\DEFGOTOSINGLE)) {
             $redirect_type = variable_get(G2\VARHOMONYMSREDIRECT, G2\DEFHOMONYMSREDIRECT);
-            drupal_goto($next, array(), $redirect_type);
+            drupal_goto($next['path'], $next['options'], $redirect_type);
             // Never returns
           }
           // Do not break: we continue with default processing in this case.
@@ -2501,7 +2509,7 @@ namespace {
           $vid = variable_get(G2\VARHOMONYMSVID, G2\DEFHOMONYMSVID);
           $rows = array();
           foreach ($entries as $nid => $node) {
-            $path = 'node/' . $nid;
+            $uri = entity_uri('node', $node);
             $terms = array();
             if (!isset($node->taxonomy)) {
               $node->taxonomy = array();
@@ -2518,11 +2526,12 @@ namespace {
               ? strip_tags(check_markup($node->teaser, $node->format))
               : NULL;
             $rows[] = t('!link!taxonomy: !teaser!more', array(
-              '!link' => l($node->title, $path),
+              '!link' => l($node->title, $uri['path'], $uri['options']),
               '!taxonomy' => $taxonomy, // safe by construction
               '!teaser' => $teaser,
               '!more' => theme('more_link', array(
-                  'url' => $path,
+                  'url' => $uri['path'],
+                  'options' => $uri['options'],
                   'title' => t('Full definition for @name: !teaser', array(
                     '@name' => $entry,
                     '!teaser' => $teaser,
@@ -2562,184 +2571,192 @@ namespace {
     $data = filter_xss($variables['data']); // Set by user, so unsafe
 
     $ret = <<<EOT
-  <div class="field field-name-body field-type-text-with-summary field-label-above $name">
-    <div class="field-label">$title:</div>
-    <div class="field-item even">
-      <p>$data</p>
-      </div><!-- field-item -->
-    </div><!-- field ... -->
+<div class="field field-name-body field-type-text-with-summary field-label-above $name">
+  <div class="field-label">$title:</div>
+  <div class="field-item even">
+    <p>$data</p>
+    </div><!-- field-item -->
+  </div><!-- field ... -->
 EOT;
   return $ret;
-}
+  }
 
-/**
- * Return a themed page listing entries by initial segment.
- *
- * This page is less information-rich than the disambiguation page,
- * because it is expected to have much more content.
- *
- * @param string $initial Set from hook_menu
- * @return string HTML
- */
-function theme_g2_initial($variables) {
-  $initial = $variables['initial'];
-  $initial = filter_xss($initial);
-  drupal_set_title(strtr(G2\TITLEINITIAL, array('%initial' => $initial))); // coder false positive: filter_xss'ed
-  $ret = G2\initial($initial);
-  return $ret;
-}
+  /**
+   * Return a themed page listing entries by initial segment.
+   *
+   * This page is less information-rich than the disambiguation page,
+   * because it is expected to have much more content.
+   *
+   * @param string $initial Set from hook_menu
+   * @return string HTML
+   */
+  function theme_g2_initial($variables) {
+    $initial = $variables['initial'];
+    $initial = filter_xss($initial);
+    // We are not using t(), because this is NOT translatable content.
+    drupal_set_title(filter_xss(strtr(G2\TITLEINITIAL, array('%initial' => $initial)))); // coder false positive: filter_xss'ed
+    $ret = G2\initial($initial);
+    return $ret;
+  }
 
-/**
- * Theme the main G2 page, using an unpublished node and the alphabar.
- *
- * Return a simple nodepage built with alphabars wrapping a node
- * to serve as the main page for the G2 glossary. If no node
- * is set, just return an alphabar.
- *
- * TODO port the D5 feature allowing a function name instead of a node.
- * XXX Find a better way to build that page
- *
- * The node is supposed to be an unpublished node, to avoid its
- * appearing in normal situations, and it will be used as if it was
- * published by this function.
- *
- * @see G2\main()
- *
- * @return string HTML
- */
-function theme_g2_main() {
-  // rowlen == 2 << 16 so that only an extremely long alphabar would wrap
-  $alphabar = theme('g2_alphabar', array(
-    'alphabar' => G2\alphabar(),
-    'rowlen' => 2 << 16,
-  ));
+  /**
+   * Theme the main G2 page, using an unpublished node and the alphabar.
+   *
+   * Return a simple nodepage built with alphabars wrapping a node
+   * to serve as the main page for the G2 glossary. If no node
+   * is set, just return an alphabar.
+   *
+   * TODO port the D5 feature allowing a function name instead of a node.
+   * XXX Find a better way to build that page
+   *
+   * The node is supposed to be an unpublished node, to avoid its
+   * appearing in normal situations, and it will be used as if it was
+   * published by this function.
+   *
+   * @see G2\main()
+   *
+   * @return string HTML
+   */
+  function theme_g2_main() {
+    // rowlen == 2 << 16 so that only an extremely long alphabar would wrap
+    $alphabar = theme('g2_alphabar', array(
+      'alphabar' => G2\alphabar(),
+      'rowlen' => 2 << 16,
+    ));
 
-  $node = node_load(variable_get(G2\VARMAIN, G2\DEFMAIN));
-  if (is_object($node)) {
-    drupal_set_title($node->title);
-    if (!empty($node->body)) {
-      $node->status = NODE_PUBLISHED; // Simulate publishing
-    }
-    $ret = node_view($node); // 'full', lang == NULL
-    if (!empty($ret['body'])) {
-      $weight = isset($ret['body']['#weight']) ? $ret['body']['#weight'] : 0;
-      $ret['alphatop'] = array('#markup' => $alphabar, '#weight' => $weight - 1);
-      $ret['alphabot'] = array('#markup' => $alphabar, '#weight' => $weight + 1);
+    $node = node_load(variable_get(G2\VARMAIN, G2\DEFMAIN));
+    if (is_object($node)) {
+      drupal_set_title($node->title);
+      if (!empty($node->body)) {
+        $node->status = NODE_PUBLISHED; // Simulate publishing
+      }
+      $ret = node_view($node); // Coder false positive: http://drupal.org/node/224333#node_view
+      if (!empty($ret['body'])) {
+        $weight = isset($ret['body']['#weight']) ? $ret['body']['#weight'] : 0;
+        $ret['alphatop'] = array('#markup' => $alphabar, '#weight' => $weight - 1);
+        $ret['alphabot'] = array('#markup' => $alphabar, '#weight' => $weight + 1);
+      }
+      else {
+        $ret['alphabar'] = array('#markup' => $alphabar);
+      }
+      G2\override_site_name();
     }
     else {
-      $ret['alphabar'] = array('#markup' => $alphabar);
+      $ret = $alphabar;
     }
-    G2\override_site_name();
-  }
-  else {
-    $ret = $alphabar;
+
+    return $ret;
   }
 
-  return $ret;
-}
-
-/**
- * Theme a G2 entries list, as used by the "latest" and "top" blocks.
- *
- * Node access control is the responsibility of the caller passing the
- * node list.
- *
- * @return string HTML
- */
-function theme_g2_node_list($variables) {
-  $nodes = $variables['nodes'];
-  $ar = array();
-  foreach ($nodes as $node) {
-    $class = ($node->status == NODE_PUBLISHED)
-      ? NULL
-      : 'node-unpublished';
-    $ar[] = l($node->title, 'node/' . $node->nid, array('attributes' => array('class' => $class)));
-  }
-  $ret = theme('item_list', array('items' => $ar));
-  return $ret;
-}
-
-/**
- * Theme a random entry.
- *
- * This is actually a short view for just about any single node, but it
- * is even shorter than node_view($node, TRUE).
- *
- * TODO: replace with just a node rendered with a specific view_mode
- *
- * @return string HTML
- */
-function theme_g2_random($variables) {
-  $node = $variables['node'];
-  $ret = l($node->title, 'node/' . $node->nid);
-  // FIXME $node->teaser is no longer a given in D7
-  if (!empty($node->teaser)) {
-    // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
-    $ret .= t(': @teaser', array('@teaser' => $node->teaser));
-  }
-  // No longer hard coded: use a view_mode instead
-  // $ret .= G2\entry_terms($node); // No need to test: also works on missing taxonomy
-  $ret .= theme('more_link', array(
-      'url' => 'node/' . $node->nid,
-      'title' => t('&nbsp;(+)'),
-    )
-  );
-  return $ret;
-}
-
-/**
- * Theme a WOTD block.
- *
- * TODO: replace with just a node rendered with a specific view_mode
- *
- * @param object $wotd
- *   The node for the word of the day. teaser and body are already
- *   filtered and truncated if needed.
- * @return object title / nid / teaser / [body]
- */
-function theme_g2_wotd($variables) {
-  $node = $variables['node'];
-  if (empty($node)) {
-    return NULL;
-  }
-
-  $link = l($node->title, 'node/' . $node->nid); // l() check_plain's text
-  if (isset($node->teaser) and !empty($node->teaser)) {
-    // teaser already filtered by G2\wotd(), don't filter twice.
-    $teaser = '<span id="g2_wotd_teaser">' . strip_tags($node->teaser) . '</span>';
-    $ret = t('!link: !teaser', array(
-      '!link' => $link,
-      '!teaser' => $teaser,
-    ));
-    unset($teaser);
-  }
-  else {
-    $ret = $link;
-  }
-
-  if (!empty($node->body)) {
-    // already filtered by G2\wotd(), don't filter twice, just strip.
-    $body = strip_tags($node->body);
-    if ($node->truncated) {
-      $body .= '&hellip;';
+  /**
+   * Theme a G2 entries list, as used by the "latest" and "top" blocks.
+   *
+   * Node access control is the responsibility of the caller passing the
+   * node list.
+   *
+   * @return string HTML
+   */
+  function theme_g2_node_list($variables) {
+    $nodes = $variables['nodes'];
+    $ar = array();
+    foreach ($nodes as $node) {
+      $class = ($node->status == NODE_PUBLISHED)
+        ? NULL
+        : 'node-unpublished';
+      $uri = entity_uri('node', $node);
+      $uri['options']['attributes']['class'][] = $class;
+      $ar[] = l($node->title, $uri['path'], $uri['options']);
     }
-    $ret .= '<div id="g2_wotd_body">' . $body . '</div>';
+    $ret = theme('item_list', array('items' => $ar));
+    return $ret;
   }
-  // No longer needed: use a view_mode instead
-  // $ret .= G2\entry_terms($node); // No need to test: it won't change anything if a taxonomy has not been returned
-  $ret .= theme('more_link', array(
-      'url' => 'node/' . $node->nid,
-      'title' => t('&nbsp;(+)'),
-    )
-  );
-  if (variable_get(G2\VARWOTDFEEDLINK, G2\DEFWOTDFEEDLINK)) {
-    $ret .= theme('feed_icon', array(
-      'url' => url(G2\PATHWOTDFEED, array('absolute' => TRUE)),
-      // TODO: find a better title
-      'title' => t('Glossary feed'),
-    ));
-  }
-  return $ret;
-}
 
+  /**
+   * Theme a random entry.
+   *
+   * This is actually a short view for just about any single node, but it
+   * is even shorter than node_view($node, TRUE).
+   *
+   * TODO 20110122: replace with just a node rendered with a specific view_mode
+   *
+   * @return string HTML
+   */
+  function theme_g2_random($variables) {
+    $node = $variables['node'];
+    $uri = entity_uri('node', $node);
+    $ret = l($node->title, $uri['path'], $uri['options']);
+    // FIXME $node->teaser is no longer a given in D7
+    if (!empty($node->teaser)) {
+      // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
+      $ret .= t(': @teaser', array('@teaser' => $node->teaser));
+    }
+    // No longer hard coded: use a view_mode instead
+    // $ret .= G2\entry_terms($node); // No need to test: also works on missing taxonomy
+    $ret .= theme('more_link', array(
+        'url' => $uri['path'],
+        'options' => $uri['options'], // TODO check evolution of http://drupal.org/node/1036190
+        'title' => t('&nbsp;(+)'),
+      )
+    );
+    return $ret;
+  }
+
+  /**
+   * Theme a WOTD block.
+   *
+   * TODO 20110122: replace with just a node rendered with a specific view_mode
+   *
+   * @param object $wotd
+   *   The node for the word of the day. teaser and body are already
+   *   filtered and truncated if needed.
+   * @return object title / nid / teaser / [body]
+   */
+  function theme_g2_wotd($variables) {
+    $node = $variables['node'];
+    if (empty($node)) {
+      return NULL;
+    }
+    $uri = entity_uri('node', $node);
+
+    $link = l($node->title, $uri['path'], $uri['options']);
+    if (isset($node->expansion) and !empty($node->expansion)) {
+      // teaser already filtered by G2\wotd(), don't filter twice.
+      // TODO 20110122 make sure this is true
+      $teaser = '<span id="g2_wotd_expansion">' . strip_tags($node->expansion) . '</span>';
+      $ret = t('!link: !teaser', array(
+        '!link' => $link,
+        '!teaser' => $teaser,
+      ));
+      unset($teaser);
+    }
+    else {
+      $ret = $link;
+    }
+
+    // No longer needed: use a view_mode instead
+    //    if (!empty($node->body)) {
+//      // already filtered by G2\wotd(), don't filter twice, just strip.
+//      $body = strip_tags($node->body);
+//      if ($node->truncated) {
+//        $body .= '&hellip;';
+//      }
+//      $ret .= '<div id="g2_wotd_body">' . $body . '</div>';
+//    }
+
+    // $ret .= G2\entry_terms($node); // No need to test: it won't change anything if a taxonomy has not been returned
+    $ret .= theme('more_link', array(
+        'url' => $uri['path'],
+        'options' => $uri['options'], // TODO check evolution of http://drupal.org/node/1036190
+        'title' => t('&nbsp;(+)'),
+      )
+    );
+    if (variable_get(G2\VARWOTDFEEDLINK, G2\DEFWOTDFEEDLINK)) {
+      $ret .= theme('feed_icon', array(
+        'url' => url(G2\PATHWOTDFEED, array('absolute' => TRUE)),
+        // TODO: find a better title
+        'title' => t('Glossary feed'),
+      ));
+    }
+    return $ret;
+  }
 }
