@@ -22,8 +22,8 @@ description = "Manage a node-based glossary"
 dependencies[] = taxonomy
 package = Content
 core = 7.x
-; closures require 5.3
-; see _g2_stats()
+; closures and namespaces require 5.3
+; see g2\* constants and _g2_stats() 
 php = 5.3
 configure = admin/config/content/g2
 
@@ -32,3 +32,8 @@ files[] = g2.module
 files[] = g2_data.inc
 files[] = tests/access.test
 files[] = views/g2.views.inc
+
+; G2 is expected to be a major feature on sites where it is present, hence
+; its content will be present on most pages, and it makes sense to aggregate 
+; its CSS.
+stylesheets[all][] = g2.css
