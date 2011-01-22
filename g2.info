@@ -29,7 +29,6 @@ configure = admin/config/content/g2
 
 files[] = g2.install
 files[] = g2.module
-files[] = g2_data.inc
 files[] = tests/access.test
 files[] = views/g2.views.inc
 

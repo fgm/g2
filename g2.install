@@ -345,3 +345,11 @@ function g2_update_7004() {
   $t = get_t();
   return $t('Removed obsolete variable g2_nofreetagging');
 }
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function g2_update_last_removed() {
+  return 6002;
+}
+

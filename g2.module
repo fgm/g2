@@ -22,9 +22,7 @@
  *
  * TODO: split settings form with local tabs or vertical tabs
  *
- * TODO: rename/remove constants
- *
- * TODO: test wipes, rss
+ * TODO: test rss
  *
  * @link http://wiki.audean.com/g2/choosing @endlink
  */
@@ -477,6 +475,235 @@ namespace g2 {
   define('G2\VARXMLRPC',            'g2_xmlrpc');
 
   /**
+   * Form builder for settings form.
+   *
+   * @param array $form
+   * @param array $form_state
+   *
+   * @return array
+   */
+  function admin_settings($form, &$form_state) {
+    $form['main'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Main page'),
+    );
+    $form['main'][VARMAIN] = array(
+      '#type' => 'textfield',
+      '#title' => t('Node used for the main page of G2 on this site'),
+      '#default_value' => variable_get(VARMAIN, 0),
+      '#description' => t('<p>When themeing for G2 is supplied by a non-G2-aware theme, the <code>theme_g2_main</code> function will use this node as the main page for the G2 glossary, wrapped between alphabars. This node will typically be an unpublished page or story node. G2-aware themes can provide their own home page, using this page as a basis, or not.</p>'),
+    );
+    $form['main'][VARPATHMAIN] = array(
+      '#type' => 'textfield',
+      '#title' => t('Path for the main page of G2 on this site'),
+      '#default_value' => variable_get(VARPATHMAIN, DEFPATHMAIN),
+      '#description' => t('<p>This setting allows site admins to modify the URL at which the home page will be found.
+           This will typically be done to replace the standard path ("g2") by a SEO-engineered path.</p>'),
+    );
+    $form['main'][VARPAGETITLE] = array(
+      '#type' => 'textfield',
+      '#title' => t('Override for site title on G2 pages'),
+      '#default_value' => variable_get(VARPAGETITLE, DEFPAGETITLE),
+      '#description' => t('<p>This setting allows site admins to modify the site title on G2 page, typically for SEO purposes. The title can include !token, which will be replaced by the standard Drupal site title. If set to empty, the default site name will not be overriden.</p>',
+        array('!token' => '@title')),
+    );
+    $form['main'][VARTOOLTIPS] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable tooltips on definitions'),
+      '#default_value' => variable_get(VARTOOLTIPS, DEFTOOLTIPS),
+      '#description' => t('Set the title attribute on definition links to the teaser of the target definition, if only one exists, or to the number of definitions, if several exist. This mechanism is only enabled on non-remote glossaries, and cause one additional query per definition link on pages where containg them.'),
+    );
+
+    $form['automation'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Site automation'),
+    );
+    $form['automation'][VARHIDDENTITLE] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Embed a CSS-masked version of the definition titles in the node rendition'),
+      '#default_value' => variable_get(VARHIDDENTITLE, DEFHIDDENTITLE),
+      '#description' => t('This setting enables search to work better on definition titles, but can be frowned upon by search engines.'),
+    );
+    $form['automation'][VARLOGREFERRERS] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Log referrers on node views.'),
+      '#default_value' => variable_get(VARLOGREFERRERS, TRUE),
+      '#description' => t('This can provide hints regarding pages referring to definitions.'),
+    );
+    $form['remoting'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Remoting'),
+    );
+    $def = variable_get(VARREMOTEG2, DEFREMOTEG2);
+    if (empty($def)) {
+      $def = DEFREMOTEG2;
+    }
+    $form['remoting'][VARREMOTEG2] = array(
+      '#type' => 'textfield',
+      '#title' => t('Use the URL of this remote G2 glossary, or !local for a local glossary',
+        array(
+        '!local' => '<code>' . check_plain(DEFREMOTENO) . '</code>',
+      )
+      ),
+      '#default_value' => $def,
+      '#description' => t('Using G2 remoting, you can supply automatic links from your site to a glossary on another site, without having to maintain anything locally. You will just need to enable the "G2 Glossary Filter" at !url for each format using it. Use !local to maintain a glossary on your site. Erase the field and save TWICE to restore the default value, the Riff dictionary of computing.',
+        array(
+        '!url' => l(t('input formats'), 'admin/config/content/formats'),
+        '!local' => '<code>' . check_plain(DEFREMOTENO) . '</code>',
+      )
+      ),
+    );
+    $form['homonyms'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Homonyms processing'),
+    );
+    $disambiguation_url = url('g2/entries', array('absolute' => TRUE));
+    $form['homonyms'][VARHOMONYMS] = array(
+      '#type' => 'textfield',
+      '#title' => t('Node used for the homonyms disambiguation page of G2 on this site'),
+      '#default_value' => variable_get(VARHOMONYMS, DEFHOMONYMS),
+      '#description' => t('If this node is non-zero, this is the page used to build the disambiguation
+            page for G2 entries at <code>!link/&lt;some entry&gt;</code>.
+            Otherwise, a default page is used.', array('!link' => $disambiguation_url)),
+    );
+    $form['homonyms'][VARGOTOSINGLE] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable auto-jump to single match on entry'),
+      '#default_value' => variable_get(VARGOTOSINGLE, TRUE),
+      '#description' => t('This setting enables automatic redirection from
+        <code>!link/&lt;some entry&gt;</code> to the entry page if only one match exists for "some entry".
+        This is especially useful for links generated from content nodes.',
+        array('!link' => $disambiguation_url)),
+    );
+    $form['homonyms'][VARHOMONYMSREDIRECT] = array(
+      '#type' => 'select',
+      '#title' => t('The type of HTTP redirection to be used if auto-jump is enabled'),
+      '#default_value' => variable_get(VARHOMONYMSREDIRECT, DEFHOMONYMSREDIRECT),
+      '#options' => array(
+        '301' => t('Permanent redirect (HTTP 301)'),
+        DEFHOMONYMSREDIRECT => t('Temporary redirect (HTTP 302)'),
+      ),
+      '#description' => t('If the "auto-jump to single match on entry" feature is enabled,
+        choose which type of redirection is generated. Technically, a temporary redirect (!see302)
+        makes more sense, especially is the glossary is often updated, but if the glossary
+        is stable, or if the site admin has reason to fear a 302 search engine blacklisting,
+        this setting makes it possible to use a permanent redirect (!see301).',
+        array(
+        '!see302' => '<a href="http://tools.ietf.org/html/rfc2616#section-10.3.3">RFC 2616 §10.3.3</a>',
+        '!see301' => '<a href="http://tools.ietf.org/html/rfc2616#section-10.3.2">RFC 2616 §10.3.2</a>',
+        )
+      ),
+    );
+
+    $ar_voc = array('0' => t('None'));
+    foreach (taxonomy_get_vocabularies(NODETYPE) as $voc) {
+      $ar_voc[$voc->vid] = $voc->name;
+    }
+    $form['homonyms'][VARHOMONYMSVID] = array(
+      '#type' => 'select',
+      '#title' => t('Vocabulary to be used on the homonyms disambiguation page'),
+      '#default_value' => variable_get(VARHOMONYMSVID, DEFHOMONYMSVID),
+      '#description' => t('If a vocabulary is chosen here, the terms bound to ambiguous entries (homonyms)
+         will be displayed on the defaut disambiguation page.'),
+      '#options' => $ar_voc,
+    );
+
+    $form['advanced'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Advanced settings (for programmers only)'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['advanced'][VARXMLRPC] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable G2 remote XML-RPC services'),
+      '#default_value' => variable_get(VARXMLRPC, DEFXMLRPC),
+      '#description' => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC services.
+         Enabling it without additional access control is typically not a good idea.
+         Local XML-RPC is not enabled by default.'),
+    );
+
+    $form['advanced'][VARRPCTHROTTLE] = array(
+      '#type' => 'textfield',
+      '#title' => t('RPC throttle'),
+      '#default_value' => variable_get(VARRPCTHROTTLE, DEFRPCTHROTTLE),
+      '#description' => t('This setting is a coefficient applied to the Top and Latest block for their XML-RPC services.
+          It defines the maximum number of entries an XML-RPC client is allowed to return
+          in just one call as the product of the block setting and this coefficient.'),
+    );
+    $form['advanced'][VERSION] = array(
+      '#value' => '<p>'
+        . t('This site is running G2 version %version. See the <a href="!page" title="G2 Glossary project page">G2 project page</a> on Drupal.org.',
+          array(
+        '%version' => VERSION,
+        '!page' => 'http://drupal.org/project/g2',
+      )
+        )
+        . '</p>',
+    );
+
+    $form['wipe_submit'] = array(
+      '#type' => 'submit',
+      '#value' => TITLEREFERERWIPE,
+      '#weight' => 2,
+      '#submit' => array('G2\referer_wipe_button_submit'),
+    );
+
+    // Explicit handler needed: the explicit submit handler declaration in
+    // system_settings_form() prevents implicit handlers from running.
+    $form['#submit'] = array('g2\admin_settings_submit');
+    $ret = system_settings_form($form);
+    return $ret;
+  }
+
+  /**
+   * Rebuild menu if the G2 main page changed.
+   *
+   * This is needed because cache_clear_all() in
+   * system_settings_form_submit() only clears {cache_block} and
+   * {cache_page}.
+   *
+   * @param array $form
+   * @param array $form_state
+   *
+   * @return void
+   */
+  function admin_settings_submit(&$form, &$form_state) {
+    if ($form_state['values'][VARPATHMAIN] != variable_get(VARPATHMAIN, DEFPATHMAIN)) {
+      variable_set('menu_rebuild_needed', TRUE);
+    }
+  }
+
+  /**
+   * Make sure the node chosen for the main page is valid.
+   *
+   * @param array $form
+   * @param array $form_state
+   * @return void
+   */
+  function admin_settings_validate(&$form, &$form_state) {
+    $nid = $form_state['values']['g2_main'];
+    if ($nid != 0 && !is_object(node_load($nid))) {
+      form_set_error('g2_main', t('The node chosen for the main page must be a valid one, or 0: "@nid" is not a valid node id.',
+        array('@nid' => $nid)));
+    }
+
+    $nid = $form_state['values']['g2_homonyms'];
+    if ($nid != 0 && !is_object(node_load($nid))) {
+      form_set_error('g2_homonyms', t('The node chosen for the homonyms disambiguation page must be a valid one, or 0: "@nid" is not a valid node id.',
+        array('@nid' => $nid)));
+    }
+
+    // Sanitize RPC throttle
+    $form_state['values']['g2_rpc_throttle'] = (int) $form_state['values']['g2_rpc_throttle'];
+
+    // Make sure tooltips are not enabled for remote glossaries
+    if ($form_state['values'][VARTOOLTIPS] && $form_state['values'][VARREMOTEG2] != DEFREMOTENO) {
+      form_set_error(VARTOOLTIPS, t('Tooltips are only available on local glossaries'));
+    }
+  }
+
+  /**
    * Return alphabar data.
    *
    * @return string
@@ -569,6 +796,8 @@ namespace g2 {
    * @return string HTML
    */
   function filter_process_callback($entry) {
+    static $hits = array(); // Loop detection
+
     $entry = $entry[1]; // [0] is the original string
     $target = variable_get(VARREMOTEG2, DEFREMOTEG2);
 
@@ -578,11 +807,14 @@ namespace g2 {
 
       // No tooltips on remote glossaries: too slow
       if (variable_get(VARTOOLTIPS, DEFTOOLTIPS)) {
-        $nodes = g2_entry_load($entry);
-        $count = count($nodes);
+        if (!isset($hits[$entry])) {
+          $hits[$entry] = array(); // Prevent infinite loop from g2_title_load
+          $hits[$entry] = g2_title_load($entry);
+        }
+        $count = count($hits[$entry]);
         if ($count == 1) {
-          $node = reset($nodes);
-          $tooltip = check_markup($node->teaser, $nodes->format);
+          $node = reset($hits[$entry]);
+          $tooltip = strip_tags($node->expansion);
         }
         elseif ($count) {
           $tooltip = t('@count entries for @entry', array(
@@ -738,35 +970,41 @@ namespace g2 {
     return $ret;
   }
 
-  function log_referer($node) {
+  /**
+   * Log HTTP_REFERERs on a given node when in full page mode.
+   *
+   * @param object $node
+   *
+   * @return void
+   */
+  function log_referrers($node) {
     global $base_url;
-    $referer = $_SERVER['HTTP_REFERER'];
+    $us_referrer = $_SERVER['HTTP_REFERER'];
 
-    // Is referer local ? MUST use ===, otherwise FALSE would match too
-    if (!empty($referer) && strpos($referer, $base_url . '/') === 0) {
+    // Is us_referer local ? MUST use ===, otherwise FALSE would match too
+    if (!empty($us_referrer) && strpos($us_referrer, $base_url . '/') === 0) {
       // extract local path, possibly aliased
-      $referer = drupal_substr($referer, drupal_strlen($base_url) + 1);
+      $us_referrer = drupal_substr($us_referrer, drupal_strlen($base_url) + 1);
 
       // Unalias it
-      $referer = drupal_get_normal_path($referer);
+      $us_referrer = drupal_get_normal_path($us_referrer);
 
       // Sanitize it
-      $referer = check_plain($referer);
+      $referrer = check_plain($us_referrer);
 
-      // drupal_write_record() is too costly to be used on frequent and
-      // non-alterable operations like logging a node view.
-      $sq = 'UPDATE {g2_referer} '
-          . 'SET incoming = incoming + 1 '
-          . "WHERE nid = %d AND referer = '%s'";
-      // TODO: DBTNG
-      db_query($sq, $node->nid, $referer);
-      if (!db_affected_rows()) {
-        $sq = 'INSERT INTO {g2_referer} '
-            . '  (nid, referer, incoming) '
-            . "VALUES (%d, '%s', 1) ";
-        // TODO: DBTNG
-        db_query($sq, $node->nid, $referer);
-      }
+      // XXX costly! Use a queue to batch such logging ?
+      $q = db_merge('g2_referer')
+        ->key(array(
+          'nid' => $node->nid,
+          'referer' => $referrer,
+        ))
+        ->fields(array(
+          'nid' => $node->nid,
+          'referer' => $referrer,
+          'incoming' => 1,
+        ))
+        ->expression('incoming', 'incoming + :inc', array(':inc' => 1))
+        ->execute();
     }
     else {
       /**
@@ -790,6 +1028,21 @@ namespace g2 {
       $conf['site_name'] = strtr(variable_get(VARPAGETITLE, DEFPAGETITLE),
         array('@title' => $conf['site_name']));
     }
+  }
+
+  /**
+   * Page callback for G2\PATHENTRIES/%g2_entry
+   *
+   * TODO convert to render array format.
+   *
+   * @param array $nodes
+   *
+   * @return string
+   */
+  function page_entries($nodes) {
+
+    $ret = theme('g2_entries', array('entries' => $nodes));
+    return $ret;
   }
 
   /**
@@ -841,11 +1094,14 @@ namespace g2 {
 
     $result = $q->execute();
     $nid = $result->fetchField();
+    if (!$nid) {
+      $nid = $wotd_nid;
+    }
 
     $node = node_load($nid);
-    $node->taxonomy = (variable_get(VARRANDOMTERMS, DEFRANDOMTERMS) && isset($node->taxonomy))
-      ? $node->taxonomy
-      : array();
+//    $node->taxonomy = (variable_get(VARRANDOMTERMS, DEFRANDOMTERMS) && isset($node->taxonomy))
+//      ? $node->taxonomy
+//      : array();
 
     if (variable_get(VARRANDOMSTORE, DEFRANDOMSTORE)) {
       variable_set(VARRANDOMENTRY, $node->title); // unfiltered
@@ -907,9 +1163,9 @@ namespace g2 {
       else {
         $title_link = NULL;
       }
-      // FIXME 20110122: l() call makes no sense currently
+      // empty referer does not happen in normal situations, but can happen with bugs
       $rows[] = empty($row->referer)
-        ? array($row->incoming, t('<empty>'), $title) // should never happen
+        ? array($row->incoming, t('<empty>'), $title_link)
         : array($row->incoming, l($row->referer, $row->referer, array('absolute' => TRUE)), $title_link);
     }
     $message = empty($rows)
@@ -971,17 +1227,89 @@ namespace g2 {
         ->execute();
       $node = node_load($nid);
       $uri = entity_uri('node', $node);
-      drupal_goto($uri['path'], $uri['options']);
+      $ret = $uri;
     }
     else {
       $deleted = db_delete('g2_referer')
         ->execute();
-      // Redirection occurs in the submit handler
+      $ret = array('path' => PATHSETTINGS);
     }
     $message = $deleted
       ? format_plural($deleted, 'Deleted 1 G2 referer link', 'Deleted @count G2 referer links', array('@count' => $deleted))
       : t('No G2 referer link found for deletion.');
     drupal_set_message(check_plain($message)); // check_plain is actually useless here.
+    return $ret;
+  }
+
+  /**
+   * Submit handler for "wipe referers" button on settings form.
+   *
+   * @param string $form_id
+   * @param array $form
+   *
+   * @return void
+   */
+  function referer_wipe_button_submit($form, &$form_state) {
+    drupal_goto('g2/wipe');
+  }
+
+  /**
+   * Form builder for the referer wipe confirmation request form.
+   *
+   * This is the same form for both global wipe and individual node wipe.
+   *
+   * @param array $form
+   * @param array $form_state
+   * @param $node
+   *
+   * @return array
+   */
+  function referer_wipe_confirm_form($form, &$form_state, $node = NULL) {
+    if (is_object($node) && isset($node->nid)) {
+      $question = t('Erase referer information from %title ?', array(
+        '%title' => $node->title,
+      ));
+      // No entity_uri: this URL belongs to this module, not to the entity
+      $cancel = 'node/' . $node->nid . '/referers';
+      $form['node'] = array(
+        '#type'  => 'value',
+        '#value' => $node,
+      );
+    }
+    else {
+      $question = t('Are you sure to want to erase the referer information on all G2 entries ?');
+      $cancel = PATHSETTINGS;
+    }
+
+    $ret = confirm_form($form,
+      $question,
+      $cancel,
+      t('This action cannot be undone.'),
+      t('Confirm'),
+      t('Cancel')
+    );
+    return $ret;
+  }
+
+  /**
+   * Submit handler for referer wipe confirmation.
+   *
+   * @return void
+   */
+  function referer_wipe_confirm_form_submit($form, &$form_state) {
+    if (isset($form_state['values']['node'])) {
+      $node = $form_state['values']['node'];
+      $dest = referer_wipe($node->nid);
+      drupal_set_message(t('Referer information has been erased from %title', array(
+        '%title' => $node->title,
+      )));
+    }
+    else {
+      $dest = referer_wipe();
+      drupal_set_message(t('Referer information has been erased from all G2 entries'));
+    }
+    $form_state['redirect'] = $dest['path']; // $dest['options'] ignored
+    return;
   }
 
   /**
@@ -1213,230 +1541,6 @@ namespace g2 {
 } // namespace G2
 
 namespace {
-  /**
-   * Implements hook_settings().
-   */
-  function g2_admin_settings($form, &$form_state) {
-    $form['main'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Main page'),
-    );
-    $form['main'][G2\VARMAIN] = array(
-      '#type' => 'textfield',
-      '#title' => t('Node used for the main page of G2 on this site'),
-      '#default_value' => variable_get(G2\VARMAIN, 0),
-      '#description' => t('<p>When themeing for G2 is supplied by a non-G2-aware theme, the <code>theme_g2_main</code> function will use this node as the main page for the G2 glossary, wrapped between alphabars. This node will typically be an unpublished page or story node. G2-aware themes can provide their own home page, using this page as a basis, or not.</p>'),
-    );
-    $form['main'][G2\VARPATHMAIN] = array(
-      '#type' => 'textfield',
-      '#title' => t('Path for the main page of G2 on this site'),
-      '#default_value' => variable_get(G2\VARPATHMAIN, G2\DEFPATHMAIN),
-      '#description' => t('<p>This setting allows site admins to modify the URL at which the home page will be found.
-           This will typically be done to replace the standard path ("g2") by a SEO-engineered path.</p>'),
-    );
-    $form['main'][G2\VARPAGETITLE] = array(
-      '#type' => 'textfield',
-      '#title' => t('Override for site title on G2 pages'),
-      '#default_value' => variable_get(G2\VARPAGETITLE, G2\DEFPAGETITLE),
-      '#description' => t('<p>This setting allows site admins to modify the site title on G2 page, typically for SEO purposes. The title can include !token, which will be replaced by the standard Drupal site title. If set to empty, the default site name will not be overriden.</p>',
-        array('!token' => '@title')),
-    );
-    $form['main'][G2\VARTOOLTIPS] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Enable tooltips on definitions'),
-      '#default_value' => variable_get(G2\VARTOOLTIPS, G2\DEFTOOLTIPS),
-      '#description' => t('Set the title attribute on definition links to the teaser of the target definition, if only one exists, or to the number of definitions, if several exist. This mechanism is only enabled on non-remote glossaries, and cause one additional query per definition link on pages where containg them.'),
-    );
-
-    $form['automation'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Site automation'),
-    );
-    $form['automation'][G2\VARHIDDENTITLE] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Embed a CSS-masked version of the definition titles in the node rendition'),
-      '#default_value' => variable_get(G2\VARHIDDENTITLE, G2\DEFHIDDENTITLE),
-      '#description' => t('This setting enables search to work better on definition titles, but can be frowned upon by search engines.'),
-    );
-    $form['automation'][G2\VARLOGREFERRERS] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Log referrers on node views.'),
-      '#default_value' => variable_get(G2\VARLOGREFERRERS, TRUE),
-      '#description' => t('This can provide hints regarding pages referring to definitions.'),
-    );
-    $form['remoting'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Remoting'),
-    );
-    $def = variable_get(G2\VARREMOTEG2, G2\DEFREMOTEG2);
-    if (empty($def)) {
-      $def = G2\DEFREMOTEG2;
-    }
-    $form['remoting'][G2\VARREMOTEG2] = array(
-      '#type' => 'textfield',
-      '#title' => t('Use the URL of this remote G2 glossary, or !local for a local glossary',
-        array(
-        '!local' => '<code>' . check_plain(G2\DEFREMOTENO) . '</code>',
-      )
-      ),
-      '#default_value' => $def,
-      '#description' => t('Using G2 remoting, you can supply automatic links from your site to a glossary on another site, without having to maintain anything locally. You will just need to enable the "G2 Glossary Filter" at !url for each format using it. Use !local to maintain a glossary on your site. Erase the field and save TWICE to restore the default value, the Riff dictionary of computing.',
-        array(
-        '!url' => l(t('input formats'), 'admin/config/content/formats'),
-        '!local' => '<code>' . check_plain(G2\DEFREMOTENO) . '</code>',
-      )
-      ),
-    );
-    $form['homonyms'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Homonyms processing'),
-    );
-    $disambiguation_url = url('g2/entries', array('absolute' => TRUE));
-    $form['homonyms'][G2\VARHOMONYMS] = array(
-      '#type' => 'textfield',
-      '#title' => t('Node used for the homonyms disambiguation page of G2 on this site'),
-      '#default_value' => variable_get(G2\VARHOMONYMS, G2\DEFHOMONYMS),
-      '#description' => t('If this node is non-zero, this is the page used to build the disambiguation
-            page for G2 entries at <code>!link/&lt;some entry&gt;</code>.
-            Otherwise, a default page is used.', array('!link' => $disambiguation_url)),
-    );
-    $form['homonyms'][G2\VARGOTOSINGLE] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Enable auto-jump to single match on entry'),
-      '#default_value' => variable_get(G2\VARGOTOSINGLE, TRUE),
-      '#description' => t('This setting enables automatic redirection from
-        <code>!link/&lt;some entry&gt;</code> to the entry page if only one match exists for "some entry".
-        This is especially useful for links generated from content nodes.',
-        array('!link' => $disambiguation_url)),
-    );
-    $form['homonyms'][G2\VARHOMONYMSREDIRECT] = array(
-      '#type' => 'select',
-      '#title' => t('The type of HTTP redirection to be used if auto-jump is enabled'),
-      '#default_value' => variable_get(G2\VARHOMONYMSREDIRECT, G2\DEFHOMONYMSREDIRECT),
-      '#options' => array(
-        '301' => t('Permanent redirect (HTTP 301)'),
-        G2\DEFHOMONYMSREDIRECT => t('Temporary redirect (HTTP 302)'),
-      ),
-      '#description' => t('If the "auto-jump to single match on entry" feature is enabled,
-        choose which type of redirection is generated. Technically, a temporary redirect (!see302)
-        makes more sense, especially is the glossary is often updated, but if the glossary
-        is stable, or if the site admin has reason to fear a 302 search engine blacklisting,
-        this setting makes it possible to use a permanent redirect (!see301).',
-        array(
-        '!see302' => '<a href="http://tools.ietf.org/html/rfc2616#section-10.3.3">RFC 2616 §10.3.3</a>',
-        '!see301' => '<a href="http://tools.ietf.org/html/rfc2616#section-10.3.2">RFC 2616 §10.3.2</a>',
-        )
-      ),
-    );
-
-    $ar_voc = array('0' => t('None'));
-    foreach (taxonomy_get_vocabularies(G2\NODETYPE) as $voc) {
-      $ar_voc[$voc->vid] = $voc->name;
-    }
-    $form['homonyms'][G2\VARHOMONYMSVID] = array(
-      '#type' => 'select',
-      '#title' => t('Vocabulary to be used on the homonyms disambiguation page'),
-      '#default_value' => variable_get(G2\VARHOMONYMSVID, G2\DEFHOMONYMSVID),
-      '#description' => t('If a vocabulary is chosen here, the terms bound to ambiguous entries (homonyms)
-         will be displayed on the defaut disambiguation page.'),
-      '#options' => $ar_voc,
-    );
-
-    $form['advanced'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Advanced settings (for programmers only)'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form['advanced'][G2\VARXMLRPC] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Enable G2 remote XML-RPC services'),
-      '#default_value' => variable_get(G2\VARXMLRPC, G2\DEFXMLRPC),
-      '#description' => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC services.
-         Enabling it without additional access control is typically not a good idea.
-         Local XML-RPC is not enabled by default.'),
-    );
-
-    $form['advanced'][G2\VARRPCTHROTTLE] = array(
-      '#type' => 'textfield',
-      '#title' => t('RPC throttle'),
-      '#default_value' => variable_get(G2\VARRPCTHROTTLE, G2\DEFRPCTHROTTLE),
-      '#description' => t('This setting is a coefficient applied to the Top and Latest block for their XML-RPC services.
-          It defines the maximum number of entries an XML-RPC client is allowed to return
-          in just one call as the product of the block setting and this coefficient.'),
-    );
-    $form['advanced'][G2\VERSION] = array(
-      '#value' => '<p>'
-        . t('This site is running G2 version %version. See the <a href="!page" title="G2 Glossary project page">G2 project page</a> on Drupal.org.',
-          array(
-        '%version' => G2\VERSION,
-        '!page' => 'http://drupal.org/project/g2',
-      )
-        )
-        . '</p>',
-    );
-
-    $form['wipe_submit'] = array(
-      '#type' => 'submit',
-      '#value' => G2\TITLEREFERERWIPE,
-      '#weight' => 2,
-      '#submit' => array('g2_referer_wipe_button_submit'),
-      '#callback' => 'G2\referer_wipe',
-    );
-
-    // Explicit handler needed: the explicit submit handler declaration in
-    // system_settings_form() prevents implicit handlers from running.
-    $form['#submit'] = array('g2_admin_settings_submit');
-    $ret = system_settings_form($form);
-    return $ret;
-  }
-
-  /**
-   * Rebuild menu if the G2 main page changed.
-   *
-   * This is needed because cache_clear_all() in
-   * system_settings_form_submit() only clears {cache_block} and
-   * {cache_page}.
-   *
-   * @param array $form
-   * @param array $form_state
-   * @return void
-   */
-  function g2_admin_settings_submit(&$form, &$form_state) {
-    if ($form_state['values'][G2\VARPATHMAIN] != variable_get(G2\VARPATHMAIN, G2\DEFPATHMAIN)) {
-      variable_set('menu_rebuild_needed', TRUE);
-    }
-  }
-
-  /**
-   * Make sure the node chosen for the main page is valid.
-   *
-   * @param array $form
-   * @param array $form_state
-   * @return void
-   */
-  function g2_admin_settings_validate(&$form, &$form_state) {
-    $nid = $form_state['values']['g2_main'];
-    if ($nid != 0 && !is_object(node_load($nid))) {
-      form_set_error('g2_main', t('The node chosen for the main page must be a valid one, or 0: "@nid" is not a valid node id.',
-        array('@nid' => $nid)));
-    }
-
-    $nid = $form_state['values']['g2_homonyms'];
-    if ($nid != 0 && !is_object(node_load($nid))) {
-      form_set_error('g2_homonyms', t('The node chosen for the homonyms disambiguation page must be a valid one, or 0: "@nid" is not a valid node id.',
-        array('@nid' => $nid)));
-    }
-
-    // Sanitize RPC throttle
-    $form_state['values']['g2_rpc_throttle'] = (int) $form_state['values']['g2_rpc_throttle'];
-
-    // Make sure tooltips are not enabled for remote glossaries
-    if ($form_state['values'][G2\VARTOOLTIPS] && $form_state['values'][G2\VARREMOTEG2] != G2\DEFREMOTENO) {
-      form_set_error(G2\VARTOOLTIPS, t('Tooltips are only available on local glossaries'));
-    }
-  }
-
   /**
    * Implements hook_block_configure().
    */
@@ -1825,11 +1929,7 @@ namespace {
   /**
    * Implements hook_form().
    *
-   * TODO use fields for teaser/body, not custom properties
-   *
-   * @param $node object
-   * @param $form_state array
-   * @return array
+   * XXX 20110122 use fields for expansion/period/editor info, not custom properties.
    */
   function g2_form(&$node, $form_state) {
 
@@ -1953,10 +2053,9 @@ namespace {
   /**
    * Implements hook_insert().
    *
-   * XXX: New feature to add: make extra node info revision-aware
+   * XXX New feature to add: make extra node info revision-aware
    */
   function g2_insert($node) {
-    // dsm($node, __FUNCTION__);
     drupal_write_record('g2_node', $node);
   }
 
@@ -1972,6 +2071,7 @@ namespace {
     $result = $q->fields('gn')
       ->condition('gn.nid', array_keys($nodes), 'IN')
       ->execute();
+
     foreach ($result as $row) {
       foreach ($row as $property => $col) {
         $nodes[$row->nid]->$property = $col;
@@ -1989,7 +2089,7 @@ namespace {
       'title' => 'G2 glossary',
       'description' => 'Define the various parameters used by the G2 module',
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('g2_admin_settings'),
+      'page arguments' => array('g2\admin_settings'),
       'access arguments' => array('administer site configuration'),
     );
 
@@ -2009,7 +2109,7 @@ namespace {
 
     $items[G2\PATHENTRIES . '/%g2_title'] = array(
       'title' => G2\TITLEENTRIES,
-      'page callback' => 'g2_page_entries',
+      'page callback' => 'g2\page_entries',
       'page arguments' => array(2),
       'access arguments' => array(G2\PERMVIEW),
       'type' => MENU_CALLBACK,
@@ -2038,7 +2138,7 @@ namespace {
     // Offers to clear referers for all entries
     $items['g2/wipe'] = array(
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('g2_referer_wipe_confirm_form'),
+      'page arguments' => array('G2\referer_wipe_confirm_form'),
       'access arguments' => array(G2\PERMADMIN),
       'type' => MENU_CALLBACK,
     );
@@ -2046,7 +2146,7 @@ namespace {
     // Offers to clear referers for a given entry
     $items['g2/wipe/%g2_nid'] = array(
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('g2_referer_wipe_confirm_form', 2),
+      'page arguments' => array('G2\referer_wipe_confirm_form', 2),
       'access arguments' => array(G2\PERMADMIN),
       'type' => MENU_CALLBACK,
     );
@@ -2140,21 +2240,6 @@ namespace {
   }
 
   /**
-   * Page callback for G2\PATHENTRIES/%g2_entry
-   *
-   * TODO convert to render array format.
-   *
-   * @param array $nodes
-   *
-   * @return string
-   */
-  function g2_page_entries($nodes) {
-
-    $ret = theme('g2_entries', array('entries' => $nodes));
-    return $ret;
-  }
-
-  /**
    * Implements hook_permission().
    */
   function g2_permission() {
@@ -2173,75 +2258,18 @@ namespace {
   }
 
   /**
-   * If the "wipe referers" button has been chosen, ask for confirmation.
-   *
-   * @param string $form_id
-   * @param array $form
-   * @return void
-   */
-  function g2_referer_wipe_button_submit($form, &$form_state) {
-    drupal_goto('g2/wipe');
-  }
-
-  /**
-   * Form builder for the referer wipe confirmation request form.
-   *
-   * This is the same form for both global wipe and individual node wipe.
-   *
-   * @param $form_state
-   * @param $node
-   *
-   * @return array
-   */
-  function g2_referer_wipe_confirm_form($form, &$form_state, $node = NULL) {
-    if (is_object($node) && isset($node->nid)) {
-      $question = t('Are you sure to want to erase the referer information on this G2 entry ?');
-      // TODO 20110122 entity_uri() or not ?
-      $cancel = 'node/' . $node->nid . '/referers';
-      $form['node'] = array(
-        '#prefix' => '<p><em>',
-        '#value' => check_plain($node->title),
-        '#suffix' => '</em></p>',
-      );
-    }
-    else {
-      $question = t('Are you sure to want to erase the referer information on all G2 entries ?');
-      $cancel = G2\PATHSETTINGS;
-    }
-
-    $ret = confirm_form($form,
-      $question,
-      $cancel,
-      t('This action cannot be undone.'),
-      t('Confirm'),
-      t('Cancel')
-    );
-    return $ret;
-  }
-
-  /**
-   * Submit handler for referer wipe confirmation.
-   */
-  function g2_referer_wipe_confirm_form_submit($form, &$form_state) {
-    G2\referer_wipe();
-    drupal_set_message(t('Referer information has been erased on all G2 entries'));
-    $form_state['redirect'] = G2\PATHSETTINGS;
-    return;
-  }
-
-  /**
    * Implements hook_theme().
    */
   function g2_theme() {
     $ret = array(
-      'g2_alphabar' => array('variables' => array('alphabar' => array(), 'rowlen' => 0)),
+      'g2_alphabar'  => array('variables' => array('alphabar' => array(), 'rowlen' => 0)),
       'g2_node_list' => array('variables' => array('nodes' => array())),
-      'g2_random' => array('variables' => array('node' => NULL)),
-      'g2_wotd' => array('variables' => array('node' => NULL)),
-      'g2_entries' => array('variables' => array('entry' => '')),
-      'g2_initial' => array('variables' => array('initial' => NULL)),
-      'g2_main' => array('variables' => array()),
-      'g2_field' => array('variables' => array(
+      'g2_random'    => array('variables' => array('node' => NULL)),
+      'g2_wotd'      => array('variables' => array('node' => NULL)),
+      'g2_entries'   => array('variables' => array('entry' => '')),
+      'g2_initial'   => array('variables' => array('initial' => NULL)),
+      'g2_main'      => array('variables' => array()),
+      'g2_field'     => array('variables' => array(
           'title' => '',
           'name' => '',
           'expansion' => '',
@@ -2259,25 +2287,28 @@ namespace {
    * @return object
    */
   function g2_title_load($title) {
+    static $hits = array();
+
     $min_status = user_access('administer nodes')
       ? NODE_NOT_PUBLISHED
       : NODE_PUBLISHED;
 
-    $q = db_select('node', 'n');
-    $q->fields('n', array('nid'))
-      ->condition('n.type', G2\NODETYPE)
-      ->condition('n.status', $min_status, '>=')
-      ->condition('n.title', $title . '%', 'LIKE')
-      ->addTag('node_access');
-    // dsm($q->__toString());
-    $result = $q->execute();
-    $nids = array();
-    foreach ($result as $row) {
-      $nids[] = $row->nid;
+    if (!isset($hits['title'])) {
+      $q = db_select('node', 'n');
+      $q->fields('n', array('nid'))
+        ->condition('n.type', G2\NODETYPE)
+        ->condition('n.status', $min_status, '>=')
+        ->condition('n.title', $title . '%', 'LIKE')
+        ->addTag('node_access');
+      // dsm($q->__toString());
+      $result = $q->execute();
+      $nids = array();
+      foreach ($result as $row) {
+        $nids[] = $row->nid;
+      }
+      $hits['title'] = node_load_multiple($nids);
     }
-    $nodes = node_load_multiple($nids);
-    // dsm($nodes);
-    return $nodes;
+    return $hits['title'];
   }
 
   /**
@@ -2347,6 +2378,11 @@ namespace {
       unset($initial);
       drupal_set_breadcrumb($bc);
       G2\override_site_name();
+
+      // Only log referrers on full page views
+      if (variable_get(G2\VARLOGREFERRERS, G2\DEFLOGREFERRERS)) {
+        G2\log_referrers($node);
+      }
     }
 
   //  // Build more link, apply input format, including sanitizing.
@@ -2461,7 +2497,7 @@ namespace {
    * Note that we query and use n.title instead of using $entry2
    * in the results to obtain mixed case results when they exist.
    *
-   * FIXME handle taxonomy properly, likely by just ignoring it and relying on the view mode
+   * TODO 20110122 handle taxonomy properly, likely by just ignoring it and relying on the view mode
    *
    * @return string
    */
@@ -2606,7 +2642,7 @@ EOT;
    * to serve as the main page for the G2 glossary. If no node
    * is set, just return an alphabar.
    *
-   * TODO port the D5 feature allowing a function name instead of a node.
+   * XXX Port the D5 feature allowing a function name instead of a node.
    * XXX Find a better way to build that page
    *
    * The node is supposed to be an unpublished node, to avoid its
@@ -2685,10 +2721,9 @@ EOT;
     $node = $variables['node'];
     $uri = entity_uri('node', $node);
     $ret = l($node->title, $uri['path'], $uri['options']);
-    // FIXME $node->teaser is no longer a given in D7
-    if (!empty($node->teaser)) {
+    if (!empty($node->expansion)) {
       // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
-      $ret .= t(': @teaser', array('@teaser' => $node->teaser));
+      $ret .= t(': @expansion', array('@expansion' => $node->expansion));
     }
     // No longer hard coded: use a view_mode instead
     // $ret .= G2\entry_terms($node); // No need to test: also works on missing taxonomy
