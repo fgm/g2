@@ -1696,7 +1696,7 @@ namespace {
 
         $form['wotd_feed'] = array(
           '#type' => 'fieldset',
-          '#title' => 'RSS Feed',
+          '#title' => t('RSS Feed'),
         );
         $form['wotd_feed'][G2\VARWOTDFEEDLINK] = array(
           '#type' => 'checkbox',
@@ -1991,7 +1991,7 @@ namespace {
 
     $form['content'] = array(
       '#type' => 'fieldset',
-      '#title' => 'Contents',
+      '#title' => t('Contents'),
       '#collapsible' => TRUE,
       '#collapsed' => FALSE,
       '#weight' => -10,
@@ -2024,10 +2024,10 @@ namespace {
     // Hide published-only secondary information in a vertical tab
     $form['publishing'] = array(
       '#type' => 'fieldset',
-      '#title' => 'Editor-only information',
+      '#title' => t('Editor-only information'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-      '#description' => 'Information in this box is not published in view mode, only during node edition.',
+      '#description' => t('Information in this box is not published in view mode, only during node edition.'),
       '#group' => 'additional_settings',
       '#weight' => -5,
       '#access' => $admin,
