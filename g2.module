@@ -511,7 +511,7 @@ namespace g2 {
       '#type' => 'checkbox',
       '#title' => t('Enable tooltips on definitions'),
       '#default_value' => variable_get(VARTOOLTIPS, DEFTOOLTIPS),
-      '#description' => t('Set the title attribute on definition links to the teaser of the target definition, if only one exists, or to the number of definitions, if several exist. This mechanism is only enabled on non-remote glossaries, and cause one additional query per definition link on pages where containg them.'),
+      '#description' => t('Set the title attribute on definition links to the teaser of the target definition, if only one exists, or to the number of definitions, if several exist. This mechanism is only enabled on non-remote glossaries, and may cause one additional DB query per definition link on pages containg them.'),
     );
 
     $form['automation'] = array(
@@ -772,6 +772,39 @@ namespace g2 {
     exit();
   }
 
+  function block_cache_decode($mode) {
+    if ($mode == -1) {
+      $ret = 'NO_CACHE';
+    }
+    elseif ($mode == -2) {
+      $ret = 'CACHE_CUSTOM';
+    }
+    elseif ($mode < 0) {
+      $ret = t('Inconsistent caching mode @mode', array('@mode' => sprintf('%04x', $mode)));
+    }
+    else {
+      $ret = array();
+      $bits = array(
+        DRUPAL_CACHE_PER_ROLE => 'CACHE_PER_ROLE',
+        DRUPAL_CACHE_PER_USER => 'CACHE_PER_USER',
+        DRUPAL_CACHE_PER_PAGE => 'CACHE_PER_PAGE',
+        DRUPAL_CACHE_GLOBAL => 'DRUPAL_CACHE_GLOBAL',
+      );
+      $remainder = $mode;
+      foreach ($bits as $bit => $name) {
+        if ($mode & $bit) {
+          $ret[] = $name;
+          $remainder &= !$bit;
+        }
+      }
+      if ($remainder) {
+        $ret[] = t('Extra bits: @bits', array('@bits' => sprintf('0x%04x', $remainder)));
+      }
+      $ret = empty($ret) ? t('Inconsistent: 0x0000') : implode(' | ', $ret);
+    };
+    return $ret;
+  }
+
   /**
    * Prepare callback for filter_g2().
    *
@@ -796,7 +829,11 @@ namespace g2 {
    * @return string HTML
    */
   function filter_process_callback($entry) {
-    static $hits = array(); // Loop detection
+    // Loop detection. Not using drupal_static() "if a function's static
+    // variable does not depend on any information outside of the function that
+    // might change during a single page request, then it's ok to use the
+    // "static" keyword instead of the drupal_static() function.
+    static $hits = array();
 
     $entry = $entry[1]; // [0] is the original string
     $target = variable_get(VARREMOTEG2, DEFREMOTEG2);
@@ -1551,6 +1588,11 @@ namespace {
       '5' => '5',
       '10' => '10',
     );
+    $info = g2_block_info();
+    $info = $info[$delta];
+    $form['caching'] = array(
+      '#markup' => t('<p>Caching mode: @mode</p>', array('@mode' => G2\block_cache_decode($info['cache']))),
+    );
 
     switch ($delta) {
       case G2\DELTAALPHABAR:
@@ -2287,13 +2329,17 @@ namespace {
    * @return object
    */
   function g2_title_load($title) {
+    // Loop detection. Not using drupal_static() "if a function's static
+    // variable does not depend on any information outside of the function that
+    // might change during a single page request, then it's ok to use the
+    // "static" keyword instead of the drupal_static() function.
     static $hits = array();
 
     $min_status = user_access('administer nodes')
       ? NODE_NOT_PUBLISHED
       : NODE_PUBLISHED;
 
-    if (!isset($hits['title'])) {
+    if (!isset($hits[$title])) {
       $q = db_select('node', 'n');
       $q->fields('n', array('nid'))
         ->condition('n.type', G2\NODETYPE)
@@ -2306,9 +2352,9 @@ namespace {
       foreach ($result as $row) {
         $nids[] = $row->nid;
       }
-      $hits['title'] = node_load_multiple($nids);
+      $hits[$title] = node_load_multiple($nids);
     }
-    return $hits['title'];
+    return $hits[$title];
   }
 
   /**
