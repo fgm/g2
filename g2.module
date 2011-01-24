@@ -491,7 +491,12 @@ namespace g2 {
       '#type' => 'textfield',
       '#title' => t('Node used for the main page of G2 on this site'),
       '#default_value' => variable_get(VARMAIN, 0),
-      '#description' => t('<p>When themeing for G2 is supplied by a non-G2-aware theme, the <code>theme_g2_main</code> function will use this node as the main page for the G2 glossary, wrapped between alphabars. This node will typically be an unpublished page or story node. G2-aware themes can provide their own home page, using this page as a basis, or not.</p>'),
+      '#description' => t('<p>This value can be a string or an integer.</p>
+<ul>
+  <li>If it is a string, it has to be the name of a function returning a render array.</li>
+  <li>If it is a node number, the node will be used in full view to build the page.</li>
+  </ul>
+<p>The default g2_main template will build the the page as a basis, wrapping it between alphabars.</p>'),
     );
     $form['main'][VARPATHMAIN] = array(
       '#type' => 'textfield',
@@ -890,7 +895,7 @@ namespace g2 {
    * @link http://drupal.org/node/267484 @endlink
    * @link http://drupal.org/node/209715 @endlink
    */
-  function filter_process($text, $filter, $format) {
+  function filter_process($text, $filter, $format, $langcode, $cache, $cache_id) {
     $text = preg_replace_callback('@\[g2-dfn\](.+?)\[/g2-dfn\]@s', 'G2\filter_process_callback', $text);
     return $text;
   }
@@ -1079,6 +1084,59 @@ namespace g2 {
   function page_entries($nodes) {
 
     $ret = theme('g2_entries', array('entries' => $nodes));
+    return $ret;
+  }
+
+  /**
+   * Page callback for G2 main page.
+   *
+   * Build the main G2 page, using an unpublished node and the alphabar.
+   *
+   * Return a simple nodepage built with alphabars wrapping a node
+   * to serve as the main page for the G2 glossary. If no node
+   * is set, just return an alphabar.
+   *
+   * XXX Port the D5 feature allowing a function name instead of a node.
+   * XXX Find a better way to build that page
+   *
+   * The node is supposed to be an unpublished node, to avoid its
+   * appearing in normal situations, and it will be used as if it was
+   * published by this function.
+   *
+   * @return array Render array for page.
+   */
+  function page_main() {
+    // rowlen == 2 << 16 so that only an extremely long alphabar would wrap
+    $alphabar = theme('g2_alphabar', array(
+      'alphabar' => alphabar(),
+      'rowlen' => 2 << 16,
+    ));
+
+    $generator = variable_get(VARMAIN, DEFMAIN);
+    if (is_numeric($generator)) {
+      $node = node_load($generator);
+      if (is_object($node)) {
+        drupal_set_title($node->title);
+        override_site_name();
+        if (!empty($node->body)) {
+          $node->status = NODE_PUBLISHED; // Simulate publishing
+          $node->title = NULL;
+          $text = theme('node', node_view($node)); // Coder false positive: http://drupal.org/node/224333#node_view
+        }
+      }
+    }
+    elseif (is_string($generator) && function_exists($generator)) {
+      $text = $generator();
+    }
+    else {
+      $text = '';
+    }
+
+    $ret = array(
+      '#theme'    => 'g2_main',
+      '#alphabar' => $alphabar,
+      '#text'     => $text,
+    );
     return $ret;
   }
 
@@ -2164,8 +2222,7 @@ namespace {
      */
     $items[variable_get(G2\VARPATHMAIN, G2\DEFPATHMAIN)] = array(
       'title' => G2\TITLEMAIN,
-      'page callback' => 'theme',
-      'page arguments' => array('g2_main'),
+      'page callback' => 'g2\page_main',
       'access arguments' => array(G2\PERMVIEW),
       'type' => MENU_NORMAL_ITEM,
     );
@@ -2302,7 +2359,14 @@ namespace {
   /**
    * Implements hook_theme().
    */
-  function g2_theme() {
+  function g2_theme($existing, $type, $theme, $path) {
+    $path = drupal_get_path('module', 'g2');
+    include_once $path . '/theme/theme.inc';
+    $base = array(
+      'file' => 'theme.inc',
+      'path' => $path . '/theme',
+    );
+
     $ret = array(
       'g2_alphabar'  => array('variables' => array('alphabar' => array(), 'rowlen' => 0)),
       'g2_node_list' => array('variables' => array('nodes' => array())),
@@ -2310,12 +2374,19 @@ namespace {
       'g2_wotd'      => array('variables' => array('node' => NULL)),
       'g2_entries'   => array('variables' => array('entry' => '')),
       'g2_initial'   => array('variables' => array('initial' => NULL)),
-      'g2_main'      => array('variables' => array()),
-      'g2_field'     => array('variables' => array(
-          'title' => '',
-          'name' => '',
-          'expansion' => '',
-        )),
+      'g2_main'      => $base + array(
+        'template'     => 'g2_main',
+        'variables'    => array(
+          'alphabar'     => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+          'text'         => '',
+        ),
+      ),
+      'g2_field'     => array(
+        'variables'    => array(
+          'expansion'    => '',
+          'name'         => '',
+          'title'        => '',
+      )),
     );
     return $ret;
   }
@@ -2678,55 +2749,6 @@ EOT;
     // We are not using t(), because this is NOT translatable content.
     drupal_set_title(filter_xss(strtr(G2\TITLEINITIAL, array('%initial' => $initial)))); // coder false positive: filter_xss'ed
     $ret = G2\initial($initial);
-    return $ret;
-  }
-
-  /**
-   * Theme the main G2 page, using an unpublished node and the alphabar.
-   *
-   * Return a simple nodepage built with alphabars wrapping a node
-   * to serve as the main page for the G2 glossary. If no node
-   * is set, just return an alphabar.
-   *
-   * XXX Port the D5 feature allowing a function name instead of a node.
-   * XXX Find a better way to build that page
-   *
-   * The node is supposed to be an unpublished node, to avoid its
-   * appearing in normal situations, and it will be used as if it was
-   * published by this function.
-   *
-   * @see G2\main()
-   *
-   * @return string HTML
-   */
-  function theme_g2_main() {
-    // rowlen == 2 << 16 so that only an extremely long alphabar would wrap
-    $alphabar = theme('g2_alphabar', array(
-      'alphabar' => G2\alphabar(),
-      'rowlen' => 2 << 16,
-    ));
-
-    $node = node_load(variable_get(G2\VARMAIN, G2\DEFMAIN));
-    if (is_object($node)) {
-      drupal_set_title($node->title);
-      if (!empty($node->body)) {
-        $node->status = NODE_PUBLISHED; // Simulate publishing
-      }
-      $ret = node_view($node); // Coder false positive: http://drupal.org/node/224333#node_view
-      if (!empty($ret['body'])) {
-        $weight = isset($ret['body']['#weight']) ? $ret['body']['#weight'] : 0;
-        $ret['alphatop'] = array('#markup' => $alphabar, '#weight' => $weight - 1);
-        $ret['alphabot'] = array('#markup' => $alphabar, '#weight' => $weight + 1);
-      }
-      else {
-        $ret['alphabar'] = array('#markup' => $alphabar);
-      }
-      G2\override_site_name();
-    }
-    else {
-      $ret = $alphabar;
-    }
-
     return $ret;
   }
 
