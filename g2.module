@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * @file
  * This defines a node-based glossary module, as opposed to the term-based

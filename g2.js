@@ -1,4 +1,3 @@
-// $Id$
 /**
  * @file
  * Vertical tabs UI support for g2.module

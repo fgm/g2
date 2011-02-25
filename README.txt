@@ -3,7 +3,6 @@ Glossary2 (G2)
 -----------------------------------------------------------------------------
  (c) 2005-2011 Frederic G. MARAND
  Licensed under the CeCILL version 2 and General Public License version 2 and later
- $Id$
 =============================================================================
 0. Table of contents
 --------------------

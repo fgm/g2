@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * @file
  * Template for G2 main page.
