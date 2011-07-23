@@ -203,6 +203,7 @@ function g2_uninstall() {
   array_walk($variables, 'variable_del');
   drupal_set_message(st('Removed G2 Glossary variables'), 'status');
 
+  module_load_include('module', 'g2');
   node_type_delete(G2\NODETYPE);
 }
 
