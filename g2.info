@@ -26,10 +26,7 @@ core = 7.x
 php = 5.3
 configure = admin/config/content/g2
 
-files[] = g2.install
-files[] = g2.module
 files[] = tests/access.test
-files[] = views/g2.views.inc
 
 ; G2 is expected to be a major feature on sites where it is present, hence
 ; its content will be present on most pages, and it makes sense to aggregate 
