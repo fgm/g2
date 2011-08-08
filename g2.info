@@ -26,6 +26,8 @@ core = 7.x
 php = 5.3
 configure = admin/config/content/g2
 
+dependencies[] = context
+
 files[] = tests/access.test
 
 ; G2 is expected to be a major feature on sites where it is present, hence

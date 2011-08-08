@@ -34,6 +34,7 @@ namespace g2 {
    * Default value of the G2 alphabar
    */
   const DEFALPHABAR = '0123456789abcdefghijklmnopqrstuvwxyz';
+  //define('g2\DEFALPHABAR',          '0123456789abcdefghijklmnopqrstuvwxyz');
 
   /**
    * Default length of an alphabar row
@@ -465,6 +466,11 @@ namespace g2 {
    * @return array
    */
   function admin_settings($form, &$form_state) {
+    // Activate context
+    if ($plugin = context_get_plugin('condition', 'g2')) {
+      $plugin->execute('g2_admin');
+    }
+
     $form['main'] = array(
       '#type' => 'fieldset',
       '#title' => t('Main page'),
@@ -1065,6 +1071,11 @@ namespace g2 {
    * @return string
    */
   function page_entries($nodes) {
+    // Activate context
+    if ($plugin = context_get_plugin('condition', 'g2')) {
+      $plugin->execute('g2_user');
+    }
+
     $ret = theme('g2_entries', array('entries' => $nodes));
     return $ret;
   }
@@ -1088,6 +1099,11 @@ namespace g2 {
    * @return array Render array for page.
    */
   function page_main() {
+    // Activate context
+    if ($plugin = context_get_plugin('condition', 'g2')) {
+      $plugin->execute('g2_user');
+    }
+
     // rowlen == 2 << 16 so that only an extremely long alphabar would wrap
     $alphabar = theme('g2_alphabar', array(
       'alphabar' => alphabar(),
@@ -1197,6 +1213,11 @@ namespace g2 {
    * @return string HTML
    */
   function referer_links($form, $form_state, $node) {
+    // Activate context
+    if ($plugin = context_get_plugin('condition', 'g2')) {
+      $plugin->execute('g2_admin');
+    }
+
     // Build list of referers
     $nid = $node->nid;
 
@@ -1343,6 +1364,11 @@ namespace g2 {
    * @return array
    */
   function referer_wipe_confirm_form($form, &$form_state, $node = NULL) {
+    // Activate context
+    if ($plugin = context_get_plugin('condition', 'g2')) {
+      $plugin->execute('g2_admin');
+    }
+
     if (is_object($node) && isset($node->nid)) {
       $question = t('Erase referer information from %title ?', array(
         '%title' => $node->title,
@@ -1908,6 +1934,25 @@ namespace {
   }
 
   /**
+   * Implements hook_context_plugins().
+   *
+   * This is a ctools plugins hook.
+   */
+  function g2_context_plugins() {
+    module_load_include('inc', 'g2', 'context/g2.plugins');
+    return _g2_context_plugins();
+  }
+
+
+  /**
+   * Implements hook_context_registry().
+   */
+  function g2_context_registry() {
+    module_load_include('inc', 'g2', 'context/g2.plugins');
+    return _g2_context_registry();
+  }
+
+  /**
    * Implements hook_cron().
    *
    * In G2's case, change the WOTD once a day if this feature is enabled,
@@ -1924,6 +1969,25 @@ namespace {
         variable_set(g2\VARWOTDDATE,  mktime());
       }
     }
+  }
+
+  /**
+   * Implements hook_ctools_plugin_api().
+   */
+  function g2_ctools_plugin_api($module, $api) {
+    if ($module == 'context' && $api == 'context') {
+      $ret = array(
+        'version' => 3,
+        'path' => drupal_get_path('module', 'g2') . '/context',
+        // Not until http://drupal.org/node/1242632 is fixed
+        // 'file' => 'g2.context_defaults.inc',
+      );
+    }
+    else {
+      $ret = NULL;
+    }
+
+    return $ret;
   }
 
   /**
@@ -2201,7 +2265,7 @@ namespace {
     );
 
     $items[g2\PATHENTRIES . '/%g2_title'] = array(
-      'title' => t('G2 entries by name'),
+      'title' => 'G2 entries by name',
       'page callback' => 'g2\page_entries',
       'page arguments' => array(2),
       'access arguments' => array(g2\PERMVIEW),
@@ -2350,6 +2414,17 @@ namespace {
   }
 
   /**
+   * Implements hook_preprocess_page().
+   *
+   * - introduce G2 page template suggestion when page is in a G2 context
+   */
+  function g2_preprocess_page(&$vars) {
+    if ($plugin = context_get_plugin('reaction', 'g2_template')) {
+      $plugin->execute($vars);
+    }
+  }
+
+  /**
    * Implements hook_theme().
    */
   function g2_theme($existing, $type, $theme, $path) {
@@ -2492,6 +2567,11 @@ namespace {
       // Only log referrers on full page views
       if (variable_get(g2\VARLOGREFERRERS, g2\DEFLOGREFERRERS)) {
         g2\log_referrers($node);
+      }
+
+      // Activate context
+      if ($plugin = context_get_plugin('condition', 'g2')) {
+        $plugin->execute('g2_node');
       }
     }
 
@@ -2737,6 +2817,11 @@ EOT;
    * @return string HTML
    */
   function theme_g2_initial($variables) {
+    // Activate context
+    if ($plugin = context_get_plugin('condition', 'g2')) {
+      $plugin->execute('g2_user');
+    }
+
     $initial = $variables['initial'];
     $initial = filter_xss($initial);
     // We are not using t(), because this is NOT translatable content.
