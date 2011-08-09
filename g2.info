@@ -29,6 +29,7 @@ configure = admin/config/content/g2
 dependencies[] = context
 
 files[] = tests/access.test
+files[] = tests/issues.test
 
 ; G2 is expected to be a major feature on sites where it is present, hence
 ; its content will be present on most pages, and it makes sense to aggregate 

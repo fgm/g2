@@ -1057,7 +1057,7 @@ namespace g2 {
     if (variable_get(VARPAGETITLE, $default_page_title)) {
       global $conf;
       $conf['site_name'] = strtr(variable_get(VARPAGETITLE, $default_page_title),
-        array('@title' => $conf['site_name']));
+        array('@title' => isset($conf['site_name']) ? $conf['site_name'] : ''));
     }
   }
 
@@ -1121,6 +1121,9 @@ namespace g2 {
           $node->title = NULL;
           $text = theme('node', node_view($node)); // Coder false positive: http://drupal.org/node/224333#node_view
         }
+      }
+      else {
+        $text = ''; // Node not found
       }
     }
     elseif (is_string($generator) && function_exists($generator)) {
@@ -2712,12 +2715,11 @@ namespace {
           $ret = t('<p>There are currently no entries for %entry.</p>',
             array('%entry' => $entry));
           if (node_access('create', g2\NODETYPE)) {
-            $ret .= t('<p>Would you like to <a href="!url" title="Create new entry for %entry">create</a> one ?</p>',
+            $ret .= t('<p>Would you like to <a href="!url" title="Create new entry for @entry">create</a> one ?</p>',
               array(
               '!url' => url(str_replace('_', '-', g2\PATHNODEADD) . '/' . $entry),
-              '%entry' => $entry,
-            )
-            );
+              '@entry' => strip_tags($entry),
+            ));
           }
           break;
 
