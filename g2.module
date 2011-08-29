@@ -1121,6 +1121,9 @@ namespace g2 {
           $node->title = NULL;
           $text = theme('node', node_view($node)); // Coder false positive: http://drupal.org/node/224333#node_view
         }
+        else {
+          $text = ''; // Empty or missing body field
+        }
       }
       else {
         $text = ''; // Node not found
