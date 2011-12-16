@@ -20,10 +20,13 @@ name = "G2 glossary"
 description = "Manage a node-based glossary"
 dependencies[] = taxonomy
 package = Content
+
 core = 7.x
+
 ; closures and namespaces require 5.3
-; see g2\* constants and _g2_stats() 
+; see G2 namespace and _g2_stats() 
 php = 5.3
+
 configure = admin/config/content/g2
 
 dependencies[] = context

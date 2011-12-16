@@ -4,9 +4,10 @@
  * This defines a node-based glossary module, as opposed to the term-based
  * glossary.module
  *
- * @copyright Copyright (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet, OSI)
+ * (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet)
  *
- * @license Licensed under the CeCILL, version 2 and General Public License version 2 or later
+ * Licensed under the CeCILL version 2 and General Public License version 2 or
+ * later
  *
  * License note: G2 is distributed by OSInet to its customers under the
  * CeCILL 2.0 license. OSInet support services only apply to the module
@@ -90,11 +91,8 @@ function g2_block_configure($delta) {
       break;
 
     case G2\DELTAWOTD:
-      /**
-       * Convert nid to "title [<nid>]" even if missing.
-       *
-       * @see autocomplete()
-       */
+      // Convert nid to "title [<nid>]" even if missing.
+      // @see autocomplete()
       $nid = variable_get(G2\VARWOTDENTRY, G2\DEFWOTDENTRY);
       $node = node_load($nid);
       if (empty($node)) {
@@ -214,11 +212,16 @@ function g2_block_info() {
   $blocks[G2\DELTAWOTD    ]['info'] = variable_get('g2_wotd_info',     t('G2 Word of the day'));
   $blocks[G2\DELTALATEST  ]['info'] = variable_get('g2_latest_info',   t('G2 Latest'));
 
-  $blocks[G2\DELTAALPHABAR]['cache'] = DRUPAL_CACHE_PER_ROLE; // Not all roles have g2 view permission
-  $blocks[G2\DELTARANDOM  ]['cache'] = DRUPAL_NO_CACHE;       // Else it couldn't be random
-  $blocks[G2\DELTATOP     ]['cache'] = DRUPAL_CACHE_PER_ROLE; // Can contain unpublished nodes
-  $blocks[G2\DELTAWOTD    ]['cache'] = DRUPAL_CACHE_PER_ROLE; // Not all roles have g2 view permission
-  $blocks[G2\DELTALATEST  ]['cache'] = DRUPAL_CACHE_PER_ROLE; // Can contain unpublished nodes
+  // Not all roles have g2 view permission.
+  $blocks[G2\DELTAALPHABAR]['cache'] = DRUPAL_CACHE_PER_ROLE;
+  // Else it couldn't be random.
+  $blocks[G2\DELTARANDOM  ]['cache'] = DRUPAL_NO_CACHE;
+  // Can contain unpublished nodes.
+  $blocks[G2\DELTATOP     ]['cache'] = DRUPAL_CACHE_PER_ROLE;
+  // Not all roles have g2 view permission.
+  $blocks[G2\DELTAWOTD    ]['cache'] = DRUPAL_CACHE_PER_ROLE;
+  // Can contain unpublished nodes.
+  $blocks[G2\DELTALATEST  ]['cache'] = DRUPAL_CACHE_PER_ROLE;
   return $blocks;
 }
 
@@ -242,7 +245,7 @@ function g2_block_save($delta, $edit) {
       break;
 
     case G2\DELTAWOTD:
-      // Convert "some title [<nid>, sticky]" to nid
+      // Convert "some title [<nid>, sticky]" to nid.
       $entry = $edit[G2\VARWOTDENTRY];
       $matches = array();
       $count = preg_match('/.*\[(\d*).*\]$/', $entry, $matches);
@@ -264,7 +267,7 @@ function g2_block_save($delta, $edit) {
       variable_set(G2\VARLATESTITEMCOUNT, $edit[G2\VARLATESTITEMCOUNT]);
       break;
 
-  default:
+    default:
       break;
   }
 }
@@ -345,7 +348,8 @@ function g2_cron() {
     $date1 = date('z');
     if ($date1 <> $date0) {
       $random = G2\random();
-      // watchdog("g2_cron", "d0 = $date0, d1 = $date1, random : " . print_r($random,TRUE) . "</pre>", NULL, WATCHDOG_INFO);
+      // watchdog("g2_cron", "d0 = $date0, d1 = $date1, random : "
+      // . print_r($random,TRUE) . "</pre>", NULL, WATCHDOG_INFO);
       variable_set(G2\VARWOTDENTRY, $random->nid);
       variable_set(G2\VARWOTDDATE,  mktime());
     }
@@ -459,7 +463,7 @@ function g2_filter_info() {
 /**
  * Implements hook_form().
  *
- * XXX 20110122 use fields for expansion/period/editor info, not custom properties.
+ * XXX 20110122 use fields, not properties for expansion/period/editor info.
  */
 function g2_form(&$node, $form_state) {
 
@@ -469,7 +473,7 @@ function g2_form(&$node, $form_state) {
 
   $type = node_type_get_type($node);
 
-  // Pre-fill title information on URL-based node creation
+  // Pre-fill title information on URL-based node creation.
   if (!isset($node->title)) {
     $node->title = check_plain(drupal_substr($_GET['q'],
       drupal_strlen(G2\PATHNODEADD) + 1));
@@ -509,7 +513,7 @@ function g2_form(&$node, $form_state) {
     '#default_value' => isset($node->period) ? $node->period : NULL,
   );
 
-  // Hide published-only secondary information in a vertical tab
+  // Hide published-only secondary information in a vertical tab.
   $form['publishing'] = array(
     '#type' => 'fieldset',
     '#title' => t('Editor-only information'),
@@ -551,7 +555,8 @@ function g2_form(&$node, $form_state) {
 function g2_help($path, $arg) {
   $ret = '';
   switch ($path) {
-    case 'admin/help#g2': // works in D6
+    // Works in D6.
+    case 'admin/help#g2':
       $ret = t('<p>G2 defines a glossary service for Drupal sites. To compare it with the default Drupal glossary:</p>
            <ul><li>G2 content is node-based, not term-based</li>
              <li>G2 leverages existing code from glossary for input filtering and node marking</li>
@@ -591,7 +596,7 @@ function g2_init() {
 /**
  * Implements hook_insert().
  *
- * XXX New feature to add: make extra node info revision-aware
+ * XXX New feature to add: make extra node info revision-aware.
  */
 function g2_insert($node) {
   drupal_write_record('g2_node', $node);
@@ -600,9 +605,9 @@ function g2_insert($node) {
 /**
  * Implements hook_load().
  *
- * Access control was performed earlier by core: no need to perform it again here.
+ * Access control was performed earlier by core: no need to do it again here.
  *
- * XXX New feature to add: make extra node info revision-aware
+ * XXX New feature to add: make extra node info revision-aware.
  */
 function g2_load($nodes) {
   $q = db_select('g2_node', 'gn');
@@ -631,7 +636,7 @@ function g2_menu() {
     'access arguments' => array('administer site configuration'),
   );
 
-  // AJAX autocomplete callback, so no menu entry
+  // AJAX autocomplete callback, so no menu entry.
   $items[G2\PATHAUTOCOMPLETE] = array(
     'page callback' => 'G2\autocomplete',
     'access arguments' => array(G2\PERMVIEW),
@@ -653,11 +658,9 @@ function g2_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  /**
-   * G2 main page: variable path. This type of semi-dynamic entry needs
-   * special care.
-   * @see g2_admin_settings_submit()
-   */
+  // G2 main page: variable path. This type of semi-dynamic entry needs
+  // special care.
+  // @see g2_admin_settings_submit()
   $items[variable_get(G2\VARPATHMAIN, G2\DEFPATHMAIN)] = array(
     'title' => G2\TITLEMAIN,
     'page callback' => 'G2\page_main',
@@ -672,7 +675,7 @@ function g2_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  // Offers to clear referers for all entries
+  // Offers to clear referers for all entries.
   $items['g2/wipe'] = array(
     'page callback' => 'drupal_get_form',
     'page arguments' => array('G2\referer_wipe_confirm_form'),
@@ -680,7 +683,7 @@ function g2_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  // Offers to clear referers for a given entry
+  // Offers to clear referers for a given entry.
   $items['g2/wipe/%g2_nid'] = array(
     'page callback' => 'drupal_get_form',
     'page arguments' => array('G2\referer_wipe_confirm_form', 2),
@@ -704,10 +707,14 @@ function g2_menu() {
  * Menu loader for g2_node.
  *
  * @param int $us_nid
+ *   Safety with regard to $us_nid is checked within node_load().
+ *
  * @return object|FALSE|NULL
+ *   - loaded object if accessible G2 node
+ *   - NULL if accessible object is not a G2 node
+ *   - FALSE otherwise
  */
 function g2_nid_load($us_nid = 0) {
-  // Safety with regard to $us_nid is checked within node_load()
   $node = node_load($us_nid);
   if ($node->type != G2\NODETYPE) {
     $node = NULL;
@@ -768,7 +775,7 @@ function g2_node_info() {
  * - Do not apply to non-G2 nodes.
  * - Do not apply to non-WOTD feeds.
  */
-function g2_node_view($node, $view_mode = 'rss', $langcode) {
+function g2_node_view($node, $view_mode, $langcode) {
   if ($view_mode == 'rss' && $node->type == G2\NODETYPE && ($_GET['q'] == G2\PATHWOTDFEED)) {
     $node->created = variable_get(G2\VARWOTDDATE, REQUEST_TIME);
     $node->name = filter_xss_admin(strtr(variable_get(G2\VARWOTDFEEDAUTHOR, '@author'),
@@ -845,8 +852,11 @@ function g2_theme($existing, $type, $theme, $path) {
  *
  * Only returns unpublished nodes to users with "administer nodes".
  *
- * @param string$title
+ * @param string $title
+ *   Title loader.
+ *
  * @return object
+ *   Formatted title.
  */
 function g2_title_load($title) {
   // Loop detection. Not using drupal_static() "if a function's static
@@ -929,9 +939,12 @@ function g2_user_view($account, $view_mode, $langcode) {
  * Implements hook_view().
  *
  * @param object $node
+ *   The node for which content is to be built.
  * @param string $view_mode
+ *   The view_mode used to chose what to build.
  *
  * @return object
+ *   The node with updated fields.
  */
 function g2_view($node, $view_mode) {
   $title = check_plain($node->title);
@@ -945,19 +958,21 @@ function g2_view($node, $view_mode) {
     drupal_set_breadcrumb($bc);
     G2\override_site_name();
 
-    // Only log referrers on full page views
+    // Only log referrers on full page views.
     if (variable_get(G2\VARLOGREFERRERS, G2\DEFLOGREFERRERS)) {
       G2\log_referrers($node);
     }
 
-    // Activate context
+    // Activate context.
     if ($plugin = context_get_plugin('condition', 'g2')) {
       $plugin->execute('g2_node');
     }
   }
 
-//  // Build more link, apply input format, including sanitizing.
-//  $node = node_prepare($node, $teaser);
+  /*
+  // Build more link, apply input format, including sanitizing.
+  $node = node_prepare($node, $teaser);
+  */
 
   if (!empty($node->expansion)) {
     $node->content['g2_expansion'] = array(
@@ -1034,8 +1049,11 @@ function g2_xmlrpc() {
 /**
  * Theme an alphabar for g2_block(view, G2\DELTAALPHABAR)
  *
- * @param array $alphabar
- * @return string HTML
+ * @param array $variables
+ *   The available variables for the theme function.
+ *
+ * @return string
+ *   HTML: the formatted alphabar.
  */
 function theme_g2_alphabar($variables) {
   $alphabar = $variables['alphabar'];
@@ -1068,9 +1086,11 @@ function theme_g2_alphabar($variables) {
  * Note that we query and use n.title instead of using $entry2
  * in the results to obtain mixed case results when they exist.
  *
- * TODO 20110122 handle taxonomy properly, likely by just ignoring it and relying on the view mode
+ * TODO 20110122 handle taxonomy properly, likely by just ignoring it and
+ * relying on the view mode
  *
  * @return string
+ *   HTML: the themed "list of entries" page content.
  */
 function theme_g2_entries($variables) {
   $entries = $variables['entries'];
@@ -1078,12 +1098,13 @@ function theme_g2_entries($variables) {
 
   drupal_set_title(t('G2 Entries for %entry', array('%entry' => $entry)), PASS_THROUGH);
 
-  // The nid for the disambiguation page
+  // The nid for the disambiguation page.
   $page_nid = variable_get(G2\VARHOMONYMS, G2\DEFHOMONYMS);
 
   if ($page_nid) {
     $page_node = node_load($page_nid);
-    $ret = node_view($page_node); // Coder false positive: http://drupal.org/node/704010
+    // Coder false positive: http://drupal.org/node/704010 .
+    $ret = node_view($page_node);
   }
   else {
 
@@ -1107,9 +1128,9 @@ function theme_g2_entries($variables) {
         if (variable_get(G2\VARGOTOSINGLE, G2\DEFGOTOSINGLE)) {
           $redirect_type = variable_get(G2\VARHOMONYMSREDIRECT, G2\DEFHOMONYMSREDIRECT);
           drupal_goto($next['path'], $next['options'], $redirect_type);
-          // Never returns
+          // Never returns.
         }
-        // Do not break: we continue with default processing in this case.
+        /* Do not break: we continue with default processing in this case. */
 
       default:
         $vid = variable_get(G2\VARHOMONYMSVID, G2\DEFHOMONYMSVID);
@@ -1133,7 +1154,8 @@ function theme_g2_entries($variables) {
             : NULL;
           $rows[] = t('!link!taxonomy: !teaser!more', array(
             '!link' => l($node->title, $uri['path'], $uri['options']),
-            '!taxonomy' => $taxonomy, // safe by construction
+            // Safe by construction.
+            '!taxonomy' => $taxonomy,
             '!teaser' => $teaser,
             '!more' => theme('more_link', array(
                 'url' => $uri['path'],
@@ -1152,7 +1174,7 @@ function theme_g2_entries($variables) {
           'type' => 'ul',
           'attributes' => array('class' => 'g2-entries'),
         ));
-      // no break; in final default clause
+        /* no break; in final default clause */
     }
     return $ret;
   }
@@ -1169,12 +1191,17 @@ function theme_g2_entries($variables) {
  *   - g2-title: the title for the pseudo-field
  *   - g2-data: the contents of the pseudo-field
  *
- * @return string HTML
+ * @return string
+ *   HTML: the themed pseudo-field.
  */
 function theme_g2_field($variables) {
-  $title = $variables['title']; // Set in code, not by user, so assumed safe.
+  // Set in code, not by user, so assumed safe.
+  $title = $variables['title'];
+
   $name = 'g2-' . $variables['name'];
-  $data = filter_xss($variables['data']); // Set by user, so unsafe
+
+  // Set by user, so unsafe.
+  $data = filter_xss($variables['data']);
 
   $ret = <<<EOT
 <div class="field field-name-body field-type-text-with-summary field-label-above $name">
@@ -1193,19 +1220,24 @@ EOT;
  * This page is less information-rich than the disambiguation page,
  * because it is expected to have much more content.
  *
- * @param string $initial Set from hook_menu
- * @return string HTML
+ * @param string $variables
+ *   Set from hook_menu.
+ *
+ * @return string
+ *   HTML: the themed page content.
  */
 function theme_g2_initial($variables) {
-  // Activate context
+  // Activate context.
   if ($plugin = context_get_plugin('condition', 'g2')) {
     $plugin->execute('g2_user');
   }
 
   $initial = $variables['initial'];
   $initial = filter_xss($initial);
+
   // We are not using t(), because this is NOT translatable content.
-  drupal_set_title(filter_xss(strtr(G2\TITLEINITIAL, array('%initial' => $initial)))); // coder false positive: filter_xss'ed
+  // coder false positive: filter_xss'ed
+  drupal_set_title(filter_xss(strtr(G2\TITLEINITIAL, array('%initial' => $initial))));
   $ret = G2\initial($initial);
   return $ret;
 }
@@ -1216,7 +1248,8 @@ function theme_g2_initial($variables) {
  * Node access control is the responsibility of the caller passing the
  * node list.
  *
- * @return string HTML
+ * @return string
+ *   HTML: the themed entries list.
  */
 function theme_g2_node_list($variables) {
   $nodes = $variables['nodes'];
@@ -1241,21 +1274,25 @@ function theme_g2_node_list($variables) {
  *
  * TODO 20110122: replace with just a node rendered with a specific view_mode
  *
- * @return string HTML
+ * @return string
+ *   HTML: the themed entry.
  */
 function theme_g2_random($variables) {
   $node = $variables['node'];
   $uri = entity_uri('node', $node);
   $ret = l($node->title, $uri['path'], $uri['options']);
   if (!empty($node->expansion)) {
-    // Why t() ? Because varying languages have varying takes on spaces before/after semicolons
+    // Why t() ? Because varying languages have varying takes on spaces before /
+    // after semicolons.
     $ret .= t(': @expansion', array('@expansion' => $node->expansion));
   }
-  // No longer hard coded: use a view_mode instead
-  // $ret .= G2\entry_terms($node); // No need to test: also works on missing taxonomy
+  // No longer hard coded: use a view_mode instead.
+  // No need to test: also works on missing taxonomy
+  // $ret .= G2\entry_terms($node);
   $ret .= theme('more_link', array(
       'url' => $uri['path'],
-      'options' => $uri['options'], // TODO check evolution of http://drupal.org/node/1036190
+      // TODO check evolution of http://drupal.org/node/1036190.
+      'options' => $uri['options'],
       'title' => t('&nbsp;(+)'),
     )
   );
@@ -1267,10 +1304,12 @@ function theme_g2_random($variables) {
  *
  * TODO 20110122: replace with just a node rendered with a specific view_mode
  *
- * @param object $wotd
- *   The node for the word of the day. teaser and body are already
- *   filtered and truncated if needed.
- * @return object title / nid / teaser / [body]
+ * @param object $variables
+ *   The node for the word of the day. teaser and body are already filtered and
+ *   truncated if needed.
+ *
+ * @return object
+ *   title / nid / teaser / [body]
  */
 function theme_g2_wotd($variables) {
   $node = $variables['node'];
@@ -1281,8 +1320,8 @@ function theme_g2_wotd($variables) {
 
   $link = l($node->title, $uri['path'], $uri['options']);
   if (isset($node->expansion) and !empty($node->expansion)) {
-    // teaser already filtered by G2\wotd(), don't filter twice.
-    // TODO 20110122 make sure this is true
+    // Teaser already filtered by G2\wotd(), don't filter twice.
+    // TODO 20110122 make sure this is true.
     $teaser = '<span id="g2_wotd_expansion">' . strip_tags($node->expansion) . '</span>';
     $ret = t('!link: !teaser', array(
       '!link' => $link,
@@ -1295,26 +1334,30 @@ function theme_g2_wotd($variables) {
   }
 
   // No longer needed: use a view_mode instead
-  //    if (!empty($node->body)) {
-//      // already filtered by G2\wotd(), don't filter twice, just strip.
-//      $body = strip_tags($node->body);
-//      if ($node->truncated) {
-//        $body .= '&hellip;';
-//      }
-//      $ret .= '<div id="g2_wotd_body">' . $body . '</div>';
-//    }
+  /*
+      if (!empty($node->body)) {
+      // already filtered by G2\wotd(), don't filter twice, just strip.
+      $body = strip_tags($node->body);
+      if ($node->truncated) {
+        $body .= '&hellip;';
+      }
+      $ret .= '<div id="g2_wotd_body">' . $body . '</div>';
+    }
+  */
 
-  // $ret .= G2\entry_terms($node); // No need to test: it won't change anything if a taxonomy has not been returned
+  // No need to test: it won't change anything unless taxonomy has been returned
+  // $ret .= G2\entry_terms($node);
   $ret .= theme('more_link', array(
       'url' => $uri['path'],
-      'options' => $uri['options'], // TODO check evolution of http://drupal.org/node/1036190
+      // TODO check evolution of http://drupal.org/node/1036190
+      'options' => $uri['options'],
       'title' => t('&nbsp;(+)'),
     )
   );
   if (variable_get(G2\VARWOTDFEEDLINK, G2\DEFWOTDFEEDLINK)) {
     $ret .= theme('feed_icon', array(
       'url' => url(G2\PATHWOTDFEED, array('absolute' => TRUE)),
-      // TODO: find a better title
+      // TODO: find a better title.
       'title' => t('Glossary feed'),
     ));
   }

@@ -1,10 +1,10 @@
 <?php
 /**
  * @file
- * Exported Context combining default G2 condition and reaction for normal users.
+ * Exported Context combining default G2 condition and reaction for users.
  */
 
-$context = new stdClass;
+$context = new stdClass();
 $context->disabled = FALSE; /* Edit this to true to make a default context disabled initially */
 $context->api_version = 3;
 $context->name = 'g2-unprivileged';

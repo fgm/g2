@@ -1,5 +1,4 @@
 #! /usr/bin/env ruby
-# $Id$
 #
 # Example of a non-Drupal (Ruby) XML-RPC client for the 
 # {G2 Glossary module}[http://drupal.org/project/g2]

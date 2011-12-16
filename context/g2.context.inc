@@ -18,8 +18,8 @@ function g2_context_default_contexts() {
   $ret = array();
   foreach ($contexts as $k => $v) {
     if (file_exists(DRUPAL_ROOT . '/' . $k)) {
-      require_once(DRUPAL_ROOT . '/' . $k);
-    $ret[$context->name] = $context;
+      require_once DRUPAL_ROOT . '/' . $k;
+      $ret[$context->name] = $context;
     }
   }
   return $ret;

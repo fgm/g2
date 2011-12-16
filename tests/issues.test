@@ -14,6 +14,9 @@ class G2IssuesTest extends DrupalWebTestCase {
    */
   public $admin;
 
+  /**
+   * Provides test set description.
+   */
   static function getInfo() {
     $ret = array(
       'name'  => t('G2 non-regression tests'),
@@ -23,11 +26,22 @@ class G2IssuesTest extends DrupalWebTestCase {
     return $ret;
   }
 
+  /**
+   * Override DrupalWebTestCase::setUp().
+   */
   public function setUp() {
     parent::setUp('taxonomy', 'g2');
     $this->admin = $this->drupalCreateUser(array(G2\PERMVIEW, G2\PERMADMIN, 'create ' . G2\NODETYPE . ' content'));
   }
 
+  /**
+   * Helper to create a G2-specific input format.
+   *
+   * @param string $format_name
+   *   The name of the format to be created.
+   * @param string $filter_name
+   *   The name of the G2 filter to be included in the format.
+   */
   public function createG2Format($format_name, $filter_name) {
     $g2_format = (object) array(
       'format' => $format_name,
@@ -54,21 +68,24 @@ class G2IssuesTest extends DrupalWebTestCase {
   /**
    * HTML test being generated in the "title" attribute on node auto-creation.
    */
-  public function test1243170_7() {
+  public function test1243170Comment7() {
     variable_set(G2\VARREMOTEG2, '<local>');
     variable_set(G2\VARTOOLTIPS, TRUE);
 
-    $format_name = 'format_g2'; // Default format on testing profile
+    // Default format on testing profile.
+    $format_name = 'format_g2';
     $filter_name = 'filter_g2';
     $this->createG2Format($format_name, $filter_name);
 
     $settings = array(
       'type' => G2\NODETYPE,
       'title' => 'CSS',
-      'body' => array(LANGUAGE_NONE => array(array(
-        'value' => 'A style language for <dfn>HTML</dfn>',
-        'format' => $format_name,
-      ))),
+      'body' => array(
+        LANGUAGE_NONE => array(
+          array(
+            'value' => 'A style language for <dfn>HTML</dfn>',
+            'format' => $format_name,
+      ), ), ),
     );
     $node = $this->drupalCreateNode($settings);
 

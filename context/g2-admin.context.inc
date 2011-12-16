@@ -4,8 +4,8 @@
  * Exported Context combining default G2 condition and reaction for admin users.
  */
 
-$context = new stdClass;
-$context->disabled = FALSE; /* Edit this to true to make a default context disabled initially */
+$context = new stdClass();
+$context->disabled = FALSE;
 $context->api_version = 3;
 $context->name = 'g2-admin';
 $context->description = 'G2 privileged context';
@@ -26,5 +26,5 @@ $context->condition_mode = 0;
 
 // Translatables
 // Included for use with string extractors like potx.
-t('Context d\'admin g2');
+t("Context d'admin g2");
 t('g2');

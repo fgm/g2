@@ -3,7 +3,7 @@
  * @file
  * Test suite for the G2 glossary module
  *
- * @copyright Copyright (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet, OSI)
+ * (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet)
  *
  * @license Licensed under the CeCILL, version 2 and General Public License version 2 or later
  *
@@ -20,6 +20,9 @@
  */
 
 class G2AccessTest extends DrupalWebTestCase {
+  /**
+   * List tests in suite.
+   */
   public static function getInfo() {
     $ret = array(
       'name'  => t('G2 access tests'),
@@ -29,6 +32,9 @@ class G2AccessTest extends DrupalWebTestCase {
     return $ret;
   }
 
+  /**
+   * Override DrupalWebTestCase::setUp().
+   */
   public function setUp() {
     parent::setUp('taxonomy', 'g2');
   }

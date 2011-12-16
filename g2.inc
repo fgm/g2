@@ -7,9 +7,10 @@
  * included, because coder.module does not recognize proper comment indentation
  * within namespace {} blocks.
  *
- * @copyright Copyright (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet, OSI)
+ * (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet)
  *
- * @license Licensed under the CeCILL, version 2 and General Public License version 2 or later
+ * Licensed under the CeCILL, version 2 and General Public License version 2 or
+ * later.
  *
  * License note: G2 is distributed by OSInet to its customers under the
  * CeCILL 2.0 license. OSInet support services only apply to the module
@@ -24,14 +25,12 @@
  */
 
 namespace G2 {
-
-  // ==== Default values for the persistent variables ============================
+  /* ==== Default values for the persistent variables ======================= */
 
   /**
    * Default value of the G2 alphabar
    */
   const DEFALPHABAR = '0123456789abcdefghijklmnopqrstuvwxyz';
-  //define('G2\DEFALPHABAR',          '0123456789abcdefghijklmnopqrstuvwxyz');
 
   /**
    * Default length of an alphabar row
@@ -161,7 +160,7 @@ namespace G2 {
    */
   const DEFXMLRPC = FALSE;
 
-  // ==== Block deltas ===========================================================
+  /* ==== Block deltas ====================================================== */
   /**
    * Block: alphabar
    */
@@ -187,7 +186,7 @@ namespace G2 {
    */
   const DELTAWOTD = 'wotd';
 
-  // ==== Miscellaneous constants ================================================
+  /* ==== Miscellaneous constants =========================================== */
 
   /**
    * G2 builtin node type
@@ -208,10 +207,10 @@ namespace G2 {
    * G2 module version
    */
 
-  const VERSION = '$Id$';
+  const VERSION = '7.x-1.x';
 
 
-  // ==== Hook_menu paths ========================================================
+  /* ==== Hook_menu paths =================================================== */
 
   /**
    * G2 node reference path
@@ -244,7 +243,7 @@ namespace G2 {
   const PATHWOTDFEED = 'g2/wotd/feed';
 
 
-  // ==== Page and feed titles (not translated) ================================
+  /* ==== Page and feed titles (not translated) ============================= */
   /**
    * Title of the G2 pages listing entries
    */
@@ -271,7 +270,7 @@ namespace G2 {
   const TITLEWOTDFEED = 'G2 word of the day RSS feed';
 
 
-  // ==== Persistent variables =================================================
+  /* ==== Persistent variables ============================================== */
 
   /**
    * Alphabar block: list of the one-symbol initials being displayed
@@ -458,12 +457,15 @@ namespace G2 {
    * Form builder for settings form.
    *
    * @param array $form
+   *   The form array
    * @param array $form_state
+   *   The form state
    *
    * @return array
+   *   The completed form.
    */
   function admin_settings($form, &$form_state) {
-    // Activate context
+    // Activate context.
     if ($plugin = context_get_plugin('condition', 'g2')) {
       $plugin->execute('g2_admin');
     }
@@ -621,8 +623,8 @@ namespace G2 {
           It defines the maximum number of entries an XML-RPC client is allowed to return
           in just one call as the product of the block setting and this coefficient.'),
     );
-    $form['advanced'][VERSION] = array(
-      '#value' => '<p>'
+    $form['advanced']['version'] = array(
+      '#markup' => '<p>'
         . t('This site is running G2 version %version. See the <a href="!page" title="G2 Glossary project page">G2 project page</a> on Drupal.org.',
           array(
         '%version' => VERSION,
@@ -654,9 +656,9 @@ namespace G2 {
    * {cache_page}.
    *
    * @param array $form
+   *   The form array.
    * @param array $form_state
-   *
-   * @return void
+   *   The current form state.
    */
   function admin_settings_submit(&$form, &$form_state) {
     if ($form_state['values'][VARPATHMAIN] != variable_get(VARPATHMAIN, DEFPATHMAIN)) {
@@ -668,8 +670,9 @@ namespace G2 {
    * Make sure the node chosen for the main page is valid.
    *
    * @param array $form
+   *   The form array.
    * @param array $form_state
-   * @return void
+   *   The current form state.
    */
   function admin_settings_validate(&$form, &$form_state) {
     $nid = $form_state['values']['g2_main'];
@@ -684,10 +687,10 @@ namespace G2 {
         array('@nid' => $nid)));
     }
 
-    // Sanitize RPC throttle
+    // Sanitize RPC throttle.
     $form_state['values']['g2_rpc_throttle'] = (int) $form_state['values']['g2_rpc_throttle'];
 
-    // Make sure tooltips are not enabled for remote glossaries
+    // Make sure tooltips are not enabled for remote glossaries.
     if ($form_state['values'][VARTOOLTIPS] && $form_state['values'][VARREMOTEG2] != DEFREMOTENO) {
       form_set_error(VARTOOLTIPS, t('Tooltips are only available on local glossaries'));
     }
@@ -697,13 +700,17 @@ namespace G2 {
    * Return alphabar data.
    *
    * @return string
+   *   The alphabar contents: a string made up of individual symbols, each
+   *   wrapped in a link.
    */
   function alphabar() {
     $raw_alphabar = variable_get(VARALPHABAR, DEFALPHABAR);
     $ret = array();
     $options = array(
-      'absolute' => TRUE, // so alphabar can be used outside web pages
-      'html' => TRUE, // to preserve the pre-encoded path
+      // So alphabar can be used outside web pages.
+      'absolute' => TRUE,
+      // To preserve the pre-encoded path.
+      'html' => TRUE,
     );
     for ($i = 0; $i < drupal_strlen($raw_alphabar); $i++) {
       $c = drupal_substr($raw_alphabar, $i, 1);
@@ -717,6 +724,7 @@ namespace G2 {
    * Return the current XML-RPC API version.
    *
    * @return int
+   *   The major version of the API. No change since D6.
    */
   function api() {
     return 6;
@@ -728,19 +736,21 @@ namespace G2 {
    * @see g2_menu()
    * @see g2_block()
    *
-   * @param string $string The beginning of the entry
-   * @return None
+   * @param string $us_string
+   *   The beginning of the entry.
    */
   function autocomplete($us_string = NULL) {
     $matches = array();
     if (isset($us_string)) {
       $us_string = drupal_strtolower($us_string);
-      $sq = 'SELECT n.nid, n.title, n.sticky '
-          . 'FROM {node} n '
-          . "WHERE LOWER(n.title) LIKE '%s%%' "
-          . "  AND n.type = '%s' "
-          . '  AND (n.status = 1)'
-          . 'ORDER BY n.sticky DESC, LOWER(n.title) ASC';
+      $sq = <<<EOT
+SELECT n.nid, n.title, n.sticky
+FROM {node} n
+WHERE LOWER(n.title) LIKE '%s%%'
+  AND n.type = '%s'
+  AND (n.status = 1)
+ORDER BY n.sticky DESC, LOWER(n.title) ASC
+EOT;
       $q = db_select('node', 'n');
       $q->fields('n', array('nid', 'title', 'sticky'))
         ->where('LOWER(n.title) LIKE :title', array(':title' => $us_string . '%'))
@@ -762,6 +772,15 @@ namespace G2 {
     exit();
   }
 
+  /**
+   * Convert cache type constants to their names.
+   *
+   * @param int $mode
+   *   Refer to cache constants in common.inc (but simplified)
+   *
+   * @return string
+   *   A human-readable name.
+   */
   function block_cache_decode($mode) {
     if ($mode == -1) {
       $ret = 'NO_CACHE';
@@ -811,12 +830,15 @@ namespace G2 {
    *
    * Translate glossary linking elements (<dfn>) to actual links)
    *
-   * This function generates absolute links, for the benefit of the WOTD RSS feed
-   * If this feed is not used, it is possible to use the (shorter) relative URLs
-   * by swapping comments.
+   * This function generates absolute links, for the benefit of the WOTD RSS
+   * feed. If this feed is not used, it is possible to use the (shorter)
+   * relative URLs by swapping comments.
    *
-   * @param string $entry An entry
-   * @return string HTML
+   * @param string $entry
+   *   An entry.
+   *
+   * @return string
+   *   HTML: the processed contents of the entry.
    */
   function filter_process_callback($entry) {
     // Loop detection. Not using drupal_static() "if a function's static
@@ -825,17 +847,20 @@ namespace G2 {
     // "static" keyword instead of the drupal_static() function.
     static $hits = array();
 
-    $entry = $entry[1]; // [0] is the original string
+    // [0] is the original string.
+    $entry = $entry[1];
+
     $target = variable_get(VARREMOTEG2, DEFREMOTEG2);
 
-    // If we are not using a remote glossary
+    // If we are not using a remote glossary.
     if ($target == DEFREMOTENO) {
       $target = PATHENTRIES;
 
-      // No tooltips on remote glossaries: too slow
+      // No tooltips on remote glossaries: too slow.
       if (variable_get(VARTOOLTIPS, DEFTOOLTIPS)) {
         if (!isset($hits[$entry])) {
-          $hits[$entry] = array(); // Prevent infinite loop from g2_title_load
+          // Prevent infinite loop from g2_title_load().
+          $hits[$entry] = array();
           $hits[$entry] = g2_title_load($entry);
         }
         $count = count($hits[$entry]);
@@ -906,7 +931,10 @@ namespace G2 {
    * XXX abstract to EntityFieldQuery
    *
    * @param string $initial
-   * @return string HTML
+   *   Usually a single letter.
+   *
+   * @return string
+   *   HTML
    */
   function initial($initial) {
     $initial = check_plain($initial);
@@ -915,7 +943,7 @@ namespace G2 {
 
     $ret = t("<p>Displaying @count entries starting with '%initial' from a total number of @total entries.</p>",
       array(
-      // Since G2\stats() does not return empty arrays, we do not need to check values
+      // Since G2\stats() does not return empty arrays, no need to check values.
       '@count' => $ar_initial[NODE_PUBLISHED],
       '%initial' => $initial,
       '@total' => $ar_total  [NODE_PUBLISHED],
@@ -960,21 +988,23 @@ namespace G2 {
    * "Latest" nodes are identified by time of latest update.
    *
    * @param int $max
-   *   The maximum number of entries to return
+   *   The maximum number of entries to return.
    * @param boolean $include_unpublished
-   *   Include unpublished nodes in that list
+   *   Include unpublished nodes in that list.
+   *
    * @return array
    *   Note that the results are NOT filtered, and must be filtered when used.
    */
   function latest($max = NULL, $include_unpublished = FALSE) {
     $def_max      = variable_get(VARLATESTITEMCOUNT, DEFLATESTITEMCOUNT);
     $rpc_throttle = variable_get(VARRPCTHROTTLE,     DEFRPCTHROTTLE);
-    // Limit extraction
+
+    // Limit extraction.
     if (empty($max) || ($max > $rpc_throttle * $def_max)) {
       $max = $def_max;
     }
 
-    // Only list unpublished nodes if requested and allowed
+    // Only list unpublished nodes if requested and allowed.
     $status = ($include_unpublished && user_access('administer nodes'))
       ? NODE_NOT_PUBLISHED
       : NODE_PUBLISHED;
@@ -1001,22 +1031,21 @@ namespace G2 {
    * Log HTTP_REFERERs on a given node when in full page mode.
    *
    * @param object $node
-   *
-   * @return void
+   *   The node to which referrer linked
    */
   function log_referrers($node) {
     global $base_url;
     $us_referrer = $_SERVER['HTTP_REFERER'];
 
-    // Is us_referer local ? MUST use ===, otherwise FALSE would match too
+    // Is us_referer local ? MUST use ===, otherwise FALSE would match too.
     if (!empty($us_referrer) && strpos($us_referrer, $base_url . '/') === 0) {
-      // extract local path, possibly aliased
+      // Extract local path, possibly aliased.
       $us_referrer = drupal_substr($us_referrer, drupal_strlen($base_url) + 1);
 
-      // Unalias it
+      // Unalias it.
       $us_referrer = drupal_get_normal_path($us_referrer);
 
-      // Sanitize it
+      // Sanitize it.
       $referrer = check_plain($us_referrer);
 
       // XXX costly! Use a queue to batch such logging ?
@@ -1034,7 +1063,7 @@ namespace G2 {
         ->execute();
     }
     else {
-      /**
+      /*
        * Referer is non-local.
        * Maybe we'll do something some day, but not right now
        */
@@ -1044,10 +1073,9 @@ namespace G2 {
   /**
    * Modify the default page title as built by Drupal.
    *
-   * Tweaking $conf only modifies the live copy used by Drupal, and does not touch
-   * the cached and stored values as would be the case using variable_set().
-   *
-   * @return void
+   * Tweaking $conf only modifies the live copy used by Drupal, and does not
+   * touch the cached and stored values as would be the case using
+   * variable_set().
    * */
   function override_site_name() {
     $default_page_title = t('G2 Glossary on @title');
@@ -1064,11 +1092,13 @@ namespace G2 {
    * TODO convert to render array format.
    *
    * @param array $nodes
+   *   An array of nodes to render.
    *
    * @return string
+   *   The rendered version.
    */
   function page_entries($nodes) {
-    // Activate context
+    // Activate context.
     if ($plugin = context_get_plugin('condition', 'g2')) {
       $plugin->execute('g2_user');
     }
@@ -1093,15 +1123,16 @@ namespace G2 {
    * appearing in normal situations, and it will be used as if it was
    * published by this function.
    *
-   * @return array Render array for page.
+   * @return array
+   *   Render array for page.
    */
   function page_main() {
-    // Activate context
+    // Activate context.
     if ($plugin = context_get_plugin('condition', 'g2')) {
       $plugin->execute('g2_user');
     }
 
-    // rowlen == 2 << 16 so that only an extremely long alphabar would wrap
+    // Rowlen == 2 << 16 so that only an extremely long alphabar would wrap.
     $alphabar = theme('g2_alphabar', array(
       'alphabar' => alphabar(),
       'rowlen' => 2 << 16,
@@ -1114,16 +1145,20 @@ namespace G2 {
         drupal_set_title($node->title);
         override_site_name();
         if (!empty($node->body)) {
-          $node->status = NODE_PUBLISHED; // Simulate publishing
+          // Simulate publishing.
+          $node->status = NODE_PUBLISHED;
           $node->title = NULL;
-          $text = theme('node', node_view($node)); // Coder false positive: http://drupal.org/node/224333#node_view
+          // Coder false positive: http://drupal.org/node/224333#node_view.
+          $text = theme('node', node_view($node));
         }
         else {
-          $text = ''; // Empty or missing body field
+          // Empty or missing body field.
+          $text = '';
         }
       }
       else {
-        $text = ''; // Node not found
+        // Node not found.
+        $text = '';
       }
     }
     elseif (is_string($generator) && function_exists($generator)) {
@@ -1138,7 +1173,7 @@ namespace G2 {
       '#alphabar' => $alphabar,
       '#text'     => $text,
     );
-    //$ret .= 'secu';
+    // $ret .= 'secu';
     return $ret;
   }
 
@@ -1150,8 +1185,9 @@ namespace G2 {
    *
    * Only works for glossaries with 3 entries or more.
    *
-   * XXX Likely possible to do better (2 or more) using a $rand,2 range and removing the wotd from there
-   * XXX Likely possible to do better (2 or more) using an ORDER BY RAND()
+   * XXX Likely possible to do better (2 or more) using a $rand, 2 range and
+   *   removing the wotd from there.
+   * XXX Likely possible to do better (2 or more) using an ORDER BY RAND().
    *
    * @return object
    *   Title / nid / teaser. Unfiltered contents.
@@ -1162,7 +1198,8 @@ namespace G2 {
     // Do we have a stored previous random to exclude ?
     $random = variable_get(VARRANDOMSTORE, DEFRANDOMSTORE)
       ? variable_get(VARRANDOMENTRY, DEFRANDOMENTRY)
-      : ''; // We don't, so just avoid untitled nodes, which should not exist anyway.
+      // We don't, so just avoid untitled nodes, which should not exist anyway.
+      : '';
 
     $q = db_select('node', 'n');
     $q->addExpression('COUNT(*)', 'cnt');
@@ -1171,13 +1208,14 @@ namespace G2 {
       ->condition('n.title', $random, '!=')
       ->condition('n.nid', $wotd_nid, '!=')
       ->addTag('node_access');
-    // dsm((string) $q);
 
     $result = $q->execute();
     $count = $result->fetchField();
-    $rand = mt_rand(0, $count - 1); // no need to mt_srand() since PHP 4.2
+    // No more need to mt_srand() since PHP 4.2.
+    $rand = mt_rand(0, $count - 1);
 
-    // Select from the exact same list of nodes, assuming none was inserted/deleted in the meantime
+    // Select from the exact same list of nodes, assuming none was inserted or
+    // deleted in the meantime.
     $q = db_select('node', 'n');
     $q->innerJoin('node_revision', 'v', 'n.vid = v.vid');
     $q->fields('n', array('nid'))
@@ -1187,7 +1225,6 @@ namespace G2 {
       ->condition('n.nid', $wotd_nid, '!=')
       ->addTag('node_access')
       ->range($rand, 1);
-    // dsm((string) $q);
 
     $result = $q->execute();
     $nid = $result->fetchField();
@@ -1196,12 +1233,16 @@ namespace G2 {
     }
 
     $node = node_load($nid);
-//    $node->taxonomy = (variable_get(VARRANDOMTERMS, DEFRANDOMTERMS) && isset($node->taxonomy))
-//      ? $node->taxonomy
-//      : array();
+    /*
+    $node->taxonomy = (variable_get(VARRANDOMTERMS, DEFRANDOMTERMS) &&
+      isset($node->taxonomy))
+      ? $node->taxonomy
+      : array();
+    */
 
     if (variable_get(VARRANDOMSTORE, DEFRANDOMSTORE)) {
-      variable_set(VARRANDOMENTRY, $node->title); // unfiltered
+      // Unfiltered.
+      variable_set(VARRANDOMENTRY, $node->title);
     }
 
     return $node;
@@ -1212,16 +1253,23 @@ namespace G2 {
    *
    * TODO: check referer wipe: it may have been damaged in the D6, then D7 ports
    *
+   * @param array $form
+   *   The form array.
+   * @param array $form_state
+   *   The current form state.
    * @param object $node
-   * @return string HTML
+   *   The node for which references are to be counted.
+   *
+   * @return string
+   *   HTML
    */
   function referer_links($form, $form_state, $node) {
-    // Activate context
+    // Activate context.
     if ($plugin = context_get_plugin('condition', 'g2')) {
       $plugin->execute('g2_admin');
     }
 
-    // Build list of referers
+    // Build list of referers.
     $nid = $node->nid;
 
     $header = array(
@@ -1248,7 +1296,8 @@ namespace G2 {
     $q->fields('gr', array('referer', 'incoming'))
       ->condition('gr.nid', $nid)
       ->addTag('node_access')
-      ->orderByHeader($header); // TableSort
+      // TableSort.
+      ->orderByHeader($header);
 
     // dsm((string) $q);
     $result = $q->execute();
@@ -1265,7 +1314,7 @@ namespace G2 {
       else {
         $title_link = NULL;
       }
-      // empty referer does not happen in normal situations, but can happen with bugs
+      // Empty referer does not happen in normal situations, only with bugs.
       $rows[] = empty($row->referer)
         ? array($row->incoming, t('<empty>'), $title_link)
         : array($row->incoming, l($row->referer, $row->referer, array('absolute' => TRUE)), $title_link);
@@ -1274,7 +1323,7 @@ namespace G2 {
       ? t('No referer found. Maybe you just cleaned the list ?')
       : theme('table', array('header' => $header, 'rows' => $rows));
 
-    // Build form from results
+    // Build form from results.
     $form = array();
     $form['links'] = array(
       '#type' => 'markup',
@@ -1283,8 +1332,8 @@ namespace G2 {
     );
 
     if (!empty($rows)) {
-      $form['links']['#suffix'] = t('<p>WARNING: just because a click came from a node doesn\'t mean the node has a link.
-          The click may have come from a block on the page. These stats are just a hint for editors.</p>');
+      $form['links']['#suffix'] = t("<p>WARNING: just because a click came from a node doesn't mean the node has a link.
+        The click may have come from a block on the page. These stats are just a hint for editors.</p>");
 
       $form['wipe_target'] = array(
         '#type' => 'value',
@@ -1307,8 +1356,9 @@ namespace G2 {
    * used a plain link.
    *
    * @param array $form
+   *   The form array.
    * @param array $form_state
-   * @return void
+   *   The current form state.
    */
   function referer_links_submit(&$form, &$form_state) {
     $form_state['redirect'] = 'g2/wipe/' . $form_state['values']['wipe_target'];
@@ -1319,8 +1369,6 @@ namespace G2 {
    *
    * @param int $nid
    *   Node from which to erase referers, or NULL to erase all g2 referers
-   *
-   * @return void
    */
   function referer_wipe($nid = NULL) {
     if (isset($nid)) {
@@ -1339,17 +1387,18 @@ namespace G2 {
     $message = $deleted
       ? format_plural($deleted, 'Deleted 1 G2 referer link', 'Deleted @count G2 referer links', array('@count' => $deleted))
       : t('No G2 referer link found for deletion.');
-    drupal_set_message(check_plain($message)); // check_plain is actually useless here.
+    // TODO Check_plain() is actually useless here. Counter-productive even ?
+    drupal_set_message(check_plain($message));
     return $ret;
   }
 
   /**
    * Submit handler for "wipe referers" button on settings form.
    *
-   * @param string $form_id
    * @param array $form
-   *
-   * @return void
+   *   The form array
+   * @param array $form_state
+   *   The current form state.
    */
   function referer_wipe_button_submit($form, &$form_state) {
     drupal_goto('g2/wipe');
@@ -1361,13 +1410,17 @@ namespace G2 {
    * This is the same form for both global wipe and individual node wipe.
    *
    * @param array $form
+   *   The form array
    * @param array $form_state
-   * @param $node
+   *   The current form state.
+   * @param object $node
+   *   The node for which the form is built.
    *
    * @return array
+   *   The confirmation form array.
    */
   function referer_wipe_confirm_form($form, &$form_state, $node = NULL) {
-    // Activate context
+    // Activate context.
     if ($plugin = context_get_plugin('condition', 'g2')) {
       $plugin->execute('g2_admin');
     }
@@ -1376,7 +1429,7 @@ namespace G2 {
       $question = t('Erase referer information from %title ?', array(
         '%title' => $node->title,
       ));
-      // No entity_uri: this URL belongs to this module, not to the entity
+      // No entity_uri: this URL belongs to this module, not to the entity.
       $cancel = 'node/' . $node->nid . '/referers';
       $form['node'] = array(
         '#type'  => 'value',
@@ -1401,8 +1454,6 @@ namespace G2 {
 
   /**
    * Submit handler for referer wipe confirmation.
-   *
-   * @return void
    */
   function referer_wipe_confirm_form_submit($form, &$form_state) {
     if (isset($form_state['values']['node'])) {
@@ -1416,7 +1467,8 @@ namespace G2 {
       $dest = referer_wipe();
       drupal_set_message(t('Referer information has been erased from all G2 entries'));
     }
-    $form_state['redirect'] = $dest['path']; // $dest['options'] ignored
+    // $dest['options'] ignored.
+    $form_state['redirect'] = $dest['path'];
     return;
   }
 
@@ -1463,9 +1515,12 @@ namespace G2 {
     }
     else {
       // XXX 20110118 also support taxonomy_maintain_index_table == TRUE
-      // 1. if $tid, same EFQ without count() and propertyCondition('n.title', $initial . '%', 'LIKE')
-      //    ... and propertyCondition('n.status', 0|1), so it runs twice. Silly.
-      // 2. or just use taxonomy_index
+      /*
+      1. if $tid, same EFQ without count()
+         and propertyCondition('n.title', $initial . '%', 'LIKE')
+         and propertyCondition('n.status', 0|1), so it runs twice. Silly.
+      2. or just use taxonomy_index
+      */
 
       $q = db_select('node', 'n');
       $q->addExpression('COUNT(DISTINCT n.nid)', 'cnt');
@@ -1475,7 +1530,8 @@ namespace G2 {
         ->addTag('node_access');
 
       if (isset($tid) && is_int($tid) && $tid > 0) {
-        // TODO: migrate from taxonomy_index to field storage taxonomy_update_7005()
+        // TODO: migrate from taxonomy_index to field storage as per
+        // taxonomy_update_7005().
         $q->innerJoin('taxonomy_index', 'ti', 'n.nid = ti.nid');
         $q->condition('ti.tid', $tid);
       }
@@ -1483,8 +1539,7 @@ namespace G2 {
       if (isset($initial) && !empty($initial)) {
         $q->condition('n.title', $initial . '%', 'LIKE');
       }
-
-      // Avoid empty returns
+      // Avoid empty returns.
       $ret = array(
         NODE_NOT_PUBLISHED => 0,
         NODE_PUBLISHED => 0,
@@ -1500,15 +1555,17 @@ namespace G2 {
   }
 
   /**
-   * Encodes terminal path portions for G2. This allows linking to
-   * things containing #, + or '.', like C++, C# or the . initial
+   * Encodes terminal path portions for G2. This allows linking to things
+   * containing #, + or '.', like C++, C# or the . initial.
    *
-   * Warning: this is NOT a generic replacement for urlencode, but
-   * covers a very specific glossary-related need.
+   * Warning: this is NOT a generic replacement for urlencode, but covers a very
+   * specific glossary-related need.
    *
    * @param string $terminal
+   *   The termin path portion to encode.
    *
    * @return string
+   *   The encoded version.
    */
   function terminal_encode($terminal) {
     $terminal = strtr($terminal, array(
@@ -1528,10 +1585,11 @@ namespace G2 {
    * - Stickyness is ignored for ordering, but returned in the results for
    *   client-side ordering if needed.
    *
-   * @param $max
+   * @param int $max
    *   Number or entries to return.
-   * @param $daily_top
+   * @param boolean $daily_top
    *   Order by daily views if TRUE, otherwise by total views (default).
+   *
    * @return array|NULL
    *   Statistics will be empty without statistics module.
    *   Note that the title of the nodes is NOT filtered.
@@ -1540,12 +1598,12 @@ namespace G2 {
     $def_max      = variable_get(VARTOPITEMCOUNT, DEFTOPITEMCOUNT);
     $rpc_throttle = variable_get(VARRPCTHROTTLE,  DEFRPCTHROTTLE);
 
-    // Limit extraction
+    // Limit extraction.
     if (empty($max) or ($max > $rpc_throttle * $def_max)) {
       $max = $def_max;
     }
 
-    // Only list unpublished nodes if requested and allowed
+    // Only list unpublished nodes if requested and allowed.
     $status = ($include_unpublished && user_access('administer nodes'))
       ? NODE_NOT_PUBLISHED
       : NODE_PUBLISHED;
@@ -1584,12 +1642,14 @@ namespace G2 {
    * TODO 20110122 replace by a node with a specific build mode
    *
    * @param int $bodysize
+   *   The maximum length of the body to use for the WOTD.
    *
-   * @return object title / nid / teaser
+   * @return object
+   *   title / nid / teaser.
    *   Teaser and Body are returned already filtered, not stripped.
    */
   function wotd($bodysize = 0) {
-    // No need for a static: this function is normally never called twice
+    // No need for a static: this function is normally never called twice.
     $nid = variable_get(VARWOTDENTRY, DEFWOTDENTRY);
     $node = node_load($nid);
     if (empty($node)) {
@@ -1606,9 +1666,10 @@ namespace G2 {
 
     $node->truncated = FALSE;
 
-    // use a node view instead
+    // Use a node view instead.
     if (FALSE && $bodysize > 0 && !empty($node->body)) {
-      $node->raw_body = $node->body; // save the raw version
+      // Save the raw version.
+      $node->raw_body = $node->body;
       if (drupal_strlen($node->body) > $bodysize) {
         $node->truncated = TRUE;
         $body = drupal_substr($node->body, 0, $bodysize);
@@ -1624,7 +1685,8 @@ namespace G2 {
    *
    * TODO check the Language to use in D7
    *
-   * @return string XML in UTF-8 encoding
+   * @return string
+   *   XML in UTF-8 encoding
    */
   function wotd_feed() {
     global $base_url;
@@ -1632,7 +1694,7 @@ namespace G2 {
     $channelinfo = array(
       // Link element:  Drupal 4.7->6 defaults to $base url
       // Language: Drupal 6 defaults to to $language->language
-      // Title: Drupal 6 defaults to site name
+      // Title: Drupal 6 defaults to site name.
       'title' => variable_get(VARWOTDFEEDTITLE, variable_get(VARWOTDTITLE, t('Word of the day in the G2 glossary'))),
       // Description: Drupal defaults to $site_mission
       'description' => strtr(variable_get(VARWOTDFEEDDESCR, t('A daily definition from the G2 Glossary at !site')), array('!site' => $base_url)),
@@ -1640,10 +1702,11 @@ namespace G2 {
     );
 
     $items = array(variable_get(VARWOTDENTRY, DEFWOTDENTRY));
-    $ret = node_feed($items, $channelinfo); // Adds the XML content-type + encoding header
+    // Adds the XML content-type + encoding header.
+    $ret = node_feed($items, $channelinfo);
 
     $ret = check_plain($ret);
     echo $ret;
     exit();
   }
-} // namespace G2
+}

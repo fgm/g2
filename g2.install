@@ -3,9 +3,10 @@
  * @file
  * Install file for G2 Glossary
  *
- * @copyright Copyright (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet, OSI)
+ * (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet)
  *
- * @license Licensed under the CeCILL, version 2 and General Public License version 2 or later
+ * Licensed under the CeCILL, version 2 and General Public License version 2 or
+ * later.
  *
  * License note: G2 is distributed by OSInet to its customers under the
  * CeCILL 2.0 license. OSInet support services only apply to the module
@@ -35,7 +36,10 @@ function g2_install() {
  * Implements hook_requirements().
  *
  * @param string $phase
+ *   "install" or "runtime".
+ *
  * @return array
+ *   List of requirements statuses.
  */
 function g2_requirements($phase) {
   $ret = array();
@@ -43,20 +47,23 @@ function g2_requirements($phase) {
     return;
   }
 
-  // Since it's runtime, t() is available, so no get_t()
+  /* Since it's runtime, t() is available, so no get_t(). */
 
   $stats = module_exists('statistics');
   $count = variable_get('statistics_count_content_views', NULL);
   if (!$stats && !$count) {
-    $severity = REQUIREMENT_INFO; // this one is a (questionable) choice
+    // This one is a (questionable) choice.
+    $severity = REQUIREMENT_INFO;
     $value = t('G2 statistics disabled.');
   }
   elseif ($stats xor $count) {
-    $severity = REQUIREMENT_WARNING; // this one is inconsistent
+    // This one is inconsistent.
+    $severity = REQUIREMENT_WARNING;
     $value = t('G2 statistics incorrectly configured.');
   }
-  else { // both on
-    $severity = REQUIREMENT_OK; // optimal
+  else {
+    // Both on: optimal.
+    $severity = REQUIREMENT_OK;
     $value = t('G2 statistics configured correctly.');
   }
 
@@ -93,11 +100,12 @@ function g2_requirements($phase) {
  * as their default charset
  *
  * @return array
+ *   Schema API array.
  */
 function g2_schema() {
   $schema = array();
 
-  /**
+  /*
    * Additional fields in G2 entries
    *
    * G2 does not currently revision the additional information it stores
@@ -143,7 +151,7 @@ function g2_schema() {
     'description' => 'The G2-specific, non-versioned, informations contained in G2 entry nodes in addition to default node content.',
   );
 
-  /**
+  /*
    * G2 per-node referer stats
    */
   $schema['g2_referer'] = array(
@@ -210,6 +218,7 @@ function g2_uninstall() {
 /**
  * Update the schema for Drupal 7 first version.
  *
+ * Clean-up obsolete variables:
  * - remove g2_*[info|title] variables, which were used in block setup. Title is
  *   managed by core since D6, Info was not really needed.
  * - have a valid schema version recorded for future updates.
@@ -219,7 +228,6 @@ function g2_uninstall() {
  * Equivalent to the first half of g2_update_6000() in the D6 branch.
  */
 function g2_update_7000() {
-  // Clean-up obsolete variables
   $q = db_select('variable', 'v');
   $q->fields('v', array('name'))
     ->condition(db_or()
@@ -303,7 +311,8 @@ function g2_update_7002() {
 
   $t = get_t();
   if ($count) {
-    $message = $t('Replaced @count occurrences of old "%" tokens by new "!" ones on the <a href="!link">WOTD block feed settings</a>.', array(// coder false positive: !link is filtered
+    // Coder false positive: !link is filtered.
+    $message = $t('Replaced @count occurrences of old "%" tokens by new "!" ones on the <a href="!link">WOTD block feed settings</a>.', array(
       '@count' => $count,
       '!link' => url('admin/structure/block/configure/g2/' . G2\DELTAWOTD),
     ));
@@ -352,4 +361,3 @@ function g2_update_7004() {
 function g2_update_last_removed() {
   return 6002;
 }
-

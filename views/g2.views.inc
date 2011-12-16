@@ -6,7 +6,7 @@
  * - define g2_node as a base table
  * - allow g2_node access from node views (g2 fields in node views)
  *
- * @copyright Copyright (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet, OSI)
+ * (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet)
  *
  * @license Licensed under the CeCILL, version 2 and General Public License version 2 or later
  *

@@ -9,4 +9,7 @@
 ?>
 <p><?php echo $alphabar; ?></p><?php
 echo $text;
-?><p><?php if (!empty($text)) echo $alphabar; ?></p>
+
+if (!empty($text)):
+  ?><p><?php echo $alphabar; ?></p>
+  <?php endif ?>
