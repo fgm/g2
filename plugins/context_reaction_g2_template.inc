@@ -1,5 +1,10 @@
 <?php
 /**
+ * @file
+ * Define a Context reaction plugin enabling G2-specific page templates.
+ */
+
+/**
  * Expose themes as context reactions.
  */
 class context_reaction_g2_template extends context_reaction_theme {

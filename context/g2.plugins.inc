@@ -1,5 +1,10 @@
 <?php
 /**
+ * @file
+ * G2 context helpers. Kept off main file to avoid useless loading.
+ */
+
+/**
  * Context registry.
  */
 function _g2_context_registry() {

@@ -39,19 +39,19 @@ class G2AccessTest extends DrupalWebTestCase {
   public function testAdminSettingsAccess() {
     $account = $this->drupalCreateUser(array('access content'));
     $this->drupalLogin($account);
-    $this->drupalGet(g2\PATHSETTINGS);
+    $this->drupalGet(G2\PATHSETTINGS);
     $this->assertResponse(403, t('Access to settings denied to normal users'));
     $this->drupalLogout();
 
-    $account = $this->drupalCreateUser(array(g2\PERMVIEW));
+    $account = $this->drupalCreateUser(array(G2\PERMVIEW));
     $this->drupalLogin($account);
-    $this->drupalGet(g2\PATHSETTINGS);
+    $this->drupalGet(G2\PATHSETTINGS);
     $this->assertResponse(403, t('Access to settings denied to users with G2 limited perms'));
     $this->drupalLogout();
 
     $account = $this->drupalCreateUser(array('administer site configuration'));
     $this->drupalLogin($account);
-    $this->drupalGet(g2\PATHSETTINGS);
+    $this->drupalGet(G2\PATHSETTINGS);
     $this->assertResponse(200, t('Access to settings granted to G2 admins'));
     $this->drupalLogout();
   }

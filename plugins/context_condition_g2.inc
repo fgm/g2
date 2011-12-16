@@ -1,4 +1,8 @@
 <?php
+/**
+ * @file
+ * Define a Context condition plugin recognizing pages under G2 control.
+ */
 
 /**
  * Expose G2-related pages as a context condition.

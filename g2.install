@@ -28,7 +28,7 @@ function g2_install() {
   node_types_rebuild();
   $types = node_type_get_types();
   $t = get_t();
-  node_add_body_field($types[g2\NODETYPE], $t('Definition'));
+  node_add_body_field($types[G2\NODETYPE], $t('Definition'));
 }
 
 /**

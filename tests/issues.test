@@ -25,7 +25,7 @@ class G2IssuesTest extends DrupalWebTestCase {
 
   public function setUp() {
     parent::setUp('taxonomy', 'g2');
-    $this->admin = $this->drupalCreateUser(array(g2\PERMVIEW, g2\PERMADMIN, 'create ' . g2\NODETYPE . ' content'));
+    $this->admin = $this->drupalCreateUser(array(G2\PERMVIEW, G2\PERMADMIN, 'create ' . G2\NODETYPE . ' content'));
   }
 
   public function createG2Format($format_name, $filter_name) {
@@ -55,15 +55,15 @@ class G2IssuesTest extends DrupalWebTestCase {
    * HTML test being generated in the "title" attribute on node auto-creation.
    */
   public function test1243170_7() {
-    variable_set(g2\VARREMOTEG2, '<local>');
-    variable_set(g2\VARTOOLTIPS, TRUE);
+    variable_set(G2\VARREMOTEG2, '<local>');
+    variable_set(G2\VARTOOLTIPS, TRUE);
 
     $format_name = 'format_g2'; // Default format on testing profile
     $filter_name = 'filter_g2';
     $this->createG2Format($format_name, $filter_name);
 
     $settings = array(
-      'type' => g2\NODETYPE,
+      'type' => G2\NODETYPE,
       'title' => 'CSS',
       'body' => array(LANGUAGE_NONE => array(array(
         'value' => 'A style language for <dfn>HTML</dfn>',
