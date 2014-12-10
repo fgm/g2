@@ -1,0 +1,11 @@
+# Information file for the G2 Glossary module
+# @copyright 2007-2014 Ouest Systemes Informatiques
+# @license CeCILL 2.0
+
+type: 'module'
+name: 'G2 glossary'
+description: 'Manage a node-based glossary'
+dependencies:
+  - taxonomy
+package: Content display
+core: 8.x

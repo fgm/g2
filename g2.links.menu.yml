@@ -1,0 +1,5 @@
+g2.settings.base:
+  description: "Configure the G2 settings"
+  route_name: "g2.settings"
+  title: "Configure G2"
+  parent: "system.admin_config"

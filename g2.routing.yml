@@ -1,0 +1,9 @@
+g2.settings:
+  path: "admin/config/content/g2"
+  defaults:
+    _form: 'Drupal\g2\Form\SettingsForm'
+    _title: "G2 settings"
+  options:
+    _admin_route: TRUE
+  requirements:
+    _permission: "administer site configuration"
