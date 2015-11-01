@@ -23,19 +23,31 @@ Licensed under the CeCILL version 2.1 and General Public License version 2 and l
   4. Installing / upgrading / uninstalling
   5. Notice
 
-### Completion status
+### Completion status 
+#### Main features
 
-Blocks    | Service     | API       | Block / controller
-----------+-------------+-----------+-------------------
-Alphabar  | Done        |           |
-Latest    |             |           |
-Random    |             |           |
-Top       |             |           |
-WOTD      |             |           |
+| Blocks    | Service     | API       | Block              |
+|-----------|-------------|-----------|--------------------|
+| Alphabar  | Done        |           |                    |
+| Latest    |             |           |                    |
+| Random    |             |           |                    |
+| Top       |             |           |                    |
+| WOTD      |             |           |                    |
+
 
 * 'Done' status means working and with high test coverage
 * 'Working' status means appears to work but not (completely) tested
 
+#### Pages
+
+| Page          | Status
+|---------------|-------------------------------------------|
+| main          |
+| entries       |
+| initial       |
+| node add form |
+| settings      | No: Use config_inspector to edit
+| WOTD feed     |
 
 ---
 
