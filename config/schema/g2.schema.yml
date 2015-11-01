@@ -1,0 +1,70 @@
+# Schema for the configuration files of the G2 module.
+
+g2.settings:
+  type: config_object
+  label: 'G2 settings'
+  mapping:
+    block:
+      label: 'Block settings'
+      type: mapping
+      mapping:
+        alphabar:
+          label: 'Alphabar block: list of the one-symbol initials being displayed'
+          type: mapping
+          mapping:
+            contents:
+              type: string
+              label: 'Alphabar value'
+            row_length:
+              type: integer
+              label: 'Row length of the themed alphabar, in number of runes'
+        latest:
+          label: 'Latest(n) block: latest entries updated block'
+          type: mapping
+          mapping:
+            count:
+              type: integer
+              label: 'Number of entries in latest(n) lists'
+        random:
+          label: 'Random entry block'
+          type: mapping
+          mapping:
+            show_terms:
+              type: boolean
+              label: 'Show terms on random node'
+            store:
+              type: boolean
+              label: 'Store random value" setting. True is better for smaller sites, false is better for larger sites.'
+        top:
+          label: 'Top(n): most viewed entries.'
+          type: mapping
+          mapping:
+            count:
+              type: integer
+              label: 'Number of entries in top(n) lists'
+        wotd:
+          label: 'Word of the day block'
+          type: mapping
+          mapping:
+            auto_change:
+              type: boolean
+              label: 'Automatically change the WOTD every day ?'
+            body_size:
+              type: integer
+              label: 'Size of body summary included in WOTD block.'
+            links:
+              type: mapping
+              label: 'Links included in the WOTD block'
+              mapping:
+                feed:
+                  type: boolean
+                  label: 'Link to the WOTD feed'
+                node:
+                  type: boolean
+                  label: 'Link to the WOTD node'
+                terms:
+                  type: boolean
+                  label: 'Link to the term feeds, if show_terms is true. Ignored otherwise.'
+            show_terms:
+              type: boolean
+              label: 'Show terms on WOTD node'

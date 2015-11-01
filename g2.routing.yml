@@ -10,15 +10,15 @@ g2.settings:
 
 # G2 node reference.
 g2.autocomplete:
-  path: '/g2/autocomplete/{g2_initial}'
+  path: '/g2/autocomplete/{g2_match}'
 
 # G2 default entries-by-initial-segment page.
 g2.initial:
-  path: '/g2/initial/{g2_initial}'
+  path: '/g2/initial/{g2_match}'
 
 # G2 default entries-matching page.
 g2.entries:
-  path: '/g2/entries/{g2_initial}'
+  path: '/g2/entries/{g2_match}'
 
 # G2 node creation form.
 g2.add:

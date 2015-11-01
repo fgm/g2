@@ -1,104 +1,91 @@
 block:
-  # Alphabar block: list of the one-symbol initials being displayed.
   alphabar:
-    # Alphabar value.
     contents: '0123456789abcdefghijklmnopqrstuvwxyz'
-    # Row length of the themed alphabar, in number of runes.
     row_length: 13
   latest:
-    # Number of entries in latest(n) lists
     count: 10
   random:
-    # Show terms on random node.
     show_terms: true
-    # "store random value" setting.
-    # True is better for smaller sites, false is better for larger sites.
     store: true
   top:
-    # Number of entries in top(n) lists.
     count: 10
   wotd:
-    # Automatically change the WOTD every day ?
     auto_change: true
-    # Size of body summary included in WOTD block.
     body_size: 40
     links:
-      # Link to the WOTD feed
       feed: true
-      # Link to the WOTD node.
       node: true
-      # Link to the term feeds, if show_terms is true. Ignored otherwise.
       terms: true
     # Show terms on WOTD node.
     show_terms: false
 
-controller:
-  # The G2 main page.
-  main:
-    # Nid of the unpublished node used as main page for G2: none.
-    nid: 0
-    # Default G2 main path.
-    path: '/g2'
-    # The route to the main page. This allows overriding the default node-based
-    # mechanism.
-    route: 'g2_main'
-
-  # The G2 entries matching name page.
-  entries:
-    # Allows replacement by a custom route.
-    route: 'g2.entries'
-
-  # The G2 entries by initial segment page.
-  initial:
-    # Allows replacement by a custom route.
-    route: 'g2.initial'
-
-  # A route name for the node creation form
-  adder:
-    route: 'g2.add'
-
-  # The G2 homonyms disambiguation page.
-  homonyms:
-    # Jump to single match on homonyms/entries pages ?
-    redirect_on_single_match: true
-    # The default nid for the homonyms disambiguation page. See homonyms.route.
-    nid: 0
-    # Default value of the HTTP automatic redirection.
-    redirect_type: 302
-    # The route to the disambiguation page for homonyms. This allows overriding
-    # the default node-based mechanism.
-    route: g2_homonyms
-    # The default vocabulary id for the homonyms disambiguation page.
-    vid: false
-  # The G2 RSS feed.
-  wotd:
-    # The feed title.
-    title: 'G2 word of the day RSS feed'
-    # The feed description. !site is a link to the G2 main page on the site.
-    description: 'One definition a day from the G2 Glossary on !site.'
-    # Include the author in the feed entries
-    feed_author: false
-
-rpc:
-  client:
-    # Remote reference glossary.
-    remote: 'http://www.riff.org/g2/entries'
-  server:
-    # Is the XML-RPC API enabled ?
-    enabled: false
-    # Coefficient limit for API operations over block settings.
-    throttle: 10
-  # Non-remote path.
-  # TODO check whether this is not actually a constant.
-  local: '<local>'
-
-formatting:
-  # Default for "hidden extra title" on node views.
-  hidden_extra_title: true
-  # Hide information from tag vocabularies to non-G2 admins.
-  no_freetagging: true
-  # Are Tooltips enabled on definitions ? 0: no, 1: title, 2: teasers.
-  tooltips_level: 0
-  # Override for default site title on G2 node pages.
-  # Translatable: @title is the node original title.
-  title: 'G2 Glossary on @title'
+#controller:
+#  # The G2 main page.
+#  main:
+#    # Nid of the unpublished node used as main page for G2: none.
+#    nid: 0
+#    # Default G2 main path.
+#    path: '/g2'
+#    # The route to the main page. This allows overriding the default node-based
+#    # mechanism.
+#    route: 'g2_main'
+#
+#  # The G2 entries matching name page.
+#  entries:
+#    # Allows replacement by a custom route.
+#    route: 'g2.entries'
+#
+#  # The G2 entries by initial segment page.
+#  initial:
+#    # Allows replacement by a custom route.
+#    route: 'g2.initial'
+#
+#  # A route name for the node creation form
+#  adder:
+#    route: 'g2.add'
+#
+#  # The G2 homonyms disambiguation page.
+#  homonyms:
+#    # Jump to single match on homonyms/entries pages ?
+#    redirect_on_single_match: true
+#    # The default nid for the homonyms disambiguation page. See homonyms.route.
+#    nid: 0
+#    # Default value of the HTTP automatic redirection.
+#    redirect_type: 302
+#    # The route to the disambiguation page for homonyms. This allows overriding
+#    # the default node-based mechanism.
+#    route: g2_homonyms
+#    # The default vocabulary id for the homonyms disambiguation page.
+#    vid: false
+#  # The G2 RSS feed.
+#  wotd:
+#    # The feed title.
+#    title: 'G2 word of the day RSS feed'
+#    # The feed description. !site is a link to the G2 main page on the site.
+#    description: 'One definition a day from the G2 Glossary on !site.'
+#    # Include the author in the feed entries
+#    feed_author: false
+#
+#rpc:
+#  client:
+#    # Remote reference glossary.
+#    remote: 'http://www.riff.org/g2/entries'
+#  server:
+#    # Is the XML-RPC API enabled ?
+#    enabled: false
+#    # Coefficient limit for API operations over block settings.
+#    throttle: 10
+#  # Non-remote path.
+#  # TODO check whether this is not actually a constant.
+#  local: '<local>'
+#
+#formatting:
+#  # Default for "hidden extra title" on node views.
+#  hidden_extra_title: true
+#  # Hide information from tag vocabularies to non-G2 admins.
+#  no_freetagging: true
+#  # Are Tooltips enabled on definitions ? 0: no, 1: title, 2: teasers.
+#  tooltips_level: 0
+#  # Override for default site title on G2 node pages.
+#  # Translatable: @title is the node original title.
+#  title: 'G2 Glossary on @title'

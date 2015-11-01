@@ -11,13 +11,13 @@ use Drupal\Core\ParamConverter\ParamConverterInterface;
 use Symfony\Component\Routing\Route;
 
 /**
- * Class Node is a flexible ParamConverter.
+ * Class NodeMatch is a flexible ParamConverter.
  *
  * Depending on its use configuration, it will match:
  * - matches at beginning, matches anywhere in title, or only full matches.
  * - returning a configurable number of results.
  */
-class Node implements ParamConverterInterface {
+class NodeMatch implements ParamConverterInterface {
 
   /**
    * Converts path variables to their corresponding objects.
