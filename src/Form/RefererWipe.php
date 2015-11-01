@@ -12,4 +12,5 @@ class RefererWipe {
    * Title of the referer wipeout page, and associated submit button.
    */
   const TITLE = 'Wipe all G2 referer information';
+
 }

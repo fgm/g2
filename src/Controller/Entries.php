@@ -21,7 +21,8 @@ class Entries {
   const ENTRIES_BY_NAME = 'G2 entries by name';
 
   /**
-   * Title of the G2 by-initial pages
+   * Title of the G2 by-initial pages.
    */
   const ENTRIES_BY_INITIAL = 'entries starting with initial %initial';
+
 }

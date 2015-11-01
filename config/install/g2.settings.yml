@@ -1,6 +1,5 @@
 block:
   alphabar:
-    contents: '0123456789abcdefghijklmnopqrstuvwxyz'
     row_length: 13
   latest:
     count: 10
@@ -19,7 +18,11 @@ block:
     # Show terms on WOTD node.
     show_terms: false
 
-#controller:
+service:
+  alphabar:
+    contents: '0123456789abcdefghijklmnopqrstuvwxyz'
+
+controller:
 #  # The G2 main page.
 #  main:
 #    # Nid of the unpublished node used as main page for G2: none.
@@ -36,9 +39,9 @@ block:
 #    route: 'g2.entries'
 #
 #  # The G2 entries by initial segment page.
-#  initial:
-#    # Allows replacement by a custom route.
-#    route: 'g2.initial'
+  initial:
+    # Allows replacement by a custom route.
+    route: 'g2.initial'
 #
 #  # A route name for the node creation form
 #  adder:

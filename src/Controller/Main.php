@@ -15,4 +15,5 @@ class Main {
    * Title of the G2 main page.
    */
   const TITLE = 'G2 glossary main page';
+
 }

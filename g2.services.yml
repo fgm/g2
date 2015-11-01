@@ -1,11 +1,12 @@
 services:
   # Provides a list of links to entries-by-initial pages
-  alphabar:
+  g2.alphabar:
     class: '\Drupal\g2\Alphabar'
     arguments:
       - '@config.factory'
-      - '@entity.query'
       - '@link_generator'
+      - '@entity.query'
+      - '@url_generator'
 
   paramconverter.g2_match:
     class: Drupal\g2\ParamConverter\NodeMatch

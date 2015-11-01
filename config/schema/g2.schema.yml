@@ -12,9 +12,6 @@ g2.settings:
           label: 'Alphabar block: list of the one-symbol initials being displayed'
           type: mapping
           mapping:
-            contents:
-              type: string
-              label: 'Alphabar value'
             row_length:
               type: integer
               label: 'Row length of the themed alphabar, in number of runes'
@@ -68,3 +65,26 @@ g2.settings:
             show_terms:
               type: boolean
               label: 'Show terms on WOTD node'
+    service:
+      type: mapping
+      label: 'The services configuration'
+      mapping:
+        alphabar:
+          type: mapping
+          label: 'The Alphabar service'
+          mapping:
+            contents:
+              type: string
+              label: 'Initials used in the Alphabar'
+
+    controller:
+      type: mapping
+      label: 'The controllers and routing configuration'
+      mapping:
+        initial:
+          type: mapping
+          label: 'The main page configuration'
+          mapping:
+            route:
+              type: string
+              label: 'The name of the route to use for the main page.'

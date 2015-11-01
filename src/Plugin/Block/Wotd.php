@@ -29,4 +29,5 @@ class Wotd {
    * TODO: check whether this is not redundant with the plugin title.
    */
   const DEFAULT_TITLE = 'Word of the day in the G2 glossary';
+
 }

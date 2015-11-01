@@ -6,6 +6,7 @@
 
 namespace Drupal\g2\Tests;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\KernelTests\KernelTestBase;
 
 /**
@@ -15,9 +16,19 @@ use Drupal\KernelTests\KernelTestBase;
  */
 class AlphabarTest extends KernelTestBase {
 
-  public static $modules = ['g2'];
+  const MODULES = ['g2', 'system'];
 
-  const MODULES = ['g2'];
+  public static $modules = self::MODULES;
+
+
+  /**
+   * The G2 Alphabar service.
+   *
+   * @var \Drupal\g2\Alphabar
+   */
+  protected $alphabar;
+
+  protected $runTestInSeparateProcess = FALSE;
 
   /**
    * {@inheritdoc}
@@ -25,12 +36,24 @@ class AlphabarTest extends KernelTestBase {
   public function setUp() {
     parent::setUp();
     $this->installConfig(static::MODULES);
+    $this->installSchema('system', 'router');
+
+    // @see https://www.drupal.org/node/2605684
+    $this->container->get('router.builder')->rebuild();
+
+    $this->alphabar = $this->container->get('g2.alphabar');
   }
 
   /**
    * Tests alphabar generation.
    */
   public function testAlphabar() {
-    $config = $this->config('g2.settings')->get('block');
+    $links = $this->alphabar->getLinks();
+    $this->assertTrue(is_array($links));
+
+    $expected = Unicode::strlen($this->alphabar->getContents());
+    $actual = count($links);
+    $this->assertEquals($expected, $actual, 'The number of links matches the number of runes in alphabar.contents');
   }
+
 }
