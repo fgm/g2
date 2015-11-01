@@ -1,6 +1,6 @@
 # Information file for the G2 Glossary module
-# @copyright 2007-2014 Ouest Systemes Informatiques
-# @license CeCILL 2.0
+#
+# @copyright 2005-2015 Frédéric G. Marand, for Ouest Systemes Informatiques.
 
 type: 'module'
 name: 'G2 glossary'
@@ -9,3 +9,4 @@ dependencies:
   - taxonomy
 package: Content display
 core: 8.x
+php: 5.6

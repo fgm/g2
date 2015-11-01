@@ -7,3 +7,23 @@ g2.settings:
     _admin_route: TRUE
   requirements:
     _permission: "administer site configuration"
+
+# G2 node reference.
+g2.autocomplete:
+  path: '/g2/autocomplete/{g2_initial}'
+
+# G2 default entries-by-initial-segment page.
+g2.initial:
+  path: '/g2/initial/{g2_initial}'
+
+# G2 default entries-matching page.
+g2.entries:
+  path: '/g2/entries/{g2_initial}'
+
+# G2 node creation form.
+g2.add:
+  path: '/node/add/g2_entry'
+
+# G2 WOTD RSS feed.
+g2.feed.wotd:
+  path: '/g2/wotd'

@@ -1,9 +1,19 @@
-=============================================================================
 Glossary2 (G2)
------------------------------------------------------------------------------
- (c) 2005-2011 Frederic G. MARAND
- Licensed under the CeCILL version 2 and General Public License version 2 and later
-=============================================================================
+==============
+
+(c) 2005-2015 Frederic G. MARAND
+ 
+Licensed under the CeCILL version 2 and General Public License version 2 and later.
+
+**WARNING** 2015-11-01 : This version of the project is _not_ usable at the 
+  moment : it is very much a work in progress. An initial usable version is 
+  expected for the Druapl 8.0.0 release due on 2015-11-19.
+  
+Everything below this line related to the 7.x-1.x branch, and is likely to be
+incorrect for 8.x-1.x
+ 
+---
+
 0. Table of contents
 --------------------
 
@@ -13,6 +23,7 @@ Glossary2 (G2)
   3. Version warnings
   4. Installing / upgrading / uninstalling
   5. Notice
+
 
 1. Introduction
 ---------------
@@ -96,7 +107,7 @@ all G2 nodes before removing the module. This includes:
 Unless you do this, you will have inconsistent nodes in your system, because
 Drupal will be missing the module to load G2 entries. If you do not modify
 any of these nodes, reinstalling the module will restore consistency and
-enable a clean noed deletion and uninstall later on.
+enable a clean node deletion and uninstall later on.
 
 5. Ruby XML-RPC client
 ----------------------
@@ -110,6 +121,7 @@ code, that should probably not be used without extra care in production.
 
 6.1 Statistics
 --------------
+
 The statistics displayed on the "entries starting by initial ..." page
 at URL <drupal>/g2/initial/<some initial segment> mention :
 
