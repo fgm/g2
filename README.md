@@ -3,16 +3,15 @@ Glossary2 (G2)
 
 (c) 2005-2015 Frederic G. MARAND
  
-Licensed under the CeCILL version 2 and General Public License version 2 and later.
+Licensed under the CeCILL version 2.1 and General Public License version 2 and later.
+
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FGM/g2/badges/quality-score.png?b=8.x-1.x)](https://scrutinizer-ci.com/g/FGM/g2/?branch=8.x-1.x)
 
 **WARNING** 2015-11-01 : This version of the project is _not_ usable at the 
   moment : it is very much a work in progress. An initial usable version is 
-  expected for the Druapl 8.0.0 release due on 2015-11-19.
+  expected for the Drupal 8.0.0 release due on 2015-11-19.
   
-Everything below this line related to the 7.x-1.x branch, and is likely to be
-incorrect for 8.x-1.x
- 
----
+  
 
 0. Table of contents
 --------------------
@@ -24,6 +23,26 @@ incorrect for 8.x-1.x
   4. Installing / upgrading / uninstalling
   5. Notice
 
+### Completion status
+
+Blocks    | Service     | API       | Block / controller
+----------+-------------+-----------+-------------------
+Alphabar  | Done        |           |
+Latest    |             |           |
+Random    |             |           |
+Top       |             |           |
+WOTD      |             |           |
+
+* 'Done' status means working and with high test coverage
+* 'Working' status means appears to work but not (completely) tested
+
+
+---
+
+Everything below this line related to the 7.x-1.x branch, and is likely to be
+incorrect for 8.x-1.x
+ 
+---
 
 1. Introduction
 ---------------

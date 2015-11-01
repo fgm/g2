@@ -91,7 +91,7 @@ class Alphabar {
   /**
    * Return an array of links to entries-by-initial pages.
    *
-   * @return \Drupal\Core\GeneratedLink[string]
+   * @return array<string,\Drupal\Core\GeneratedLink>
    *   A hash of initials to entry pages.
    */
   public function getLinks() {
