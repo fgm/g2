@@ -36,6 +36,7 @@ class NodeMatch implements ParamConverterInterface {
    */
   public function convert($value, $definition, $name, array $defaults) {
     // TODO: Implement convert() method.
+    return NULL;
   }
 
   /**
@@ -54,5 +55,7 @@ class NodeMatch implements ParamConverterInterface {
    */
   public function applies($definition, $name, Route $route) {
     // TODO: Implement applies() method.
+    return FALSE;
   }
+
 }

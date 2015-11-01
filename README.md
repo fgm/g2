@@ -26,14 +26,14 @@ Licensed under the CeCILL version 2.1 and General Public License version 2 and l
 ### Completion status 
 #### Main features
 
-| Blocks    | Service     | API       | Block              |
-|-----------|-------------|-----------|--------------------|
-| Alphabar  | Done        |           |                    |
-| Latest    |             |           |                    |
-| Random    |             |           |                    |
-| Top       |             |           |                    |
-| WOTD      |             |           |                    |
-
+| Blocks    | Service     | API       | Block / controller  |
+|-----------|-------------|-----------|---------------------|
+| Alphabar  | Done        | Working   |                     |
+| API       | n.a.        | Working   |                     |
+| Latest    |             |           |                     | 
+| Random    |             |           |                     | 
+| Top       |             |           |                     | 
+| WOTD      |             |           |                     | 
 
 * 'Done' status means working and with high test coverage
 * 'Working' status means appears to work but not (completely) tested

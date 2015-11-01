@@ -23,4 +23,5 @@ class G2UnitTest extends UnitTestCase {
     $this->assertEquals(G2::encodeTerminal('a'), 'a', 'G2 does not recode basic characters.');
     $this->assertEquals(G2::encodeTerminal('a/b'), 'a%2Fb', 'G2 does recode special characters.');
   }
+
 }

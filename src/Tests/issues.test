@@ -1,31 +1,29 @@
 <?php
+
 /**
  * @file
- * Test for regression of fixed issues
+ * Test for regression of fixed issues.
  */
 
+/**
+ * Class G2IssuesTest contains G2 non-regression tests.
+ *
+ * Test once-fixed issues to catch regressions.
+ *
+ * @group G2
+ */
 class G2IssuesTest extends DrupalWebTestCase {
-  static $group = 'Initialization';
+  static public $group = 'Initialization';
 
   /**
-   * Admin account, used for privileged operations
+   * Admin account, used for privileged operations.
    *
    * @var object
    */
   public $admin;
 
-  static function getInfo() {
-    $ret = array(
-      'name'  => t('G2 non-regression tests'),
-      'description'  => t('Test once-fixed issues to catch regressions'),
-      'group' => t('G2 Glossary'),
-    );
-    return $ret;
-  }
-
   /**
-   * (non-PHPdoc)
-   * @see DrupalWebTestCase::setUp()
+   * {@inheritdoc}
    *
    * Note: no "create|delete|edit [own|any] g2_entry content": G2 6.1 assumes a
    * single author with full admin permissions for its content.
@@ -36,6 +34,17 @@ class G2IssuesTest extends DrupalWebTestCase {
     $this->root = $this->drupalCreateUser(module_invoke_all('perm'));
   }
 
+  /**
+   * Helper for the filter test.
+   *
+   * @param string $format_name
+   *   The name of a format.
+   * @param string $filter_name
+   *   The name of a filter.
+   *
+   * @return int|null|string
+   *   The format number.
+   */
   public function createG2Format($format_name, $filter_name) {
     $this->drupalLogin($this->root);
 
@@ -73,11 +82,12 @@ class G2IssuesTest extends DrupalWebTestCase {
   /**
    * HTML test being generated in the "title" attribute on node auto-creation.
    */
-  public function test1243170_7() {
+  public function test1243170version7() {
     variable_set(G2VARREMOTEG2, '<local>');
     variable_set(G2VARTOOLTIPS, TRUE);
 
-    $format_name = 'Text with G2 format'; // Default format on testing profile
+    // Default format on testing profile.
+    $format_name = 'Text with G2 format';
     $filter_name = 'g2/0';
     $fid = $this->createG2Format($format_name, $filter_name);
 
@@ -111,4 +121,5 @@ class G2IssuesTest extends DrupalWebTestCase {
     $href = (string) $attributes['href'];
     $this->assertEqual($href, url('node/add/g2-entry/HTML'), t('Found G2 node creation link on g2/entries/HTML'), self::$group);
   }
+
 }

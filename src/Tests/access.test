@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Test suite for the G2 glossary module
+ * Test suite for the G2 glossary module.
  *
  * @copyright Copyright (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet, OSI)
  *
@@ -19,22 +19,21 @@
  * the drupal.org organization or the downstream distributor, not OSInet.
  */
 
+/**
+ * Class G2AccessTest contains the G2 access tests.
+ *
+ * @group G2
+ */
 class G2AccessTest extends DrupalWebTestCase {
-  public static function getInfo() {
-    $ret = array(
-      'name'  => t('G2 access tests'),
-      'description'  => t('Make sure that G2 paths are adequately protected'),
-      'group' => t('G2 Glossary'),
-    );
-    return $ret;
-  }
-
+  /**
+   * {@inheritdoc}
+   */
   public function setUp() {
     parent::setUp('taxonomy', 'g2');
   }
 
   /**
-   * Make sure only appropriate users have access to the settings page
+   * Make sure only appropriate users have access to the settings page.
    */
   public function testAdminSettingsAccess() {
     $account = $this->drupalCreateUser(array('access content'));
@@ -55,4 +54,5 @@ class G2AccessTest extends DrupalWebTestCase {
     $this->assertResponse(200, t('Access to settings granted to G2 admins'));
     $this->drupalLogout();
   }
+
 }

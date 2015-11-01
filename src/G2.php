@@ -32,6 +32,11 @@ class G2 {
   const VERSION = '8.1';
 
   /**
+   * The API format.
+   */
+  const API_VERSION = 8;
+
+  /**
    * Encodes terminal path portions for G2.
    *
    * This allows linking to things containing #, + or '.', like 'C++', 'C#' or
@@ -55,6 +60,16 @@ class G2 {
       '+' => '%2B',
     ));
     return $terminal;
+  }
+
+  /**
+   * Return the RPC API version.
+   *
+   * @return int
+   *   The version of the API format.
+   */
+  public static function api() {
+    return static::API_VERSION;
   }
 
 }
