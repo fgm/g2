@@ -16,10 +16,21 @@ use Drupal\KernelTests\KernelTestBase;
  */
 class AlphabarTest extends KernelTestBase {
 
-  const MODULES = ['g2', 'system'];
+  const MODULES = [
+    // Needed for routing.
+    'system',
+    // Service node_preview (proxied) needs user.private_tempstore.
+    'user',
+    // Needed by text.module
+    'field',
+    // Needed by node module.
+    'text',
+    // Needed by g2.module.
+    'node',
+    'g2',
+  ];
 
   public static $modules = self::MODULES;
-
 
   /**
    * The G2 Alphabar service.

@@ -28,7 +28,7 @@ Licensed under the CeCILL version 2.1 and General Public License version 2 and l
 
 | Blocks    | Service     | API       | Block / controller  |
 |-----------|-------------|-----------|---------------------|
-| Alphabar  | Done        | Working   |                     |
+| Alphabar  | Done        | Working   | Working             |
 | API       | n.a.        | Working   |                     |
 | Latest    |             |           |                     | 
 | Random    |             |           |                     | 
