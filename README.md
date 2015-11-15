@@ -7,7 +7,7 @@ Licensed under the CeCILL version 2.1 and General Public License version 2 and l
 
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FGM/g2/badges/quality-score.png?b=8.x-1.x)](https://scrutinizer-ci.com/g/FGM/g2/?branch=8.x-1.x)
 
-**WARNING** 2015-11-01 : This version of the project is _not_ usable at the 
+**WARNING** 2015-11-15 : This version of the project is _not_ usable at the 
   moment : it is very much a work in progress. An initial usable version is 
   expected for the Drupal 8.0.0 release due on 2015-11-19.
   
@@ -42,12 +42,12 @@ Licensed under the CeCILL version 2.1 and General Public License version 2 and l
 
 | Page          | Status
 |---------------|-------------------------------------------|
-| main          |
-| entries       |
-| initial       |
-| node add form |
-| settings      | No: Use config_inspector to edit
-| WOTD feed     |
+| main          |                                           |
+| entries       |                                           |
+| initial       |                                           |
+| node add form |                                           |
+| settings      | Working                                   |
+| WOTD feed     |                                           |
 
 ---
 

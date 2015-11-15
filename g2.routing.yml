@@ -1,8 +1,60 @@
-g2.settings:
-  path: "admin/config/content/g2"
+#g2.settings.base:
+#  path: "admin/config/content/g2"
+#  options:
+#    _admin_route: TRUE
+#  requirements:
+#    _permission: "administer site configuration"
+
+g2.settings.rpc:
+  path: "admin/config/content/g2/rpc"
   defaults:
     _form: 'Drupal\g2\Form\SettingsForm'
-    _title: "G2 settings"
+    _title: "G2 RPC configuration"
+    section: "rpc"
+  options:
+    _admin_route: TRUE
+  requirements:
+    _permission: "administer site configuration"
+
+g2.settings.block:
+  path: "admin/config/content/g2/block"
+  defaults:
+    _form: 'Drupal\g2\Form\SettingsForm'
+    _title: "G2 block configuration"
+    section: "block"
+  options:
+    _admin_route: TRUE
+  requirements:
+    _permission: "administer site configuration"
+
+g2.settings.controller:
+  path: "admin/config/content/g2/controller"
+  defaults:
+    _form: 'Drupal\g2\Form\SettingsForm'
+    _title: "G2 controllers configuration"
+    section: "controller"
+  options:
+    _admin_route: TRUE
+  requirements:
+    _permission: "administer site configuration"
+
+g2.settings.formatting:
+  path: "admin/config/content/g2/formatting"
+  defaults:
+    _form: 'Drupal\g2\Form\SettingsForm'
+    _title: "G2 formatting configuration"
+    section: "formatting"
+  options:
+    _admin_route: TRUE
+  requirements:
+    _permission: "administer site configuration"
+
+g2.settings.service:
+  path: "admin/config/content/g2/service"
+  defaults:
+    _form: 'Drupal\g2\Form\SettingsForm'
+    _title: "G2 services configuration"
+    section: "service"
   options:
     _admin_route: TRUE
   requirements:

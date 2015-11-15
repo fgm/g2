@@ -178,12 +178,12 @@ g2.settings:
         hidden_extra_title:
           type: boolean
           label: 'Add a "hidden extra title" on G2 entry node views.'
-        hide_freetagging:
+        hide_free_tagging:
           type: boolean
           label: 'Hide information from tag vocabularies to non-G2 admins.'
         tooltips_level:
           type: integer
-          label: 'Are Tooltips enabled on definitions ? 0: no, 1: title, 2 and more: teasers.'
+          label: 'Tooltips on definitions ? 0: no, 1: title, 2: teasers.'
         title:
           type: string
           label: 'Override for default site title on G2 entry node pages. Translatable: @title is the node original title.'
