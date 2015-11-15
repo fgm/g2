@@ -1847,7 +1847,7 @@ function theme_g2_teaser($title, $teaser) {
 /**
  * Theme a WOTD block.
  *
- * @param \Drupal\node\Entity\Node $node
+ * @param \Drupal\node\Entity\Node|null $node
  *   The node for the word of the day. teaser and body are already filtered and
  *   truncated if needed.
  *

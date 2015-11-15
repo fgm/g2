@@ -307,11 +307,11 @@ SQL;
   }
 
   if ($count) {
-    $message = $t('Converted G2 block deltas to new format.');
+    $message = t('Converted G2 block deltas to new format.');
     cache_clear_all('variables', 'cache');
   }
   else {
-    $message = $t('No obsolete delta to convert.');
+    $message = t('No obsolete delta to convert.');
   }
 
   drupal_set_message($message, 'status');
@@ -330,17 +330,18 @@ function g2_update_6001() {
   $count = 0;
   $wotd_author = variable_get(G2VARWOTDFEEDAUTHOR, G2DEFWOTDFEEDAUTHOR);
   if (strpos($wotd_author, '%author') !== FALSE) {
-    variable_set(G2VARWOTDFEEDAUTHOR, str_replace('%author', '!author', $wotd_author));
+    variable_set(G2VARWOTDFEEDAUTHOR, str_replace('%author', '@author', $wotd_author));
     $count++;
   }
   $wotd_descr = variable_get(G2VARWOTDFEEDDESCR, G2DEFWOTDFEEDDESCR);
   if (strpos($wotd_descr, '%site') !== FALSE) {
-    variable_set(G2VARWOTDFEEDDESCR, str_replace('%site', '!site', $wotd_descr));
+    variable_set(G2VARWOTDFEEDDESCR, str_replace('%site', ':site', $wotd_descr));
     $count++;
   }
 
   if ($count) {
-    $message = t('Replaced @count occurrences of old "percent" tokens by new "bang" ones on the <a href=":link">WOTD block feed settings</a>.', array( // coder false positive: :link is filtered
+    // Coder false positive: :link is filtered.
+    $message = t('Replaced @count occurrences of old "percent" tokens by new "colon" ones on the <a href=":link">WOTD block feed settings</a>.', array(
       '@count' => $count,
       // Constant: no need to check_url().
       ':link'  => url('admin/build/block/configure/g2/' . G2DELTAWOTD),
@@ -365,7 +366,8 @@ function g2_update_6001() {
 function g2_update_6002() {
   $ret = array();
   if (!db_table_exists('g2_referer')) {
-    $message = t("Temporarily reinstating g2_referer table for current version. In future versions, use an external tracking module instead.");
+    $message = t('Temporarily reinstating g2_referer table for current version.')
+     . t('In future versions, use an external tracking module instead.');
     $schema = g2_schema();
     db_create_table($ret, 'g2_referer', $schema['g2_referer']);
   }
