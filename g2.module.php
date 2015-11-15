@@ -1585,9 +1585,8 @@ function g2_xmlrpc() {
   );
 
   $enabled = \Drupal::config('g2.settings')->get('rpc.server.enabled');
-  // Local XML-RPC is no longer forced to allowed in the Drupal 6 version.
   if (!$enabled) {
-    $mapping = array_fill_keys(array_keys($mapping), 'xmlrpc_error');
+    $mapping = [];
   }
 
   return $mapping;
@@ -2882,32 +2881,6 @@ unset($_g2_er);
 //    'api' => '3.0',
 //    'path' => drupal_get_path('module', 'g2') . '/views',
 //  );
-//}
-//
-///**
-// * Implements hook_xmlrpc().
-// *
-// * Note that functions returning node portions return them unfiltered. It is the
-// * caller's responsibility to apply filtering depending on its actual use of the
-// * data.
-// */
-//function g2_xmlrpc() {
-//  $mapping = array(
-//    'g2.alphabar' => 'G2\alphabar',
-//    'g2.api'      => 'G2\api',
-//    'g2.latest'   => 'G2\latest',
-//    'g2.random'   => 'G2\random',
-//    'g2.stats'    => 'G2\stats',
-//    'g2.top'      => 'G2\top',
-//    'g2.wotd'     => 'G2\wotd',
-//  );
-//
-//  // Local XML-RPC is no longer forced to 'allowed' in the Drupal 6/7 versions.
-//  if (!variable_get(G2\VARXMLRPC, G2\DEFXMLRPC)) {
-//    $mapping = array_fill_keys(array_keys($mapping), 'xmlrpc_error');
-//  }
-//
-//  return $mapping;
 //}
 //
 ///**
