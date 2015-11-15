@@ -41,11 +41,14 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
    *   The block definition.
    * @param \Drupal\g2\Alphabar $alphabar
    *   The Alphabar service.
+   * @param array $block_config
+   *   The block configuration.
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition,
-    Alphabar $alphabar) {
+    Alphabar $alphabar, array $block_config) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->alphabar = $alphabar;
+    $this->blockConfig = $block_config;
   }
 
   /**
@@ -66,6 +69,7 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
     $result = [
       '#theme' => 'g2_alphabar',
       '#alphabar' => $links,
+      '#row_length' => $this->blockConfig['row_length'],
       '#attached' => [
         'library' => ['g2/g2-alphabar'],
       ]
@@ -96,8 +100,17 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
   ) {
     /* @var \Drupal\g2\Alphabar $alphabar */
     $alphabar = $container->get('g2.alphabar');
+
+    /* @var \Drupal\Core\Config\ConfigFactory $config_factory */
+    $config_factory = $container->get('config.factory');
+
+    /* @var \Drupal\Core\Config\ImmutableConfig $config */
+    $config = $config_factory->get('g2.settings');
+
+    $block_config = $config->get('block.alphabar');
+
     return new static($configuration, $plugin_id, $plugin_definition,
-      $alphabar);
+      $alphabar, $block_config);
   }
 
 }
