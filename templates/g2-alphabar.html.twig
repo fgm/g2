@@ -1,9 +1,7 @@
 <div class="alphabar">
-  {%  set limit = row_length - 1 %}
-  {% for index,link in alphabar %}
-    {{ link }}
-    {% if index % row_length == limit %}<br />
-    {% else %}&nbsp;
-    {% endif %}
-  {% endfor %}
+  {% for index,link in alphabar -%}
+  {{- link -}}
+  {%- if index % row_length == row_length - 1 %}<br />
+  {% endif %}
+  {%- endfor -%}
   </div>

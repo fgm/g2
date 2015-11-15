@@ -1,0 +1,14 @@
+@CHARSET "UTF-8";
+
+.alphabar a {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  border: thin solid transparent;
+  display: inline-block;
+}
+
+.alphabar a:hover {
+  background-color: ButtonHighlight;
+  border-color: ActiveBorder;
+  color: HighlightText;
+}

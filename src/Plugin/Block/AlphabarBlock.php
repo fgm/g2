@@ -66,6 +66,9 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
     $result = [
       '#theme' => 'g2_alphabar',
       '#alphabar' => $links,
+      '#attached' => [
+        'library' => ['g2/g2-alphabar'],
+      ]
     ];
     return $result;
   }
