@@ -67,7 +67,8 @@ class Alphabar {
    * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
    *   The URL generator service.
    */
-  public function __construct(ConfigFactoryInterface $config, LinkGenerator $link_generator, QueryFactory $query, UrlGeneratorInterface $url_generator) {
+  public function __construct(ConfigFactoryInterface $config, LinkGenerator $link_generator,
+    QueryFactory $query, UrlGeneratorInterface $url_generator) {
     $this->linkGenerator = $link_generator;
     $this->query = $query;
     $this->urlGenerator = $url_generator;

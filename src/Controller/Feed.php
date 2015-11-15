@@ -24,6 +24,6 @@ class Feed {
   /**
    * The default G2 author in feeds.
    */
-  const DEFAULT_AUTHOR = "@author";
+  const DEFAULT_AUTHOR = '@author';
 
 }

@@ -53,6 +53,27 @@ class SettingsForm extends ConfigFormBase {
   }
 
   /**
+   * Helper for form builders : prepare top-level details.
+   *
+   * @param array $form
+   *   The base form array.
+   * @param array $schema
+   *   The configuration schema from which to take the list of details.
+   *
+   * @return array
+   *   The extended array.
+   */
+  protected static function prepareTopLevelDetails(array $form, array $schema) {
+    foreach ($schema as $section => $section_schema) {
+      $form['controller'][$section] = [
+        '#type' => 'details',
+        '#title' => $section_schema['label'],
+      ];
+    }
+    return $form;
+  }
+
+  /**
    * {@inheritdoc}
    */
   protected function getEditableConfigNames() {
@@ -83,12 +104,7 @@ class SettingsForm extends ConfigFormBase {
    *   The form array.
    */
   public function buildBlockForm(array $form, array $config, array $schema) {
-    foreach ($schema as $section => $section_schema) {
-      $form['block'][$section] = [
-        '#type' => 'details',
-        '#title' => $section_schema['label'],
-      ];
-    }
+    $form = $this->prepareTopLevelDetails($form, $schema);
 
     $element = &$form['block']['alphabar'];
     $element['row_length'] = [
@@ -167,12 +183,7 @@ class SettingsForm extends ConfigFormBase {
    * @TODO provide an auto-complete for node ids instead of using a plain number.
    */
   public function buildControllerForm(array $form, array $config, array $schema) {
-    foreach ($schema as $section => $section_schema) {
-      $form['controller'][$section] = [
-        '#type' => 'details',
-        '#title' => $section_schema['label'],
-      ];
-    }
+    $form = $this->prepareTopLevelDetails($form, $schema);
 
     $element = &$form['controller']['main'];
     $element['nid'] = [
@@ -402,9 +413,6 @@ class SettingsForm extends ConfigFormBase {
       $config = $this->config(static::CONFIG_NAME)->get($section);
       $schema = $this->configSchema['mapping'][$section]['mapping'];
       $form = $this->{$builder}($form, $config, $schema);
-    }
-    else {
-      drupal_set_message(t('Non-existent form section %section.', ['%section' => $section]), 'warning');
     }
 
     return parent::buildForm($form, $form_state);

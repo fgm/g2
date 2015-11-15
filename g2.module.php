@@ -15,8 +15,10 @@
  * @link http://wiki.audean.com/g2/choosing @endlink
  */
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\GeneratedLink;
 use Drupal\g2\G2;
+use Drupal\node\Entity\Node;
 
 $_g2_er = error_reporting(E_ALL | E_STRICT);
 
@@ -51,7 +53,8 @@ function _g2_api() {
  * @see g2_menu()
  * @see g2_block()
  *
- * @param string $string The beginning of the entry
+ * @param null|string $us_string The beginning of the entry
+ *
  * @return None
  */
 function _g2_autocomplete($us_string = NULL) {
@@ -69,7 +72,7 @@ function _g2_autocomplete($us_string = NULL) {
     while (is_object($o = db_fetch_object($q))) {
       $title = $o->sticky
         ? t('@title [@nid, sticky]', array('@title' => $o->title, '@nid' => $o->nid))
-        : t('@title [@nid]',         array('@title' => $o->title, '@nid' => $o->nid));
+        : t('@title [@nid]', array('@title' => $o->title, '@nid' => $o->nid));
       $matches[$title] = $o->title;
     }
   }
@@ -186,7 +189,7 @@ function _g2_filter_process($entry) {
     $attributes['title'] = $tooltip;
   }
 
-  $ret = l($entry, $target .'/'. $path, array(
+  $ret = l($entry, $target . '/' . $path, array(
     'absolute'   => TRUE,
     'html'       => FALSE,
     'attributes' => $attributes,
@@ -241,9 +244,10 @@ function _g2_initial($initial) {
   $q = db_query($sq, G2NODETYPE, $initial);
   $ar_entries = array();
   while (is_object($o = db_fetch_object($q))) {
-    $ar_entries[] = t('!link: !teaser', array(
-      '!link'   => l($o->title, 'node/'. $o->nid),              // l() filters
-      '!teaser' => strip_tags(check_markup($o->teaser, $o->format, FALSE)),
+    $ar_entries[] = t(':link: @teaser', array(
+      // Function l() filters.
+      ':link'   => l($o->title, 'node/' . $o->nid),
+      '@teaser' => strip_tags(check_markup($o->teaser, $o->format, FALSE)),
       )
     );
   }
@@ -260,12 +264,13 @@ function _g2_initial($initial) {
  *   The maximum number of entries to return
  * @param boolean $include_unpublished
  *   Include unpublished nodes in that list
+ *
  * @return array
  *   Note that the results are NOT filtered, and must be filtered when used.
  */
 function _g2_latest($max = NULL, $include_unpublished = FALSE) {
   $def_max      = variable_get(G2VARLATESTITEMCOUNT, G2DEFLATESTITEMCOUNT);
-  $rpc_throttle = variable_get(G2VARRPCTHROTTLE,     G2DEFRPCTHROTTLE);
+  $rpc_throttle = variable_get(G2VARRPCTHROTTLE, G2DEFRPCTHROTTLE);
   // Limit extraction
   if (empty($max) || ($max > $rpc_throttle * $def_max)) {
     $max = $def_max;
@@ -303,7 +308,7 @@ function _g2_override_site_name() {
   if (variable_get(G2VARPAGETITLE, G2DEFPAGETITLE)) {
     global $conf;
     $conf['site_name'] = strtr(variable_get(G2VARPAGETITLE, G2DEFPAGETITLE),
-      array('@title' => variable_get('site_name', 'Drupal'))) ;
+      array('@title' => variable_get('site_name', 'Drupal')));
   }
 }
 
@@ -329,7 +334,7 @@ function _g2_random() {
   $sq = 'SELECT COUNT(*) cnt '
       . 'FROM {node} n '
       . "WHERE n.type = '%s' AND (n.status = 1) "
-      . "  AND NOT (n.title = '%s' OR n.nid = %d)" ;
+      . "  AND NOT (n.title = '%s' OR n.nid = %d)";
   $sq = db_rewrite_sql($sq);
   $q = db_query($sq, G2NODETYPE, $random, $wotd_nid);
   $n = db_result($q);
@@ -341,7 +346,7 @@ function _g2_random() {
       . 'FROM {node} n '
       . '  INNER JOIN {node_revisions} v ON n.vid = v.vid '
       . "WHERE n.type = '%s' AND (n.status = 1) "
-      . "  AND NOT (n.title = '%s' OR n.nid = %d) " ;
+      . "  AND NOT (n.title = '%s' OR n.nid = %d) ";
   $sq = db_rewrite_sql($sq);
   $q = db_query_range($sq, G2NODETYPE, $random, $wotd_nid, $rand, 1);
   $nid = db_result($q);
@@ -393,7 +398,7 @@ function _g2_referer_links($form_state, $node) {
     $sts = preg_match('/node\/(\d+)/', $o->referer, $matches);
     if ($sts) {
       $node = node_load($matches[1]);
-      $title = l($node->title, 'node/'. $node->nid);
+      $title = l($node->title, 'node/' . $node->nid);
     }
     else {
       $title = NULL;
@@ -447,7 +452,7 @@ function _g2_referer_links($form_state, $node) {
  * @return void
  */
 function _g2_referer_links_submit(&$form, &$form_state) {
-  $form_state['redirect'] = 'g2/wipe/'. $form_state['values']['wipe_target'];
+  $form_state['redirect'] = 'g2/wipe/' . $form_state['values']['wipe_target'];
 }
 
 /**
@@ -560,7 +565,7 @@ function _g2_top($max = NULL, $daily_top = FALSE, $include_unpublished = FALSE) 
         . '  INNER JOIN {node_counter} c ON n.nid = c.nid '
         . "WHERE (n.type = '%s') AND (n.status >= %d) "
         . '  AND (c.totalcount is not NULL) '
-        . 'ORDER BY '. $ordering .', n.changed DESC';
+        . 'ORDER BY ' . $ordering . ', n.changed DESC';
     $sq = db_rewrite_sql($sq);
     $q = db_query_range($sq, G2NODETYPE, $status, 0, $max);
     while (is_object($o = db_fetch_object($q))) {
@@ -618,10 +623,10 @@ function _g2_wotd_feed() {
     // Language: Drupal 6 defaults to to $language->language
 
     // Title: Drupal 6 defaults to site name
-    'title'          => variable_get(G2VARWOTDFEEDTITLE, variable_get(G2VARWOTDTITLE, G2DEFWOTDTITLE)),
+    'title' => variable_get(G2VARWOTDFEEDTITLE, variable_get(G2VARWOTDTITLE, G2DEFWOTDTITLE)),
 
     // Description: Drupal defaults to $site_mission
-    'description'    => strtr(variable_get(G2VARWOTDFEEDDESCR, G2DEFWOTDFEEDDESCR), array('!site' => $base_url)),
+    'description' => strtr(variable_get(G2VARWOTDFEEDDESCR, G2DEFWOTDFEEDDESCR), array('!site' => $base_url)),
     'managingEditor' => variable_get('site_mail', 'nobody@example.com'),
   );
 
@@ -1012,7 +1017,7 @@ function g2_filter_tips($delta, $format, $long = FALSE) {
 function g2_form(&$node, $form_state) {
   if (!isset($node->title)) {
     $node->title = check_plain(drupal_substr($_REQUEST['q'],
-      drupal_strlen(G2PATHNODEADD) + 1)) ;
+      drupal_strlen(G2PATHNODEADD) + 1));
   }
 
   $type = node_get_types('type', G2NODETYPE);
@@ -1175,7 +1180,7 @@ function g2_menu() {
     'type'             => MENU_CALLBACK
   );
 
-  $items[G2PATHENTRIES .'/%g2_entry'] = array(
+  $items[G2PATHENTRIES . '/%g2_entry'] = array(
     'title'            => G2TITLEENTRIES,
     'page callback'    => 'theme',
     'page arguments'   => array('g2_entries', 2),
@@ -1321,12 +1326,10 @@ function g2_preprocess_page(&$vars) {
 /**
  * Submit handler for "wipe referers" button.
  *
- * @param array $form_
- * @param array $form_state
- *
- * @return void
+ * @param array $form
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
  */
-function g2_referer_wipe_button_submit($form, &$form_state) {
+function g2_referer_wipe_button_submit(array $form, FormStateInterface &$form_state) {
   drupal_goto('g2/wipe');
 }
 
@@ -1345,7 +1348,7 @@ function g2_referer_wipe_confirm_form(&$form_state, $node = NULL) {
 
   if (is_object($node) && isset($node->nid)) {
     $question = t('Are you sure to want to erase the referer information on this G2 entry ?');
-    $cancel = 'node/'. $node->nid .'/referers';
+    $cancel = 'node/' . $node->nid . '/referers';
     $form['node'] = array(
       '#prefix' => '<p><em>',
       '#value' => check_plain($node->title),
@@ -1434,7 +1437,7 @@ function g2_user($op, &$edit, &$account, $category = NULL) {
       $account->nodes = array();
       while (is_object($o = db_fetch_object($q))) {
         $account->nodes[] = array(
-          'value' => l($o->title, 'node/'. $o->nid, array('absolute' => TRUE))
+          'value' => l($o->title, 'node/' . $o->nid, array('absolute' => TRUE))
         );
       }
       break;
@@ -1455,7 +1458,7 @@ function g2_user($op, &$edit, &$account, $category = NULL) {
       break;
 
     default:
-      //dprint_r($op)  ;
+      //dprint_r($op);
       break;
   }
 }
@@ -1474,7 +1477,7 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE) {
     $bc = drupal_get_breadcrumb();
     $bc[] = l(G2TITLEMAIN, $g2_home = variable_get(G2VARPATHMAIN, G2DEFPATHMAIN));
     $initial = drupal_substr($title, 0, 1);
-    $bc[] = l($title[0], G2PATHINITIAL .'/'. $initial);
+    $bc[] = l($title[0], G2PATHINITIAL . '/' . $initial);
     unset($initial);
     drupal_set_breadcrumb($bc);
     _g2_override_site_name();
@@ -1552,7 +1555,7 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE) {
      */
   }
 
-  // $x = $node; $x->as_teaser = $teaser ? 'teaser' : 'body' ; $x->as_page = $page ? 'page' : 'list'; dsm($x);
+  // $x = $node; $x->as_teaser = $teaser ? 'teaser' : 'body'; $x->as_page = $page ? 'page' : 'list'; dsm($x);
   return $node;
 }
 
@@ -1562,7 +1565,7 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE) {
 function g2_views_api() {
   return array(
     'api' => '2.0',
-    'path' => drupal_get_path('module', 'g2') .'/views',
+    'path' => drupal_get_path('module', 'g2') . '/views',
   );
 }
 
@@ -1646,7 +1649,7 @@ function theme_g2_entries($entries = array()) {
         if (node_access('create', G2NODETYPE)) {
           $ret .= t('<p>Would you like to <a href="!url" title="Create new entry for %entry">create</a> one ?</p>',
             array(
-              '!url'   => url(str_replace('_', '-', G2PATHNODEADD) .'/'. $entry),
+              '!url'   => url(str_replace('_', '-', G2PATHNODEADD) . '/' . $entry),
               '%entry' => $entry
             )
           );
@@ -1654,7 +1657,7 @@ function theme_g2_entries($entries = array()) {
         break;
 
       case 1:
-        $next = 'node/'. reset($entries)->nid;
+        $next = 'node/' . reset($entries)->nid;
         // Does the webmaster want us to jump ?
         if (variable_get(G2VARGOTOSINGLE, G2DEFGOTOSINGLE)) {
           $redirect_type = variable_get(G2VARHOMONYMSREDIRECT, G2DEFHOMONYMSREDIRECT);
@@ -1665,12 +1668,12 @@ function theme_g2_entries($entries = array()) {
 
       default:
         // Style more-link specifically
-        drupal_add_css(drupal_get_path('module', 'g2') .'/g2.css', 'module', 'all', FALSE);
+        drupal_add_css(drupal_get_path('module', 'g2') . '/g2.css', 'module', 'all', FALSE);
 
         $vid = variable_get(G2VARHOMONYMSVID, G2DEFHOMONYMSVID);
         $rows = array();
         foreach ($entries as $nid => $node) {
-          $path = 'node/'. $nid;
+          $path = 'node/' . $nid;
           $terms = array();
           foreach ($node->taxonomy as $tid => $term) {
             if ($vid && $term->vid == $vid) {
@@ -1678,7 +1681,7 @@ function theme_g2_entries($entries = array()) {
             }
           $taxonomy = empty($terms)
             ? NULL
-            : ' <span class="inline">('. implode(', ', $terms) .')</span>';
+            : ' <span class="inline">(' . implode(', ', $terms) . ')</span>';
 
           }
         $teaser = strip_tags(check_markup($node->teaser, $node->format));
@@ -1777,7 +1780,7 @@ function theme_g2_node_list($nodes = array()) {
     $class = ($node->status == NODE_PUBLISHED)
       ? NULL
       : 'node-unpublished';
-    $ar[] = l($node->title, 'node/'. $node->nid, array('attributes' => array('class' => $class)));
+    $ar[] = l($node->title, 'node/' . $node->nid, array('attributes' => array('class' => $class)));
   }
   $ret = theme('item_list', $ar);
   return $ret;
@@ -1789,9 +1792,9 @@ function theme_g2_node_list($nodes = array()) {
  * Title and period are filtered prior to invoking this theme function
  * within g2_view(), so it performs no filtering on its own.
  *
- * @param title $title
+ * @param string $title
  *   The title for the period container
- * @param body $body
+ * @param string $period
  *   The period itself. filtered by check_plain().
  *
  * @return string HTML
@@ -1817,7 +1820,7 @@ function theme_g2_random($node = NULL) {
     $ret .= t(': @teaser', array('@teaser' => $node->teaser));
   }
   $ret .= _g2_entry_terms($node); // No need to test: also works on missing taxonomy
-  $ret .= theme('more_link', url('node/'. $node->nid), t('&nbsp;(+)'));
+  $ret .= theme('more_link', url('node/' . $node->nid), t('&nbsp;(+)'));
   return $ret;
 }
 
@@ -1844,21 +1847,21 @@ function theme_g2_teaser($title, $teaser) {
 /**
  * Theme a WOTD block.
  *
- * @param object $wotd
- *   The node for the word of the day. teaser and body are already
- *   filtered and truncated if needed.
+ * @param \Drupal\node\Entity\Node $node
+ *   The node for the word of the day. teaser and body are already filtered and
+ *   truncated if needed.
  *
  * @return object title / nid / teaser / [body]
  */
-function theme_g2_wotd($node = NULL) {
+function theme_g2_wotd(Node $node = NULL) {
   if (empty($node)) {
     return NULL;
   }
 
-  $link = l($node->title, 'node/'. $node->nid); // l() check_plain's text
+  $link = l($node->title, 'node/' . $node->nid); // l() check_plain's text
   if (isset($node->teaser) and !empty($node->teaser)) {
     // teaser already filtered by _g2_wotd(), don't filter twice.
-    $teaser = '<span id="g2_wotd_teaser">'. strip_tags($node->teaser) .'</span>';
+    $teaser = '<span id="g2_wotd_teaser">' . strip_tags($node->teaser) . '</span>';
     $ret = t('!link: !teaser', array(
       '!link' => $link,
       '!teaser' => $teaser,
