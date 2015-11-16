@@ -13,6 +13,11 @@ namespace Drupal\g2;
  * Class G2 is the container for general-use G2 data.
  */
 class G2 {
+  /**
+   * The key for the module configuration.
+   */
+  const CONFIG_NAME = 'g2.settings';
+
   // The name of the node.type.g2_entry config entity.
   const NODE_TYPE = 'g2_entry';
 

@@ -20,8 +20,6 @@ use Drupal\Core\GeneratedLink;
 use Drupal\g2\G2;
 use Drupal\node\Entity\Node;
 
-$_g2_er = error_reporting(E_ALL | E_STRICT);
-
 module_load_include('inc', 'g2', 'g2_data');
 
 /**
@@ -46,6 +44,63 @@ function _g2_alphabar() {
 function _g2_api() {
   return G2::api();
 }
+
+/**
+ * Implements hook_theme().
+ */
+function g2_theme($existing, $type, $theme, $path) {
+  $config = \Drupal::config('g2.settings');
+  $ret = [
+    // Checked for D8.
+    'g2_alphabar'  => [
+      'variables' => [
+        'alphabar' => [],
+        'row_length' => $config->get('block.alphabar.row_length'),
+      ]],
+    'g2_main' => [
+      'variables'    => array(
+        'alphabar'     => $config->get('service.alphabar.contents'),
+        'text'         => '',
+
+      ),
+    ],
+
+    // --- Older versions ------------------------------------------------------
+    'g2_node_list' => array('arguments' => array('nodes' => array())),
+    'g2_random'    => array('arguments' => array('node' => NULL)),
+    'g2_wotd'      => array('arguments' => array('node' => NULL)),
+    'g2_body'      => array('arguments' => array('title' => '', 'body' => '')),
+    'g2_entries'   => array('arguments' => array('entry' => '')),
+    'g2_initial'   => array('arguments' => array('initial' => NULL)),
+    'g2_period'    => array('arguments' => array('title' => '', 'period' => '')),
+    'g2_teaser'    => array('arguments' => array('title' => '', 'teaser' => '')),
+  ];
+  return $ret;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function Zg2_theme($existing, $type, $theme, $path) {
+  include_once $path . '/theme/theme.inc';
+  $ret = array(
+    'g2_node_list' => array('variables' => array('nodes' => array())),
+    'g2_random'    => array('variables' => array('node' => NULL)),
+    'g2_wotd'      => array('variables' => array('node' => NULL)),
+    'g2_entries'   => array('variables' => array('entry' => '')),
+    'g2_initial'   => array('variables' => array('initial' => NULL)),
+    'g2_field'     => array(
+      'variables'    => array(
+        'expansion'    => '',
+        'name'         => '',
+        'title'        => '',
+    )),
+  );
+  return $ret;
+}
+
+
+// ==== Code below this line has not yet been converted to D8 ==================
 
 /**
  * AJAX autocomplete for entry
@@ -303,6 +358,8 @@ function _g2_latest($max = NULL, $include_unpublished = FALSE) {
  * as would be the case using variable_set.
  *
  * @return void
+ *
+ * @see \Drupal\g2\Controller\Main::indexAction()
  * */
 function _g2_override_site_name() {
   if (variable_get(G2VARPAGETITLE, G2DEFPAGETITLE)) {
@@ -1188,19 +1245,6 @@ function g2_menu() {
     'type'             => MENU_CALLBACK
   );
 
-  /**
-   * G2 main page: variable path. This type of semi-dynamic entry needs
-   * special care.
-   * @see g2_admin_settings_submit()
-   */
-  $items[variable_get(G2VARPATHMAIN, G2DEFPATHMAIN)] = array(
-    'title'            => G2TITLEMAIN,
-    'page callback'    => 'theme',
-    'page arguments'   => array('g2_main'),
-    'access arguments' => array(G2PERMVIEW),
-    'type'             => MENU_NORMAL_ITEM
-  );
-
   $items[G2PATHWOTDFEED] = array(
     'title'            => G2TITLEWOTDFEED,
     'page callback'    => '_g2_wotd_feed',
@@ -1259,10 +1303,16 @@ function g2_node_info() {
  */
 function g2_node_load($us_nid = 0) {
   // Safety with regard to $us_nid is checked within node_load()
-  $node = node_load($us_nid);
-  if ($node->type != G2NODETYPE) {
+  if (is_numeric($us_nid)) {
+    $node = Node::load($us_nid);
+  }
+  else {
+    $node = reset($us_nid);
+  }
+  if ($node->type != G2::NODE_TYPE) {
     $node = NULL;
   }
+
   return $node;
 }
 
@@ -1383,32 +1433,6 @@ function g2_referer_wipe_confirm_form_submit($form, &$form_state) {
   drupal_set_message(t('Referer information has been erased on all G2 entries'));
   $form_state['redirect'] = G2PATHSETTINGS;
   return;
-}
-
-/**
- * Implements hook_theme().
- */
-function g2_theme() {
-  $ret = [
-    // Checked for D8
-    'g2_alphabar'  => [
-      'variables' => [
-        'alphabar' => [],
-        'row_length' => \Drupal::config('g2.settings')->get('block.alphabar.row_length'),
-      ]],
-
-    // --- Older versions ------------------------------------------------------
-    'g2_node_list' => array('arguments' => array('nodes' => array())),
-    'g2_random'    => array('arguments' => array('node' => NULL)),
-    'g2_wotd'      => array('arguments' => array('node' => NULL)),
-    'g2_body'      => array('arguments' => array('title' => '', 'body' => '')),
-    'g2_entries'   => array('arguments' => array('entry' => '')),
-    'g2_initial'   => array('arguments' => array('initial' => NULL)),
-    'g2_main'      => array('arguments' => array()),
-    'g2_period'    => array('arguments' => array('title' => '', 'period' => '')),
-    'g2_teaser'    => array('arguments' => array('title' => '', 'teaser' => '')),
-  ];
-  return $ret;
 }
 
 /**
@@ -1723,48 +1747,6 @@ function theme_g2_initial($initial = NULL) {
 }
 
 /**
- * Theme the main G2 page, using an unpublished node and the alphabar.
- *
- * Return a simple nodepage built with alphabars wrapping a node
- * to serve as the main page for the G2 glossary. If no node
- * is set, just return an alphabar.
- *
- * The node is supposed to be an unpublished node, to avoid its
- * appearing in normal situations, and it will be used as if it was
- * published by this function.
- *
- * @see _g2_main()
- *
- * @return string HTML
- */
-function theme_g2_main() {
-  // rowlen == 2 << 16 so that only an extremely long alphabar would wrap
-  $alphabar = theme('g2_alphabar', _g2_alphabar(), 2 << 16);
-  $main = variable_get(G2VARMAIN, G2DEFMAIN);
-  if (is_numeric($main)) {
-    $node = node_load($main);
-    if (is_object($node)) {
-      drupal_set_title(check_plain($node->title));
-      if (isset($node->body)) {
-        $node->status = NODE_PUBLISHED; // Simulate publishing
-        $node->content['alphatop'] = array('#value' => $alphabar, '#weight' => -15);
-        $node->content['alphabot'] = array('#value' => $alphabar, '#weight' =>  15);
-      }
-      else {
-        $node->body = $alphabar;
-      }
-    $ret = node_view($node, FALSE, TRUE);
-    _g2_override_site_name();
-    }
-  }
-  else {
-    $ret = $main();
-  }
-
-  return $ret;
-}
-
-/**
  * Themed a G2 entries list, as used by the "latest" and "top" blocks.
  *
  * Node access control is the responsibility of the caller passing the
@@ -1889,9 +1871,6 @@ function theme_g2_wotd(Node $node = NULL) {
   }
   return $ret;
 }
-
-error_reporting($_g2_er);
-unset($_g2_er);
 
 //require __DIR__ . '/g2.inc';
 //
@@ -2525,16 +2504,6 @@ unset($_g2_er);
 //    'type' => MENU_CALLBACK,
 //  );
 //
-//  // G2 main page: variable path. This type of semi-dynamic entry needs
-//  // special care.
-//  // @see g2_admin_settings_submit()
-//  $items[variable_get(G2\VARPATHMAIN, G2\DEFPATHMAIN)] = array(
-//    'title' => G2\TITLEMAIN,
-//    'page callback' => 'G2\page_main',
-//    'access arguments' => array(G2\PERMVIEW),
-//    'type' => MENU_NORMAL_ITEM,
-//  );
-//
 //  $items[G2\PATHWOTDFEED] = array(
 //    'title' => G2\TITLEWOTDFEED,
 //    'page callback' => 'G2\wotd_feed',
@@ -2677,40 +2646,6 @@ unset($_g2_er);
 //  if ($plugin = context_get_plugin('reaction', 'g2_template')) {
 //    $plugin->execute($vars);
 //  }
-//}
-//
-///**
-// * Implements hook_theme().
-// */
-//function g2_theme($existing, $type, $theme, $path) {
-//  $path = drupal_get_path('module', 'g2');
-//  include_once $path . '/theme/theme.inc';
-//  $base = array(
-//    'file' => 'theme.inc',
-//    'path' => $path . '/theme',
-//  );
-//
-//  $ret = array(
-//    'g2_node_list' => array('variables' => array('nodes' => array())),
-//    'g2_random'    => array('variables' => array('node' => NULL)),
-//    'g2_wotd'      => array('variables' => array('node' => NULL)),
-//    'g2_entries'   => array('variables' => array('entry' => '')),
-//    'g2_initial'   => array('variables' => array('initial' => NULL)),
-//    'g2_main'      => $base + array(
-//      'template'     => 'g2_main',
-//      'variables'    => array(
-//        'alphabar'     => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-//        'text'         => '',
-//      ),
-//    ),
-//    'g2_field'     => array(
-//      'variables'    => array(
-//        'expansion'    => '',
-//        'name'         => '',
-//        'title'        => '',
-//    )),
-//  );
-//  return $ret;
 //}
 //
 ///**

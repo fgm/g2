@@ -21,7 +21,7 @@ block:
 controller:
   main:
     nid: 0
-    route: 'g2_main'
+    route: 'g2.main'
   entries:
     route: 'g2.entries'
   initial:

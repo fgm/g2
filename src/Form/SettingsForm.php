@@ -9,7 +9,9 @@ namespace Drupal\g2\Form;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Routing\RouteBuilderInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\g2\G2;
 use Drupal\taxonomy\Entity\Vocabulary;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,9 +23,19 @@ use Symfony\Component\HttpFoundation\Response;
  * @TODO Refactor like \Drupal\config_inspector\Form\ConfigInspectorItemForm.
  */
 class SettingsForm extends ConfigFormBase {
-  const CONFIG_NAME = 'g2.settings';
-
+  /**
+   * The schema information for the module configuration.
+   *
+   * @var array
+   */
   protected $configSchema;
+
+  /**
+   * The router.builder service.
+   *
+   * @var \Drupal\Core\Routing\RouteBuilderInterface
+   */
+  protected $routerBuilder;
 
   /**
    * Constructs a \Drupal\system\ConfigFormBase object.
@@ -32,10 +44,14 @@ class SettingsForm extends ConfigFormBase {
    *   The factory for configuration objects.
    * @param array $config_schema
    *   The schema array for the configuration data.
+   * @param \Drupal\Core\Routing\RouteBuilderInterface $router_builder
+   *   The router.builder service.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, array $config_schema) {
+  public function __construct(ConfigFactoryInterface $config_factory, array $config_schema,
+    RouteBuilderInterface $router_builder) {
     parent::__construct($config_factory);
     $this->configSchema = $config_schema;
+    $this->routerBuilder = $router_builder;
   }
 
   /**
@@ -45,11 +61,13 @@ class SettingsForm extends ConfigFormBase {
     /* @var \Drupal\Core\Config\ConfigFactoryInterface  $config_factory */
     $config_factory = $container->get('config.factory');
 
+    /* @var \Drupal\Core\Routing\RouteBuilderInterface $router_builder */
+    $router_builder = $container->get('router.builder');
+
     /* @var \Drupal\Core\Config\TypedConfigManagerInterface $typed_config */
     $typed_config = $container->get('config.typed');
 
-    return new static($config_factory, $typed_config->getDefinition(static::CONFIG_NAME)
-    );
+    return new static($config_factory, $typed_config->getDefinition(G2::CONFIG_NAME), $router_builder);
   }
 
   /**
@@ -59,15 +77,17 @@ class SettingsForm extends ConfigFormBase {
    *   The base form array.
    * @param array $schema
    *   The configuration schema from which to take the list of details.
+   * @param string $section
+   *   The configuration section in which to build the list of details.
    *
    * @return array
    *   The extended array.
    */
-  protected static function prepareTopLevelDetails(array $form, array $schema) {
-    foreach ($schema as $section => $section_schema) {
-      $form['controller'][$section] = [
+  protected static function prepareTopLevelDetails(array $form, array $schema, $section) {
+    foreach ($schema as $top => $top_schema) {
+      $form[$section][$top] = [
         '#type' => 'details',
-        '#title' => $section_schema['label'],
+        '#title' => $top_schema['label'],
       ];
     }
     return $form;
@@ -77,7 +97,7 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   protected function getEditableConfigNames() {
-    return [static::CONFIG_NAME];
+    return [G2::CONFIG_NAME];
   }
 
   /**
@@ -104,23 +124,24 @@ class SettingsForm extends ConfigFormBase {
    *   The form array.
    */
   public function buildBlockForm(array $form, array $config, array $schema) {
-    $form = $this->prepareTopLevelDetails($form, $schema);
+    $section = 'block';
+    $form = $this->prepareTopLevelDetails($form, $schema, $section);
 
-    $element = &$form['block']['alphabar'];
+    $element = &$form[$section]['alphabar'];
     $element['row_length'] = [
       '#type' => 'number',
       '#title' => $schema['alphabar']['mapping']['row_length']['label'],
       '#default_value' => $config['alphabar']['row_length'],
     ];
 
-    $element = &$form['block']['latest'];
+    $element = &$form[$section]['latest'];
     $element['count'] = [
       '#type' => 'number',
       '#title' => $schema['latest']['mapping']['count']['label'],
       '#default_value' => $config['latest']['count'],
     ];
 
-    $element = &$form['block']['random'];
+    $element = &$form[$section]['random'];
     $element['show_terms'] = [
       '#type' => 'checkbox',
       '#title' => $schema['random']['mapping']['show_terms']['label'],
@@ -132,14 +153,14 @@ class SettingsForm extends ConfigFormBase {
       '#default_value' => $config['random']['store'],
     ];
 
-    $element = &$form['block']['top'];
+    $element = &$form[$section]['top'];
     $element['count'] = [
       '#type' => 'number',
       '#title' => $schema['top']['mapping']['count']['label'],
       '#default_value' => $config['top']['count'],
     ];
 
-    $element = &$form['block']['wotd'];
+    $element = &$form[$section]['wotd'];
     $element['auto_change'] = [
       '#type' => 'checkbox',
       '#title' => $schema['wotd']['mapping']['auto_change']['label'],
@@ -183,8 +204,9 @@ class SettingsForm extends ConfigFormBase {
    * @TODO provide an auto-complete for node ids instead of using a plain number.
    */
   public function buildControllerForm(array $form, array $config, array $schema) {
-    $form = $this->prepareTopLevelDetails($form, $schema);
-
+    $section = 'controller';
+    $form = $this->prepareTopLevelDetails($form, $schema, $section);
+    drupal_set_message(t('Be aware that saving this configuration will rebuild the router.'));
     $element = &$form['controller']['main'];
     $element['nid'] = [
       '#type' => 'number',
@@ -192,12 +214,12 @@ class SettingsForm extends ConfigFormBase {
       '#default_value' => $config['main']['nid']
     ];
 
-    foreach (['main', 'entries', 'initial', 'adder', 'homonyms'] as $section) {
-      $element = &$form['controller'][$section];
+    foreach (['main', 'entries', 'initial', 'adder', 'homonyms'] as $top) {
+      $element = &$form['controller'][$top];
       $element['route'] = [
         '#type' => 'textfield',
-        '#title' => $schema[$section]['mapping']['route']['label'],
-        '#default_value' => $config[$section]['route']
+        '#title' => $schema[$top]['mapping']['route']['label'],
+        '#default_value' => $config[$top]['route']
       ];
     }
 
@@ -410,12 +432,21 @@ class SettingsForm extends ConfigFormBase {
     ];
     $builder = 'build' . ucfirst($section) . 'Form';
     if (method_exists($this, $builder)) {
-      $config = $this->config(static::CONFIG_NAME)->get($section);
+      $config = $this->config(G2::CONFIG_NAME)->get($section);
       $schema = $this->configSchema['mapping'][$section]['mapping'];
       $form = $this->{$builder}($form, $config, $schema);
     }
 
     return parent::buildForm($form, $form_state);
+  }
+
+  /**
+   * Additional submit handler for the block configuration form.
+   */
+  public function submitControllerForm() {
+    // @TODO Really necessary ? We change selected routes, not modifying them.
+    $this->routerBuilder->rebuild();
+    drupal_set_message($this->t('The router has been rebuilt.'));
   }
 
   /**
@@ -425,8 +456,14 @@ class SettingsForm extends ConfigFormBase {
     $values = $form_state->getValues();
     $section = $values['section'];
     $values = $values[$section];
-    $config = $this->config(static::CONFIG_NAME);
+    $config = $this->config(G2::CONFIG_NAME);
     $config->set($section, $values)->save();
+
+    $handler = 'submit' . ucfirst($section) . 'Form';
+    if (method_exists($this, $handler)) {
+      $this->{$handler}();
+    }
+
     drupal_set_message($this->t('The configuration options have been saved.'));
   }
 

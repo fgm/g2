@@ -1,10 +1,13 @@
-#g2.settings.base:
-#  path: "admin/config/content/g2"
-#  options:
-#    _admin_route: TRUE
-#  requirements:
-#    _permission: "administer site configuration"
+# G2 default main page.
+g2.main:
+  path: '/g2'
+  defaults:
+    _controller: '\Drupal\g2\Controller\Main::indexAction'
+    _title: 'G2 Glossary main page'
+  requirements:
+    _permission: 'view g2 entries'
 
+# Settings-related routes.
 g2.settings.rpc:
   path: "admin/config/content/g2/rpc"
   defaults:
@@ -15,7 +18,6 @@ g2.settings.rpc:
     _admin_route: TRUE
   requirements:
     _permission: "administer site configuration"
-
 g2.settings.block:
   path: "admin/config/content/g2/block"
   defaults:
@@ -26,7 +28,6 @@ g2.settings.block:
     _admin_route: TRUE
   requirements:
     _permission: "administer site configuration"
-
 g2.settings.controller:
   path: "admin/config/content/g2/controller"
   defaults:
@@ -37,7 +38,6 @@ g2.settings.controller:
     _admin_route: TRUE
   requirements:
     _permission: "administer site configuration"
-
 g2.settings.formatting:
   path: "admin/config/content/g2/formatting"
   defaults:
@@ -48,7 +48,6 @@ g2.settings.formatting:
     _admin_route: TRUE
   requirements:
     _permission: "administer site configuration"
-
 g2.settings.service:
   path: "admin/config/content/g2/service"
   defaults:
@@ -60,22 +59,23 @@ g2.settings.service:
   requirements:
     _permission: "administer site configuration"
 
+# ==== The routes below this line are not yet complete =========================
+# G2 node creation form.
+g2.add:
+  path: '/node/add/g2_entry'
+
 # G2 node reference.
 g2.autocomplete:
   path: '/g2/autocomplete/{g2_match}'
-
-# G2 default entries-by-initial-segment page.
-g2.initial:
-  path: '/g2/initial/{g2_match}'
 
 # G2 default entries-matching page.
 g2.entries:
   path: '/g2/entries/{g2_match}'
 
-# G2 node creation form.
-g2.add:
-  path: '/node/add/g2_entry'
-
 # G2 WOTD RSS feed.
 g2.feed.wotd:
   path: '/g2/wotd'
+
+# G2 default entries-by-initial-segment page.
+g2.initial:
+  path: '/g2/initial/{g2_match}'

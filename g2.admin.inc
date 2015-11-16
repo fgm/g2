@@ -46,7 +46,7 @@ function g2_admin_settings() {
     '#type'          => 'textfield',
     '#title'         => t('Override for site title on G2 pages'),
     '#default_value' => variable_get(G2VARPAGETITLE, G2DEFPAGETITLE),
-    '#description'   => t('<p>This setting allows site admins to modify the site title on G2 page, typically for SEO purposes. The title can include !token, which will be replaced by the standard Drupal site title. If set to empty, the default site name will not be overriden.</p>',
+    '#description'   => t('<p>This setting allows site admins to modify the site title on G2 page, typically for SEO purposes. The title can include !token, which will be replaced by the standard Drupal site title. If set to empty, the default site name will not be overridden.</p>',
       array('!token' => '@title')),
   );
   $form['main'][G2VARTOOLTIPS] = array(
