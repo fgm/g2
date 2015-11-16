@@ -48,7 +48,7 @@ function _g2_api() {
 /**
  * Implements hook_theme().
  */
-function g2_theme($existing, $type, $theme, $path) {
+function g2_theme() {
   $config = \Drupal::config('g2.settings');
   $ret = [
     // Checked for D8.
@@ -64,43 +64,28 @@ function g2_theme($existing, $type, $theme, $path) {
 
       ),
     ],
-
     // --- Older versions ------------------------------------------------------
-    'g2_node_list' => array('arguments' => array('nodes' => array())),
-    'g2_random'    => array('arguments' => array('node' => NULL)),
-    'g2_wotd'      => array('arguments' => array('node' => NULL)),
-    'g2_body'      => array('arguments' => array('title' => '', 'body' => '')),
-    'g2_entries'   => array('arguments' => array('entry' => '')),
-    'g2_initial'   => array('arguments' => array('initial' => NULL)),
-    'g2_period'    => array('arguments' => array('title' => '', 'period' => '')),
-    'g2_teaser'    => array('arguments' => array('title' => '', 'teaser' => '')),
+    'g2_node_list' => array('variables' => array('nodes' => array())),
+    'g2_random' => array('variables' => array('node' => NULL)),
+    'g2_wotd' => array('variables' => array('node' => NULL)),
+    'g2_entries' => array('variables' => array('entry' => '')),
+    'g2_initial' => array('variables' => array('initial' => NULL)),
+
+    'g2_body' => array('variables' => array('title' => '', 'body' => '')),
+    'g2_period' => array('variables' => array('title' => '', 'period' => '')),
+    'g2_teaser' => array('variables' => array('title' => '', 'teaser' => '')),
+    'g2_field' => array(
+      'variables' => array(
+        'expansion' => '',
+        'name' => '',
+        'title' => '',
+      )
+    ),
   ];
   return $ret;
 }
 
-/**
- * Implements hook_theme().
- */
-function Zg2_theme($existing, $type, $theme, $path) {
-  include_once $path . '/theme/theme.inc';
-  $ret = array(
-    'g2_node_list' => array('variables' => array('nodes' => array())),
-    'g2_random'    => array('variables' => array('node' => NULL)),
-    'g2_wotd'      => array('variables' => array('node' => NULL)),
-    'g2_entries'   => array('variables' => array('entry' => '')),
-    'g2_initial'   => array('variables' => array('initial' => NULL)),
-    'g2_field'     => array(
-      'variables'    => array(
-        'expansion'    => '',
-        'name'         => '',
-        'title'        => '',
-    )),
-  );
-  return $ret;
-}
-
-
-// ==== Code below this line has not yet been converted to D8 ==================
+/* ==== Code below this line has not yet been converted to D8 =============== */
 
 /**
  * AJAX autocomplete for entry

@@ -42,12 +42,15 @@ Licensed under the CeCILL version 2.1 and General Public License version 2 and l
 
 | Page          | Status
 |---------------|-------------------------------------------|
-| main          |                                           |
+| main          | Working                                   |
 | entries       |                                           |
 | initial       |                                           |
 | node add form |                                           |
 | settings      | Working                                   |
 | WOTD feed     |                                           |
+
+At this point in the module port, the composer.json file is only here to allow 
+Scrutinizer to find core classes, not for actual deployment.
 
 ---
 

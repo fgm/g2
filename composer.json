@@ -1,0 +1,16 @@
+{
+    "name": "drupal/g2",
+    "description": "A node-based glossary module for Drupal 8",
+    "type": "drupal-module",
+    "require": {
+        "drupal/drupal": "8.0.x-dev"
+    },
+    "license": "GPL2-2.0+",
+    "authors": [
+        {
+            "name": "Frederic G. MARAND",
+            "email": "fgm@osinet.fr"
+        }
+    ],
+    "minimum-stability": "dev"
+}
