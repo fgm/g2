@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
  * Class SettingsForm contains the G2 configuration form.
  *
  * @TODO Refactor like \Drupal\config_inspector\Form\ConfigInspectorItemForm.
+ * @TODO Relate service.alphabar.contents configuraiton with routes like g2.initial.
  */
 class SettingsForm extends ConfigFormBase {
   /**

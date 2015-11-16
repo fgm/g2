@@ -6,14 +6,17 @@
  */
 
 namespace Drupal\g2\Controller;
+
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
-use Drupal\Core\Entity\EntityManager;
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+
 use Drupal\g2\Alphabar;
 use Drupal\g2\G2;
+
 use Drupal\node\Entity\Node;
+use Drupal\node\NodeInterface;
+
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -77,7 +80,7 @@ class Main implements ContainerInjectionInterface {
 
     $generator = $this->config->get('controller.main.nid');
     $node = Node::load($generator);
-    if ($node instanceof Node) {
+    if ($node instanceof NodeInterface) {
       $title = $node->label();
 
       // @TODO Ensure we still want to override the site name.

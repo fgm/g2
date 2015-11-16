@@ -1,0 +1,8 @@
+status: true
+dependencies:
+  module:
+    - node
+id: node.g2_entry_list
+label: 'G2 Entry list'
+targetEntityType: node
+cache: true

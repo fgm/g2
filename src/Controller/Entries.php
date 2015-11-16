@@ -25,4 +25,6 @@ class Entries {
    */
   const ENTRIES_BY_INITIAL = 'entries starting with initial %initial';
 
+  const VIEW_MODE = 'g2_entry_list';
+
 }

@@ -1,3 +1,13 @@
+# G2 default entries-by-initial page.
+g2.initial:
+  path: '/g2/initial/{g2_match}'
+  defaults:
+    _controller: '\Drupal\g2\Controller\Initial::indexAction'
+    _title_callback: '\Drupal\g2\Controller\Initial::indexTitle'
+  requirements:
+    _permission: 'view g2 entries'
+    g2_match: '[_\-0-9a-zA-Z]'
+
 # G2 default main page.
 g2.main:
   path: '/g2'
@@ -75,7 +85,3 @@ g2.entries:
 # G2 WOTD RSS feed.
 g2.feed.wotd:
   path: '/g2/wotd'
-
-# G2 default entries-by-initial-segment page.
-g2.initial:
-  path: '/g2/initial/{g2_match}'

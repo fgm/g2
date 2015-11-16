@@ -44,7 +44,7 @@ Licensed under the CeCILL version 2.1 and General Public License version 2 and l
 |---------------|-------------------------------------------|
 | main          | Working                                   |
 | entries       |                                           |
-| initial       |                                           |
+| initial       | Working                                   |
 | node add form |                                           |
 | settings      | Working                                   |
 | WOTD feed     |                                           |
