@@ -1,0 +1,18 @@
+{#
+/**
+ * @file
+ * Default G2 items-by-entry template.
+ *
+ * Available variables:
+ * - raw_entry : the string for which to list G2 entries, tainted.
+ * - entries : glossary entries matching entry parameter.
+ */
+#}
+<div class="g2-entries">
+  <span class="g2-entries-raw">{{ raw_entry }}</span>
+  {% if entries is not empty %}
+  <div class="g2-entries-list">
+    {{ entries }}
+    </div>
+  {% endif %}
+  </div>

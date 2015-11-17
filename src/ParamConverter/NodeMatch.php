@@ -7,7 +7,12 @@
 
 namespace Drupal\g2\ParamConverter;
 
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\ParamConverter\ParamConverterInterface;
+use Drupal\Core\Session\AccountProxy;
+use Drupal\g2\G2;
+use Drupal\node\Entity\Node;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -20,41 +25,71 @@ use Symfony\Component\Routing\Route;
 class NodeMatch implements ParamConverterInterface {
 
   /**
-   * Converts path variables to their corresponding objects.
+   * The current_user service.
    *
-   * @param mixed $value
-   *   The raw value.
-   * @param mixed $definition
-   *   The parameter definition provided in the route options.
-   * @param string $name
-   *   The name of the parameter.
-   * @param array $defaults
-   *   The route defaults array.
-   *
-   * @return mixed|null
-   *   The converted parameter value.
+   * @var \Drupal\Core\Session\AccountProxy
    */
-  public function convert($value, $definition, $name, array $defaults) {
-    // TODO: Implement convert() method.
-    return NULL;
+  protected $currentUser;
+
+  /**
+   * The entity.query service.
+   */
+  protected $entityQuery;
+
+  /**
+   * The entity_type.manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
+   * NodeMatch constructor.
+   *
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
+   *   The entity_type.manager service.
+   * @param \Drupal\Core\Session\AccountProxy $current_user
+   *   The current_user service.
+   * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
+   *   The entity.query service.
+   */
+  public function __construct(EntityTypeManagerInterface $etm, AccountProxy $current_user,
+    QueryFactory $entity_query) {
+    $this->currentUser = $current_user;
+    $this->entityQuery = $entity_query;
+    $this->entityTypeManager = $etm;
   }
 
   /**
-   * Determines if the converter applies to a specific route and variable.
+   * {@inheritdoc}
    *
-   * @param mixed $definition
-   *   The parameter definition provided in the route options.
-   * @param string $name
-   *   The name of the parameter.
-   * @param \Symfony\Component\Routing\Route $route
-   *   The route to consider attaching to.
-   *
-   * @return bool
-   *   TRUE if the converter applies to the passed route and parameter, FALSE
-   *   otherwise.
+   * Only returns unpublished nodes to users with "administer g2 entries".
+   */
+  public function convert($value, $definition, $name, array $defaults) {
+    // XXX earlier versions user "administer nodes". Which one is better ?
+    $min_status = $this->currentUser->hasPermission(G2::PERM_ADMIN)
+      ? NODE_NOT_PUBLISHED
+      : NODE_PUBLISHED;
+
+    $query = $this->entityQuery->get('node')
+      ->addTag('node_access')
+      ->condition('type', G2::NODE_TYPE)
+      ->condition('status', $min_status, '>=')
+      ->condition('title', $value . '%', 'LIKE');
+
+    $ids = $query->execute();
+    $nodes = Node::loadMultiple($ids);
+
+    return $nodes;
+  }
+
+  /**
+   * {@inheritdoc}
    */
   public function applies($definition, $name, Route $route) {
-    // TODO: Implement applies() method.
+    if (!empty($definition['type']) && $definition['type'] == 'g2:node:title') {
+      return TRUE;
+    }
     return FALSE;
   }
 

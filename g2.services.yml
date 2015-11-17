@@ -12,5 +12,5 @@ services:
     class: Drupal\g2\ParamConverter\NodeMatch
     tags:
       - { name: paramconverter }
-    arguments: ['@entity.manager']
+    arguments: ['@entity_type.manager', '@current_user', '@entity.query']
 

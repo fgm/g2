@@ -56,7 +56,14 @@ function g2_theme() {
       'variables' => [
         'alphabar' => [],
         'row_length' => $config->get('block.alphabar.row_length'),
-      ]],
+      ],
+    ],
+    'g2_entries' => [
+      'variables' => [
+        'raw_entry' => '',
+        'entries' => [],
+      ],
+    ],
     'g2_initial' => [
       'variables' => [
         'initial' => NULL,
@@ -64,17 +71,15 @@ function g2_theme() {
       ],
     ],
     'g2_main' => [
-      'variables'    => array(
-        'alphabar'     => $config->get('service.alphabar.contents'),
-        'text'         => '',
-
-      ),
+      'variables' => [
+        'alphabar' => $config->get('service.alphabar.contents'),
+        'text' => '',
+      ]
     ],
     // --- Older versions ------------------------------------------------------
     'g2_node_list' => array('variables' => array('nodes' => array())),
     'g2_random' => array('variables' => array('node' => NULL)),
     'g2_wotd' => array('variables' => array('node' => NULL)),
-    'g2_entries' => array('variables' => array('entry' => '')),
 
     'g2_body' => array('variables' => array('title' => '', 'body' => '')),
     'g2_period' => array('variables' => array('title' => '', 'period' => '')),
@@ -1116,14 +1121,6 @@ function g2_menu() {
     'type'             => MENU_CALLBACK,
     );
 
-  $items[G2PATHENTRIES . '/%g2_entry'] = array(
-    'title'            => G2TITLEENTRIES,
-    'page callback'    => 'theme',
-    'page arguments'   => array('g2_entries', 2),
-    'access arguments' => array(G2PERMVIEW),
-    'type'             => MENU_CALLBACK,
-  );
-
   $items[G2PATHWOTDFEED] = array(
     'title'            => G2TITLEWOTDFEED,
     'page callback'    => '_g2_wotd_feed',
@@ -1513,94 +1510,6 @@ function g2_xmlrpc() {
  */
 function theme_g2_body($title, $body) {
   return theme('box', $title, $body);
-}
-
-/**
- * Return a homonyms disambiguation page for homonym entries.
- *
- * The page is built:
- * - either by this module
- * - either from a site node (typically in PHP input format)
- *
- * When examining the code to build $entry, remember that
- * we need to obtain slashes, which drupal preprocesses.
- *
- * Note that we query and use n.title instead of using $entry2
- * in the results to obtain mixed case results when they exist.
- *
- * @return string
- */
-function theme_g2_entries($entries = array()) {
-
-  $entry = filter_xss(arg(2));
-  drupal_set_title(t('G2 Entries for %entry', array('%entry' => $entry)));
-
-  // The nid for the disambiguation page
-  $page_nid = variable_get(G2VARHOMONYMS, G2DEFHOMONYMS);
-
-  if ($page_nid) {
-    $page_node = node_load($page_nid);
-    $ret = node_view($page_node);
-  }
-  else {
-
-    $count = count($entries);
-    switch ($count) {
-      case 0:
-        $ret = t('<p>There are currently no entries for %entry.</p>',
-          array('%entry' => $entry));
-        if (node_access('create', G2NODETYPE)) {
-          $ret .= t('<p>Would you like to <a href="!url" title="Create new entry for %entry">create</a> one ?</p>',
-            array(
-              '!url'   => url(str_replace('_', '-', G2PATHNODEADD) . '/' . $entry),
-              '%entry' => $entry
-            )
-          );
-        }
-        break;
-
-      case 1:
-        $next = 'node/' . reset($entries)->nid;
-        // Does the webmaster want us to jump ?
-        if (variable_get(G2VARGOTOSINGLE, G2DEFGOTOSINGLE)) {
-          $redirect_type = variable_get(G2VARHOMONYMSREDIRECT, G2DEFHOMONYMSREDIRECT);
-          drupal_goto($next, NULL, NULL, $redirect_type);
-          // Never returns
-        }
-        // Do not break: we continue with default processing in this case.
-
-      default:
-        // Style more-link specifically
-        drupal_add_css(drupal_get_path('module', 'g2') . '/g2.css', 'module', 'all', FALSE);
-
-        $vid = variable_get(G2VARHOMONYMSVID, G2DEFHOMONYMSVID);
-        $rows = array();
-        foreach ($entries as $nid => $node) {
-          $path = 'node/' . $nid;
-          $terms = array();
-          foreach ($node->taxonomy as $tid => $term) {
-            if ($vid && $term->vid == $vid) {
-              $terms[] = l($term->name, taxonomy_term_path($term));
-            }
-          $taxonomy = empty($terms)
-            ? NULL
-            : ' <span class="inline">(' . implode(', ', $terms) . ')</span>';
-
-          }
-        $teaser = strip_tags(check_markup($node->teaser, $node->format));
-        $rows[] = t('!link!taxonomy: !teaser!more', array(
-          '!link'     => l($node->title, $path),
-          '!taxonomy' => $taxonomy, // safe by construction
-          '!teaser'   => $teaser,
-          '!more'     => theme('more_link', url($path),
-            t('Full definition for @name: !teaser',
-              array('@name' => $entry, '!teaser' => $teaser))),
-        ));
-      }
-      $ret = theme('item_list', $rows, NULL, 'ul', array('class' => 'g2-entries'));
-    }
-  return $ret;
-  }
 }
 
 /**
@@ -2346,14 +2255,6 @@ function Zg2_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items[G2\PATHENTRIES . '/%g2_title'] = array(
-    'title' => 'G2 entries by name',
-    'page callback' => 'G2\page_entries',
-    'page arguments' => array(2),
-    'access arguments' => array(G2\PERMVIEW),
-    'type' => MENU_CALLBACK,
-  );
-
   $items[G2\PATHWOTDFEED] = array(
     'title' => G2\TITLEWOTDFEED,
     'page callback' => 'G2\wotd_feed',
@@ -2496,46 +2397,6 @@ function Zg2_preprocess_page(&$vars) {
   if ($plugin = context_get_plugin('reaction', 'g2_template')) {
     $plugin->execute($vars);
   }
-}
-
-/**
- * Menu loader for %g2_title.
- *
- * Only returns unpublished nodes to users with "administer nodes".
- *
- * @param string $title
- *   Title loader.
- *
- * @return object
- *   Formatted title.
- */
-function Zg2_title_load($title) {
-  // Loop detection. Not using drupal_static() "if a function's static
-  // variable does not depend on any information outside of the function that
-  // might change during a single page request, then it's ok to use the
-  // "static" keyword instead of the drupal_static() function.
-  static $hits = array();
-
-  $min_status = user_access('administer nodes')
-    ? NODE_NOT_PUBLISHED
-    : NODE_PUBLISHED;
-
-  if (!isset($hits[$title])) {
-    $q = db_select('node', 'n');
-    $q->fields('n', array('nid'))
-      ->condition('n.type', G2\NODETYPE)
-      ->condition('n.status', $min_status, '>=')
-      ->condition('n.title', $title . '%', 'LIKE')
-      ->addTag('node_access');
-    // dsm($q->__toString());
-    $result = $q->execute();
-    $nids = array();
-    foreach ($result as $row) {
-      $nids[] = $row->nid;
-    }
-    $hits[$title] = node_load_multiple($nids);
-  }
-  return $hits[$title];
 }
 
 /**
@@ -2696,113 +2557,6 @@ function Ztheme_g2_alphabar($variables) {
     $i++;
   }
   return $ret;
-}
-
-/**
- * Return a homonyms disambiguation page for homonym entries.
- *
- * The page is built:
- * - either by this module
- * - either from a site node (typically in PHP input format)
- *
- * When examining the code to build $entry, remember that
- * we need to obtain slashes, which drupal preprocesses.
- *
- * Note that we query and use n.title instead of using $entry2
- * in the results to obtain mixed case results when they exist.
- *
- * TODO 20110122 handle taxonomy properly, likely by just ignoring it and
- * relying on the view mode
- *
- * @return string
- *   HTML: the themed "list of entries" page content.
- */
-function Ztheme_g2_entries($variables) {
-  $entries = $variables['entries'];
-  $entry = filter_xss(arg(2));
-
-  drupal_set_title(t('G2 Entries for %entry', array('%entry' => $entry)), PASS_THROUGH);
-
-  // The nid for the disambiguation page.
-  $page_nid = variable_get(G2\VARHOMONYMS, G2\DEFHOMONYMS);
-
-  if ($page_nid) {
-    $page_node = node_load($page_nid);
-    // Coder false positive: http://drupal.org/node/704010 .
-    $ret = node_view($page_node);
-  }
-  else {
-
-    $count = count($entries);
-    switch ($count) {
-      case 0:
-        $ret = t('<p>There are currently no entries for %entry.</p>',
-          array('%entry' => $entry));
-        if (node_access('create', G2\NODETYPE)) {
-          $ret .= t('<p>Would you like to <a href="!url" title="Create new entry for @entry">create</a> one ?</p>',
-            array(
-            '!url' => url(str_replace('_', '-', G2\PATHNODEADD) . '/' . $entry),
-            '@entry' => strip_tags($entry),
-          ));
-        }
-        break;
-
-      case 1:
-        $next = entity_uri('node', reset($entries));
-        // Does the webmaster want us to jump ?
-        if (variable_get(G2\VARGOTOSINGLE, G2\DEFGOTOSINGLE)) {
-          $redirect_type = variable_get(G2\VARHOMONYMSREDIRECT, G2\DEFHOMONYMSREDIRECT);
-          drupal_goto($next['path'], $next['options'], $redirect_type);
-          // Never returns.
-        }
-        /* Do not break: we continue with default processing in this case. */
-
-      default:
-        $vid = variable_get(G2\VARHOMONYMSVID, G2\DEFHOMONYMSVID);
-        $rows = array();
-        foreach ($entries as $nid => $node) {
-          $uri = entity_uri('node', $node);
-          $terms = array();
-          if (!isset($node->taxonomy)) {
-            $node->taxonomy = array();
-          }
-          foreach ($node->taxonomy as $tid => $term) {
-            if ($vid && $term->vid == $vid) {
-              $terms[] = l($term->name, taxonomy_term_path($term));
-            }
-          }
-          $taxonomy = empty($terms)
-            ? NULL
-          : ' <span class="inline">(' . implode(', ', $terms) . ')</span>';
-          $teaser = isset($node->teaser)
-            ? strip_tags(check_markup($node->teaser, $node->format))
-            : NULL;
-          $rows[] = t('!link!taxonomy: !teaser!more', array(
-            '!link' => l($node->title, $uri['path'], $uri['options']),
-            // Safe by construction.
-            '!taxonomy' => $taxonomy,
-            '!teaser' => $teaser,
-            '!more' => theme('more_link', array(
-                'url' => $uri['path'],
-                'options' => $uri['options'],
-                'title' => t('Full definition for @name: !teaser', array(
-                  '@name' => $entry,
-                  '!teaser' => $teaser,
-                )),
-              )
-            ),
-          ));
-        }
-        $ret = theme('item_list', array(
-          'items' => $rows,
-          'title' => NULL,
-          'type' => 'ul',
-          'attributes' => array('class' => 'g2-entries'),
-        ));
-        /* no break; in final default clause */
-    }
-    return $ret;
-  }
 }
 
 /**

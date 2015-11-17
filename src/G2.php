@@ -19,7 +19,7 @@ class G2 {
   const CONFIG_NAME = 'g2.settings';
 
   // The name of the node.type.g2_entry config entity.
-  const NODE_TYPE = 'g2_entry';
+  const NODE_TYPE = 'page';
 
   /**
    * The G2 permission for normal users.

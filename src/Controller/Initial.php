@@ -125,7 +125,7 @@ class Initial implements ContainerInjectionInterface {
     else {
       $result = [
         'stats-basic' => ['#markup' => $stats_basic],
-        'entries' => node_view_multiple($nodes, Entries::VIEW_MODE),
+        'entries' => node_view_multiple($nodes, Homonyms::VIEW_MODE),
       ];
     }
 
@@ -138,34 +138,34 @@ class Initial implements ContainerInjectionInterface {
   /**
    * Controller for route g2.initial.
    *
-   * @param string $g2_match
+   * @param string $g2_initial
    *   The raw initial matching the route regexp.
    *
    * @return array
    *   The render array.
    */
-  public function indexAction($g2_match = '@') {
-    // Parameter g2_match has been checked against route regex, so it is safe.
-    $nodes = $this->getByInitial($g2_match);
+  public function indexAction($g2_initial = '@') {
+    // Parameter g2_initial has been checked against route regex, so it is safe.
+    $nodes = $this->getByInitial($g2_initial);
     return [
       '#theme' => 'g2_initial',
       '#entries' => $nodes,
-      '#initial' => $g2_match,
+      '#initial' => $g2_initial,
     ];
   }
 
   /**
    * Title callback for route g2.initial.
    *
-   * @param string $g2_match
+   * @param string $g2_initial
    *   The raw initial matching the route regexp.
    *
-   * @return \Drupal\Core\StringTranslation\TranslatableMarkup|string
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
    *   The page title.
    */
-  public function indexTitle($g2_match = '@') {
+  public function indexTitle($g2_initial = '@') {
     $result = t('Entries starting with initial %initial', [
-      '%initial' => $g2_match,
+      '%initial' => $g2_initial,
     ]);
 
     return $result;

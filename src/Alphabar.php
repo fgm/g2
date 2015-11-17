@@ -111,7 +111,7 @@ class Alphabar {
     for ($i = 0; $i < Unicode::strlen($initials); $i++) {
       $initial = Unicode::substr($initials, $i, 1);
       $path = G2::encodeTerminal($initial);
-      $parameters = ['g2_match' => $path];
+      $parameters = ['g2_initial' => $path];
       $url = Url::fromRoute($route_name, $parameters, $options);
       $result[] = $this->linkGenerator->generate($initial, $url);
     }
