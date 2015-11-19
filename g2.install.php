@@ -7,14 +7,7 @@
  * @copyright 2005-2015 Frédéric G. Marand, for Ouest Systemes Informatiques.
  */
 
-/**
- * Implements hook_install().
- */
-function g2_install() {
-  // Create tables.
-  drupal_install_schema('g2');
-  drupal_set_message(t('Installed G2 schema'), 'status');
-}
+/* ===== Code below this line not checked for D8 ============================ */
 
 /**
  * Implements hook_requirements().
@@ -228,30 +221,6 @@ function g2_schema() {
   );
 
   return $schema;
-}
-
-/**
- * Implements hook_uninstall().
- */
-function g2_uninstall() {
-  // Remove tables. Automatic removal starts with D7.
-  drupal_uninstall_schema('g2');
-  drupal_set_message(st('Uninstalled G2 schema'), 'status');
-
-  // Remove variables.
-  $variables = array();
-
-  $sq = 'SELECT v.name '
-      . 'FROM {variable} v '
-      . "WHERE v.name LIKE 'g2_%%' OR v.name LIKE 'g2/%%' ";
-  $q = db_query($sq);
-  while ($row = db_fetch_object($q)) {
-    $variables[] = $row->name;
-  }
-  array_walk($variables, 'variable_del');
-  drupal_set_message(st('Removed G2 Glossary variables'), 'status');
-
-  // @todo TODO check: node_type_delete(G2NODETYPE) needed or not ?
 }
 
 /**

@@ -1,5 +1,8 @@
 status: true
 dependencies:
+  enforced:
+    module:
+      - g2
   module:
     - node
 id: node.g2_entry_list
