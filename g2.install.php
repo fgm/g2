@@ -9,8 +9,6 @@
 
 use Drupal\g2\Requirements;
 
-/* ===== Code below this line not checked for D8 ============================ */
-
 /**
  * Implements hook_requirements().
  */
@@ -21,51 +19,12 @@ function g2_requirements($phase) {
 
   $requirements = Requirements::create(\Drupal::getContainer());
   $requirements->checkControllers();
+  $requirements->checkStatistics();
   $result = $requirements->getResult();
   return $result;
-
-  // 3. Statistics req. check.
-  $stats = module_exists('statistics');
-  $count = variable_get('statistics_count_content_views', NULL);
-  if (!$stats && !$count) {
-    // This one is a (questionable) choice.
-    $severity = REQUIREMENT_INFO;
-    $value = t('G2 statistics disabled.');
-  }
-  elseif ($stats xor $count) {
-    // This one is inconsistent.
-    $severity = REQUIREMENT_WARNING;
-    $value = t('G2 statistics incorrectly configured.');
-  }
-  else {
-    // Both on: optimal.
-    $severity = REQUIREMENT_OK;
-    $value = t('G2 statistics configured correctly.');
-  }
-
-  $items = array();
-  $stats_link = array(':link' => url('admin/build/modules/list'));
-  $items[] = $stats
-    ? t('<a href=":link">Statistics module</a> installed and activated: OK.', $stats_link)
-    : t('<a href=":link">Statistics module</a> not installed or not activated.', $stats_link);
-  $link_text = $count ? t('ON') : t('OFF');
-  if ($stats) {
-    $link = l($link_text, 'admin/reports/settings',
-        array('fragment' => 'statistics_count_content_views'));
-    $items[] = t('Count content views" setting is !link', array('!link' => $link));
-  }
-  else {
-    $items[] = t('G2 relies on statistics.module to provide data for the G2 "Top" block and XML-RPC service. If you do not use either block, you can leave statistics.module disabled.');
-  }
-  $description = theme('item_list', $items);
-  $ret['statistics'] = array(
-    'title'       => t('G2 statistics'),
-    'value'       => $value,
-    'description' => $description,
-    'severity'    => $severity,
-  );
-  return $ret;
 }
+
+/* ===== Code below this line not checked for D8 ============================ */
 
 /**
  * Implements hook_schema().

@@ -13,6 +13,7 @@ namespace Drupal\g2;
 use Drupal\Component\Render\MarkupInterface;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
 use Drupal\Core\Url;
 use Drupal\node\Entity\Node;
@@ -30,23 +31,44 @@ class Requirements implements ContainerInjectionInterface {
    *
    * @var \Drupal\Core\Config\ImmutableConfig
    */
-  protected $config;
+  protected $g2Config;
+
+  /**
+   * The module_handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
 
   protected $result = [];
 
   protected $routeProvider;
 
   /**
+   * The statistics.settings configuration.
+   *
+   * @var \Drupal\Core\Config\ImmutableConfig
+   */
+  protected $statisticsConfig;
+
+  /**
    * Requirements constructor.
    *
-   * @param \Drupal\Core\Config\ImmutableConfig $config
+   * @param \Drupal\Core\Config\ImmutableConfig $g2_config
    *   The g2.settings configuration.
    * @param \Drupal\Core\Routing\RouteProviderInterface $route_provider
    *   The router.route_provider service.
+   * @param \Drupal\Core\Config\ImmutableConfig $statistics_config
+   *   The statistics.settings configuration.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module_handler service.
    */
-  public function __construct(ImmutableConfig $config, RouteProviderInterface $route_provider) {
-    $this->config = $config;
+  public function __construct(ImmutableConfig $g2_config, RouteProviderInterface $route_provider,
+    ImmutableConfig $statistics_config, ModuleHandlerInterface $module_handler) {
+    $this->g2Config = $g2_config;
     $this->routeProvider = $route_provider;
+    $this->statisticsConfig = $statistics_config;
+    $this->moduleHandler = $module_handler;
   }
 
   /**
@@ -64,13 +86,19 @@ class Requirements implements ContainerInjectionInterface {
    *   A new instance every time.
    */
   public static function create(ContainerInterface $container) {
-    /* @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
-    $config_factory = $container->get('config.factory');
-    $config = $config_factory->get('g2.settings');
+    /* @var \Drupal\Core\Extension\ModuleHandlerInterface $module_handler */
+    $module_handler = $container->get('module_handler');
 
     /* @var \Drupal\Core\Routing\RouteProvider $route_provider */
     $route_provider = $container->get('router.route_provider');
-    return new static($config, $route_provider);
+
+    /* @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
+    $config_factory = $container->get('config.factory');
+
+    $g2_config = $config_factory->get('g2.settings');
+    $statistics_settings = $config_factory->get('statistics.settings');
+
+    return new static($g2_config, $route_provider, $statistics_settings, $module_handler);
   }
 
   /**
@@ -86,7 +114,7 @@ class Requirements implements ContainerInjectionInterface {
    */
   protected function checkNid($key, MarkupInterface $title) {
     $result = ['title' => $title];
-    $main = $this->config->get($key);
+    $main = $this->g2Config->get($key);
 
     assert('is_numeric($nid)');
     if ($main) {
@@ -129,7 +157,7 @@ class Requirements implements ContainerInjectionInterface {
    */
   protected function checkRoute($key, MarkupInterface $title) {
     $result = ['title' => $title];
-    $name = $this->config->get($key);
+    $name = $this->g2Config->get($key);
 
     $arguments = ['%route' => $name];
     try {
@@ -164,6 +192,68 @@ class Requirements implements ContainerInjectionInterface {
     $this->result['main.route'] = $this->checkRoute('controller.main.route', t('G2 main page route'));
     $this->result['homonyms.nid'] = $this->checkNid('controller.homonyms.nid', t('G2 homonyms disambiguation page node id'));
     $this->result['homonyms.route'] = $this->checkRoute('controller.homonyms.route', t('G2 homonyms disambiguation page route'));
+  }
+
+  /**
+   * Perform statistics-related requirements checks.
+   */
+  public function checkStatistics() {
+    $stats = $this->moduleHandler->moduleExists('statistics');
+    $count = $this->statisticsConfig->get('count_content_views');
+
+    if (!$stats && !$count) {
+      // This one is a (questionable) choice.
+      $severity = REQUIREMENT_INFO;
+      $value = t('G2 statistics disabled.');
+    }
+    elseif ($stats xor $count) {
+      // This one is inconsistent.
+      $severity = REQUIREMENT_WARNING;
+      $value = t('G2 statistics incorrectly configured.');
+    }
+    else {
+      // Both on: optimal.
+      $severity = REQUIREMENT_OK;
+      $value = t('G2 statistics configured correctly.');
+    }
+
+    $items = array();
+    $modules_url = [
+      ':link' => Url::fromRoute('system.modules_list', [], [
+        'fragment' => 'module-statistics',
+      ])->toString(),
+    ];
+    $items[] = $stats
+      ? t('<a href=":link">Statistics module</a> installed and activated: OK.', $modules_url)
+      : t('<a href=":link">Statistics module</a> not installed or not activated.', $modules_url);
+    $link_text = $count ? t('ON') : t('OFF');
+    if ($stats) {
+      $stats_url = [
+        ':stats_url' => Url::fromRoute('statistics.settings', [], [
+          'fragment' => 'edit-content',
+        ])->toString(),
+      ];
+      $items[] = t('Count content views" setting is <a href=":stats_url">@on_off</a>',
+        $stats_url + [
+        '@on_off' => $link_text,
+        ]
+      );
+    }
+    else {
+      $items[] = t('G2 relies on statistics.module to provide data for the G2 "Top" block and XML-RPC service.
+If you do not use either block, you can leave statistics.module disabled.');
+    }
+    $description = [
+      '#theme' => 'item_list',
+      '#items' => $items,
+    ];
+
+    $this->result['statistics'] = [
+      'title' => t('G2 Statistics'),
+      'value' => $value,
+      'description' => $description,
+      'severity' => $severity,
+    ];
   }
 
   /**

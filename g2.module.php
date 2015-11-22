@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * This defines a node-based glossary module, as opposed to the term-based
@@ -8,6 +9,7 @@
  *
  * @TODO for D8
  *  - ensure theme is flushed whenever block.alphabar.row_length config is updated.
+ *  - implement SettingsForm::validateForm() using Requirements
  * @todo XXX split settings form with local tabs
  * @todo convert to class format, rename constants
  * @todo TODO test wipes, rss

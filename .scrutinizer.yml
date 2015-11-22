@@ -87,9 +87,10 @@ coding_style:
         braces:
             if:
                 else_on_new_line: true
+            try:
+                catch_on_new_line: true
+                finally_on_new_line: true
         upper_lower_casing:
-            keywords:
-                general: lower
             constants:
                 true_false_null: upper
 
