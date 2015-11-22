@@ -877,6 +877,7 @@ function g2_block($op = 'list', $delta = 0, $edit = array()) {
  * which is the default case.
  */
 function g2_cron() {
+  return;
   if (variable_get(G2VARWOTDAUTOCHANGE, G2DEFWOTDAUTOCHANGE)) {
     $date0 = date('z', variable_get(G2VARWOTDDATE, mktime()));
     $date1 = date('z');

@@ -7,91 +7,22 @@
  * @copyright 2005-2015 Frédéric G. Marand, for Ouest Systemes Informatiques.
  */
 
+use Drupal\g2\Requirements;
+
 /* ===== Code below this line not checked for D8 ============================ */
 
 /**
  * Implements hook_requirements().
  */
 function g2_requirements($phase) {
-  $ret = array();
   if ($phase != 'runtime') {
-    return;
+    return [];
   }
 
-  // 1. Main page req. check.
-  $main = variable_get(G2VARMAIN, G2DEFMAIN);
-  $ret['main'] = array(
-    'title' => t('G2 main page'),
-  );
-  if (is_numeric($main)) {
-    if ($main) {
-      $node = node_load($main);
-      if (!is_object($node)) {
-        $ret['main'] += array(
-          'value' => t('The node chosen for the main page must be a valid one, or 0: "@nid" is not a valid node id.',
-            array('@nid' => $main)),
-          'severity' => REQUIREMENT_ERROR,
-        );
-      }
-      else {
-        $ret['main'] += array(
-          'value' => t('Valid node: :link', array(
-            ':link' => l($node->title, 'node/' . $main),
-          )),
-          'severity' => REQUIREMENT_OK,
-        );
-      }
-    }
-    else {
-      $ret['main'] += array(
-        'value' => t('Set to empty'),
-        'severity' => REQUIREMENT_INFO,
-      );
-    }
-  }
-  elseif (!function_exists($main)) {
-    $ret['main'] += array(
-      'value' => t('The chosen function must visible to G2: "@function" is not a valid function name.',
-        array('@function' => $main)),
-      'severity' => REQUIREMENT_ERROR,
-    );
-  }
-  else {
-    $ret['main'] += array(
-      'value' => t('Set to visible function %main', array('%main' => $main)),
-      'severity' => REQUIREMENT_OK,
-    );
-  }
-
-  // 2. Disambiguation req. check.
-  $ret['homonyms'] = array(
-    'title' => t('G2 disambiguation page'),
-  );
-  $nid = variable_get(G2VARHOMONYMS, G2DEFHOMONYMS);
-  if ($nid) {
-    $node = node_load($nid);
-    if (!is_object($node)) {
-      $ret['homonyms'] += array(
-        'value' => t('The node chosen for the homonyms disambiguation page must be a valid one, or 0: "@nid" is not a valid node id.',
-          array('@nid' => $nid)),
-        'severity' => REQUIREMENT_ERROR,
-      );
-    }
-    else {
-      $ret['homonyms'] += array(
-        'value' => t('Valid node: :link', array(
-          ':link' => l($node->title, 'node/' . $nid),
-        )),
-      );
-    }
-  }
-  else {
-    $ret['homonyms'] += array(
-      'value' => t('Set to empty.'),
-      'severity' => REQUIREMENT_INFO,
-    );
-  }
-
+  $requirements = Requirements::create(\Drupal::getContainer());
+  $requirements->checkControllers();
+  $result = $requirements->getResult();
+  return $result;
 
   // 3. Statistics req. check.
   $stats = module_exists('statistics');

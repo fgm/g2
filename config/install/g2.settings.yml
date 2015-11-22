@@ -30,7 +30,7 @@ controller:
     redirect_on_single_match: true
     nid: 0
     redirect_status: 302
-    route: g2_homonyms
+    route: g2.homonyms
     vid: null
   wotd:
     title: 'G2 word of the day RSS feed'
