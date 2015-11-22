@@ -138,7 +138,7 @@ class Requirements implements ContainerInjectionInterface {
         $value = t('Valid parametric route %route', $arguments);
       }
       else {
-        $value = t('Valid route <a href="url">%route</a>', $arguments + [
+        $value = t('Valid static route <a href="url">%route</a>', $arguments + [
             ':url' => Url::fromRoute($name)->toString(),
         ]);
       }

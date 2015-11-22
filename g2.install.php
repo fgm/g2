@@ -267,7 +267,7 @@ function g2_update_6002() {
   $ret = array();
   if (!db_table_exists('g2_referer')) {
     $message = t('Temporarily reinstating g2_referer table for current version.')
-     . t('In future versions, use an external tracking module instead.');
+      . t('In future versions, use an external tracking module instead.');
     $schema = g2_schema();
     db_create_table($ret, 'g2_referer', $schema['g2_referer']);
   }

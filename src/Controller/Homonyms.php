@@ -7,9 +7,6 @@
 
 namespace Drupal\g2\Controller;
 
-use Drupal\Component\Render\HtmlEscapedText;
-use Drupal\Component\Utility\SafeMarkup;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
