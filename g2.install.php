@@ -8,6 +8,7 @@
  */
 
 use Drupal\g2\Requirements;
+use \Drupal\g2\G2;
 
 /**
  * Implements hook_requirements().
@@ -150,13 +151,12 @@ SQL;
    *
    * This is really only needed for sites upgrading from D5.
    */
-  module_load_include('inc', 'g2', 'g2_data');
   $delta_changes = array(
-    0 => G2DELTAALPHABAR,
-    1 => G2DELTARANDOM,
-    2 => G2DELTATOP,
-    3 => G2DELTAWOTD,
-    4 => G2DELTALATEST,
+    0 => G2::DELTA_ALPHABAR,
+    1 => G2::DELTA_RANDOM,
+    2 => G2::DELTA_TOP,
+    3 => G2::DELTA_WOTD,
+    4 => G2::DELTA_LATEST,
   );
   $sql = "UPDATE {blocks} b SET delta = '%s' WHERE module = '%s' AND delta = %d ";
   $count = 0;
@@ -203,7 +203,7 @@ function g2_update_6001() {
     $message = t('Replaced @count occurrences of old "percent" tokens by new "colon" ones on the <a href=":link">WOTD block feed settings</a>.', array(
       '@count' => $count,
       // Constant: no need to check_url().
-      ':link'  => url('admin/build/block/configure/g2/' . G2DELTAWOTD),
+      ':link'  => url('admin/build/block/configure/g2/' . G2::DELTA_WOTD),
     ));
   }
   else {
