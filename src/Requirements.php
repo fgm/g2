@@ -195,9 +195,15 @@ class Requirements implements ContainerInjectionInterface {
   }
 
   /**
-   * Perform statistics-related requirements checks.
+   * Helper for checkStatistics(): build the check data.
+   *
+   * @return array
+   *   - stats
+   *   - count
+   *   - severity
+   *   - value
    */
-  public function checkStatistics() {
+  protected function prepareStatisticCheck() {
     $stats = $this->moduleHandler->moduleExists('statistics');
     $count = $this->statisticsConfig->get('count_content_views');
 
@@ -217,6 +223,14 @@ class Requirements implements ContainerInjectionInterface {
       $value = t('G2 statistics configured correctly.');
     }
 
+    return [$stats, $count, $severity, $value];
+  }
+
+  /**
+   * Perform statistics-related requirements checks.
+   */
+  public function checkStatistics() {
+    list($stats, $count, $severity, $value) = $this->prepareStatisticCheck();
     $items = array();
     $modules_url = [
       ':link' => Url::fromRoute('system.modules_list', [], [
