@@ -62,6 +62,8 @@ function g2_theme() {
       'variables' => [
         'raw_entry' => '',
         'entries' => [],
+        'message' => NULL,
+        'offer' => NULL,
       ],
     ],
     'g2_initial' => [
