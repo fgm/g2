@@ -13,6 +13,7 @@ use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Url;
 use Drupal\g2\G2;
 use Drupal\node\Entity\Node;
+use Drupal\views\Entity\View;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -85,7 +86,7 @@ class Homonyms implements ContainerInjectionInterface {
    * @return array<string,array|string>
    *   A render array.
    *
-   * @TODO find a way to add the title to the node.add route for ease of creation.
+   * @FIXME passing "+" (unquoted) causes notice in getAliasByPath().
    */
   protected function indexNoMatch($raw_match) {
     $message = t('There are currently no entries for %entry.', ['%entry' => $raw_match]);
@@ -96,11 +97,11 @@ class Homonyms implements ContainerInjectionInterface {
         'node_type' => G2::NODE_TYPE,
       ];
       $options = [
-        'query' => ['title' => $raw_match],
+        'query' => ['title' => urlencode($raw_match)],
       ];
-      $offer = t('Would you like to <a href=":url" title="Create new entry for @entry">create</a> one ?', [
+      $offer = t('Would you like to <a href=":url" title="Create new entry for @entry">create one</a> ?', [
         ':url'   => Url::fromRoute('node.add', $arguments, $options)->toString(),
-        '@entry' => $raw_match
+        '@entry' => $raw_match,
       ]);
     }
     else {
@@ -119,7 +120,7 @@ class Homonyms implements ContainerInjectionInterface {
   /**
    * Build a redirect response to the matching G2 entry canonical URL.
    *
-   * @param array $g2_match
+   * @param \Drupal\node\NodeInterface[] $g2_match
    *   The match array, containing a single node entity.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
@@ -148,13 +149,64 @@ class Homonyms implements ContainerInjectionInterface {
    *   A render array.
    */
   protected function indexMatches($raw_match, array $g2_match) {
+    $entries = node_view_multiple($g2_match, 'g2_entry_list');
     $result = [
-      '#prefix' => '<p>MATCHES</p>',
       '#theme' => 'g2_entries',
       '#raw_entry' => $raw_match,
-      '#entries' => [],
+      '#entries' => $entries,
     ];
     return $result;
+  }
+
+  /**
+   * Build a homonyms page using a node instead of the match information.
+   *
+   * This is an old feature, included for compatibility with antique versions,
+   * but it is better to avoid it and use a custom route instead, which will be
+   * able to take advantage of the converted parameters and have versions code.
+   *
+   * @param int $nid
+   *   The node to use to build the page.
+   *
+   * @return array<string,array|string>
+   *   A render array.
+   *
+   * @deprecated in Drupal 8.x. Will be removed before 9.x. Use a view instead.
+   */
+  protected function indexUsingNode($nid) {
+    /* @var \Drupal\node\NodeInterface $node */
+    $node = Node::load($nid);
+    $result = node_view($node, 'g2_homonyms_page');
+    return $result;
+  }
+
+  /**
+   * Build a homonyms page using a view instead of the match information.
+   *
+   * View is invoked using the unsafe raw_match.
+   *
+   * @param string $raw_match
+   *   The raw, unsafe string requested.
+   * @param int $view_id
+   *   The id of the view to use.
+   *
+   * @return array<string,array|string>
+   *   A render array.
+   */
+  protected function indexUsingView($raw_match, $view_id) {
+    /* @var \Drupal\views\ViewEntityInterface $view */
+    $view = View::load($view_id);
+    assert('$view instanceof \Drupal\views\ViewEntityInterface');
+
+    $executable = $view->getExecutable();
+    assert('$executable instanceof \Drupal\views\ViewExecutable');
+
+    $result = $executable->access('default')
+      ? $executable->preview('default', [$raw_match])
+      : [];
+
+    return $result;
+
   }
 
   /**
@@ -162,13 +214,13 @@ class Homonyms implements ContainerInjectionInterface {
    *
    * @param \Drupal\Core\Routing\RouteMatchInterface $route
    *   The current route.
-   * @param array $g2_match
+   * @param \Drupal\node\NodeInterface[] $g2_match
    *   Unsafe. The entry for which to find matching G2 entries.
    *
    * @return array<string,array|string>|\Symfony\Component\HttpFoundation\RedirectResponse
    *   Render array or redirect response.
    */
-  public function indexAction(RouteMatchInterface $route, array $g2_match = NULL) {
+  public function indexAction(RouteMatchInterface $route, array $g2_match) {
     $raw_match = $route->getRawParameter('g2_match');
 
     switch (count($g2_match)) {
@@ -186,7 +238,17 @@ class Homonyms implements ContainerInjectionInterface {
         /* Single match handled as any other non-0 number, so fall through. */
 
       default:
-        $result = $this->indexMatches($raw_match, $g2_match);
+        $use_node = $this->config['nid'] > 0;
+        $use_view = !empty($this->config['vid']);
+        if ($use_node) {
+          $result = $this->indexUsingNode($this->config['nid']);
+        }
+        elseif ($use_view) {
+          $result = $this->indexUsingView($raw_match, $this->config['vid']);
+        }
+        else {
+          $result = $this->indexMatches($raw_match, $g2_match);
+        }
         break;
     }
     if (!isset($result)) {
@@ -208,141 +270,6 @@ class Homonyms implements ContainerInjectionInterface {
   public function indexTitle(RouteMatchInterface $route) {
     $raw_match = $route->getRawParameter('g2_match');
     return t('G2 entries matching %entry', ['%entry' => $raw_match]);
-  }
-
-  /**
-   * Return a homonyms disambiguation page for homonym entries.
-   *
-   * The page is built:
-   * - either by this module
-   * - either from a site node (typically in PHP input format)
-   *
-   * When examining the code to build $entry, remember that
-   * we need to obtain slashes, which drupal pre-processes.
-   *
-   * Note that we query and use n.title instead of using $entry2
-   * in the results to obtain mixed case results when they exist.
-   *
-   * @param string $raw_entry
-   *   The tainted user requested entry.
-   * @param array $entries
-   *   A possibly empty array of matches.
-   *
-   * @return string HTML: the themed "list of entries" page content.
-   *   HTML: the themed "list of entries" page content.
-   */
-  protected function themeG2Entries($raw_entry, $entries = array()) {
-    // The nid for the disambiguation page.
-    $page_nid = variable_get(G2VARHOMONYMS, G2DEFHOMONYMS);
-
-    if ($page_nid) {
-      /* @var \Drupal\node\NodeInterface $page_node */
-      $page_node = Node::load($page_nid);
-      $result = node_view($page_node);
-    }
-    else {
-      // Style more-link specifically.
-      drupal_add_css(drupal_get_path('module', 'g2') . '/g2.css', 'module', 'all', FALSE);
-
-      $vid = variable_get(G2VARHOMONYMSVID, G2DEFHOMONYMSVID);
-      $rows = array();
-      foreach ($entries as $nid => $node) {
-        $path = 'node/' . $nid;
-        $terms = array();
-        $taxonomy = NULL;
-        foreach ($node->taxonomy as $tid => $term) {
-          if ($vid && $term->vid == $vid) {
-            $terms[] = l($term->name, taxonomy_term_path($term));
-          }
-          $taxonomy = empty($terms)
-            ? NULL
-            : ' <span class="inline">(' . implode(', ', $terms) . ')</span>';
-
-        }
-        $teaser = strip_tags(check_markup($node->teaser, $node->format));
-        $rows[] = t('!link!taxonomy: !teaser!more', array(
-          '!link'     => l($node->title, $path),
-          // Safe by construction.
-          '!taxonomy' => $taxonomy,
-          '!teaser'   => $teaser,
-          '!more'     => theme('more_link', url($path),
-            t('Full definition for @name: !teaser',
-              array('@name' => $raw_entry, '!teaser' => $teaser))),
-        ));
-      }
-      $result = theme('item_list', $rows, NULL, 'ul', array('class' => 'g2-entries'));
-    }
-    return $result;
-  }
-
-  /**
-   * Alternative version.
-   *
-   * @param array $variables
-   *   The theme variables.
-   *
-   * @return array
-   *   A render array.
-   */
-  protected function zThemeG2Entries(array $variables) {
-    $entries = $variables['entries'];
-    $entry = filter_xss(arg(2));
-
-    drupal_set_title(t('G2 Entries for %entry', array('%entry' => $entry)), PASS_THROUGH);
-
-    // The nid for the disambiguation page.
-    $page_nid = variable_get(G2::VARHOMONYMS, G2::DEFHOMONYMS);
-
-    if ($page_nid) {
-      $page_node = Node::load($page_nid);
-      /* @var \Drupal\node\NodeInterface $page_node */
-      $result = node_view($page_node);
-    }
-    else {
-      $vid = variable_get(G2::VARHOMONYMSVID, G2::DEFHOMONYMSVID);
-      $rows = array();
-      foreach ($entries as $nid => $node) {
-        $uri = entity_uri('node', $node);
-        $terms = [];
-        if (!isset($node->taxonomy)) {
-          $node->taxonomy = [];
-        }
-        foreach ($node->taxonomy as $tid => $term) {
-          if ($vid && $term->vid == $vid) {
-            $terms[] = l($term->name, taxonomy_term_path($term));
-          }
-        }
-        $taxonomy = empty($terms)
-          ? NULL
-          : ' <span class="inline">(' . implode(', ', $terms) . ')</span>';
-        $teaser = isset($node->teaser)
-          ? strip_tags(check_markup($node->teaser, $node->format))
-          : NULL;
-        $rows[] = t('!link!taxonomy: !teaser!more', [
-          '!link' => l($node->title, $uri['path'], $uri['options']),
-          // Safe by construction.
-          '!taxonomy' => $taxonomy,
-          '!teaser' => $teaser,
-          '!more' => theme('more_link', [
-              'url' => $uri['path'],
-              'options' => $uri['options'],
-              'title' => t('Full definition for @name: !teaser', [
-                '@name' => $entry,
-                '!teaser' => $teaser,
-              ]),
-            ]
-          ),
-        ]);
-      }
-      $result = [
-        '#theme' => 'item_list',
-        '#items' => $rows,
-        '#title' => NULL,
-        '#type' => 'ul',
-        '#attributes' => array('class' => 'g2-entries'),
-      ];
-    }
-    return $result;
   }
 
 }

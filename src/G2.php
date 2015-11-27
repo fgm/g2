@@ -42,27 +42,27 @@ class G2 {
   const API_VERSION = 8;
 
   /**
-   * Block: alphabar
+   * Block: alphabar.
    */
   const DELTA_ALPHABAR = 'alphabar';
 
   /**
-   * Block: n most recent
+   * Block: n most recent.
    */
   const DELTA_LATEST = 'latest';
 
   /**
-   * Block: random
+   * Block: random.
    */
   const DELTA_RANDOM = 'random';
 
   /**
-   * Block: n most viewed
+   * Block: n most viewed.
    */
   const DELTA_TOP = 'top';
 
   /**
-   * Block: word of the day
+   * Block: word of the day.
    */
   const DELTA_WOTD = 'wotd';
 

@@ -1,0 +1,14 @@
+status: false
+dependencies:
+  config:
+    - core.entity_view_mode.node.g2_homonyms_page
+    - node.type.g2_entry
+  module:
+    - user
+id: node.g2_entry.g2_homonyms_page
+targetEntityType: node
+bundle: g2_entry
+mode: g2_homonyms_page
+content: {  }
+hidden:
+  links: true

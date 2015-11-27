@@ -76,7 +76,7 @@ Its development to this date has been entirely sponsored by OSInet.fr
 | Page          | Status
 |---------------|-------------------------------------------|
 | main          | Working                                   |
-| entries       |                                           |
+| entries       | Working                                   |
 | initial       | Working                                   |
 | node add form |                                           |
 | settings      | Working                                   |

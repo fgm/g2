@@ -64,9 +64,12 @@ class NodeMatch implements ParamConverterInterface {
    * {@inheritdoc}
    *
    * Only returns unpublished nodes to users with "administer g2 entries".
+   *
+   * @return \Drupal\node\NodeInterface[]
+   *   A possibly empty array of nodes.
    */
   public function convert($value, $definition, $name, array $defaults) {
-    // XXX earlier versions user "administer nodes". Which one is better ?
+    // XXX earlier versions used "administer nodes". Which one is better ?
     $min_status = $this->currentUser->hasPermission(G2::PERM_ADMIN)
       ? NODE_NOT_PUBLISHED
       : NODE_PUBLISHED;
@@ -87,10 +90,8 @@ class NodeMatch implements ParamConverterInterface {
    * {@inheritdoc}
    */
   public function applies($definition, $name, Route $route) {
-    if (!empty($definition['type']) && $definition['type'] == 'g2:node:title') {
-      return TRUE;
-    }
-    return FALSE;
+    $result = !empty($definition['type']) && $definition['type'] == 'g2:node:title';
+    return $result;
   }
 
 }

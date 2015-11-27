@@ -51,7 +51,9 @@ class Initial implements ContainerInjectionInterface {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
+    /* @var \Drupal\Core\Session\AccountInterface $current_user */
     $current_user = $container->get('current_user');
+    /* @var \Drupal\Core\Database\Connection $database */
     $database = $container->get('database');
     return new static($database, $current_user);
   }
@@ -70,8 +72,8 @@ class Initial implements ContainerInjectionInterface {
    *   Usually a single letter. Assumed to be safe, so do not call this method
    *   on raw user input.
    *
-   * @return string
-   *   HTML
+   * @return array<string,array>
+   *   A render array.
    */
   protected function getByInitial($initial) {
     $ar_total   = $this->getStats();
@@ -103,12 +105,14 @@ class Initial implements ContainerInjectionInterface {
 
     $query = $this->database->select('node', 'n');
     $query->innerJoin('node_field_revision', 'nfv', 'n.vid = nfv.vid');
-    $query->fields('n', array('nid'))
-      ->condition('n.type', G2::NODE_TYPE)
-      ->condition('nfv.status', 1)
-      ->condition('nfv.title', $initial . '%', 'LIKE')
+    /* @var \Drupal\Core\Database\Query\SelectInterface $query */
+    $query = $query->fields('n', array('nid'))
       ->orderBy('nfv.title')
       ->addTag('node_access');
+    $query
+      ->condition('n.type', G2::NODE_TYPE)
+      ->condition('nfv.status', 1)
+      ->condition('nfv.title', $initial . '%', 'LIKE');
 
     $node_ids = array();
     $result = $query->execute();
@@ -141,10 +145,10 @@ class Initial implements ContainerInjectionInterface {
    * @param string $g2_initial
    *   The raw initial matching the route regexp.
    *
-   * @return array
+   * @return array<string,string|array<string,array>>
    *   The render array.
    */
-  public function indexAction($g2_initial = '@') {
+  public function indexAction($g2_initial) {
     // Parameter g2_initial has been checked against route regex, so it is safe.
     $nodes = $this->getByInitial($g2_initial);
     return [
@@ -179,7 +183,7 @@ class Initial implements ContainerInjectionInterface {
    * @param string $initial
    *   Initial segment.
    *
-   * @return array
+   * @return array<integer,integer>
    *   - g2 entries having chosen taxonomy term
    *   - g2 entries starting with chosen initial segment
    */
@@ -193,9 +197,9 @@ FROM {node} n
 SQL;
 
     $sq_params = array();
-    $sq_test = "WHERE n.type = :nodetype \n";
+    $sq_test = "WHERE n.type = :node_type \n";
 
-    $sq_params[':nodetype'] = G2::NODE_TYPE;
+    $sq_params[':node_type'] = G2::NODE_TYPE;
 
     if (isset($tid) && is_int($tid) && $tid > 0) {
       $sql .= "  INNER JOIN {taxonomy_index} tn ON n.nid = tn.nid \n";

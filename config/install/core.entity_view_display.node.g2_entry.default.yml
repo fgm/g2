@@ -1,0 +1,16 @@
+status: true
+dependencies:
+  config:
+    - node.type.g2_entry
+  module:
+    - user
+id: node.g2_entry.default
+targetEntityType: node
+bundle: g2_entry
+mode: default
+content:
+  links:
+    weight: 100
+    settings: {  }
+    third_party_settings: {  }
+hidden: {  }

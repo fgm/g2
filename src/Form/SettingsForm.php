@@ -7,12 +7,13 @@
 
 namespace Drupal\g2\Form;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteBuilderInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\g2\G2;
-use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\views\Entity\View;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -21,7 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
  * Class SettingsForm contains the G2 configuration form.
  *
  * @TODO Refactor like \Drupal\config_inspector\Form\ConfigInspectorItemForm.
- * @TODO Relate service.alphabar.contents configuraiton with routes like g2.initial.
+ * @TODO Relate service.alphabar.contents configuration with routes like g2.initial.
  */
 class SettingsForm extends ConfigFormBase {
   /**
@@ -30,6 +31,13 @@ class SettingsForm extends ConfigFormBase {
    * @var array
    */
   protected $configSchema;
+
+  /**
+   * The query.factory service.
+   *
+   * @var \Drupal\Core\Entity\Query\QueryFactory
+   */
+  protected $entityQuery;
 
   /**
    * The router.builder service.
@@ -41,6 +49,8 @@ class SettingsForm extends ConfigFormBase {
   /**
    * Constructs a \Drupal\system\ConfigFormBase object.
    *
+   * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
+   *   The entity.query service.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The factory for configuration objects.
    * @param array $config_schema
@@ -48,9 +58,10 @@ class SettingsForm extends ConfigFormBase {
    * @param \Drupal\Core\Routing\RouteBuilderInterface $router_builder
    *   The router.builder service.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, array $config_schema,
+  public function __construct(QueryFactory $entity_query, ConfigFactoryInterface $config_factory, array $config_schema,
     RouteBuilderInterface $router_builder) {
     parent::__construct($config_factory);
+    $this->entityQuery = $entity_query;
     $this->configSchema = $config_schema;
     $this->routerBuilder = $router_builder;
   }
@@ -59,6 +70,9 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
+    /* @var \Drupal\Core\Entity\Query\QueryFactory $entity_query */
+    $entity_query = $container->get('entity.query');
+
     /* @var \Drupal\Core\Config\ConfigFactoryInterface  $config_factory */
     $config_factory = $container->get('config.factory');
 
@@ -68,7 +82,7 @@ class SettingsForm extends ConfigFormBase {
     /* @var \Drupal\Core\Config\TypedConfigManagerInterface $typed_config */
     $typed_config = $container->get('config.typed');
 
-    return new static($config_factory, $typed_config->getDefinition(G2::CONFIG_NAME), $router_builder);
+    return new static($entity_query, $config_factory, $typed_config->getDefinition(G2::CONFIG_NAME), $router_builder);
   }
 
   /**
@@ -255,10 +269,14 @@ class SettingsForm extends ConfigFormBase {
       '#default_value' => $config['homonyms']['redirect_status']
     ];
 
-    $vocabularies = Vocabulary::loadMultiple();
-    $options = ['' => t('-- Not set --')];
-    foreach ($vocabularies as $vid => $vocabulary) {
-      $options[$vid] = $vocabulary->label();
+    $view_ids = $this->entityQuery->get('view')
+      ->condition('tag', 'G2')
+      ->execute();
+    $views = View::loadMultiple($view_ids);
+    $options = ['' => t('-- Use plain node list --')];
+    /* @var \Drupal\views\ViewEntityInterface $view */
+    foreach ($views as $vid => $view) {
+      $options[$vid] = $view->label();
     }
     $element['vid'] = [
       '#type' => 'select',

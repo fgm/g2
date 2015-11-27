@@ -116,7 +116,7 @@ class Requirements implements ContainerInjectionInterface {
     $result = ['title' => $title];
     $main = $this->g2Config->get($key);
 
-    assert('is_numeric($nid)');
+    assert('is_numeric($main)');
     if ($main) {
       $node = Node::load($main);
       if (!($node instanceof NodeInterface)) {
@@ -188,10 +188,14 @@ class Requirements implements ContainerInjectionInterface {
    * Perform controller requirements checks.
    */
   public function checkControllers() {
-    $this->result['main.nid'] = $this->checkNid('controller.main.nid', t('G2 main page node id'));
-    $this->result['main.route'] = $this->checkRoute('controller.main.route', t('G2 main page route'));
-    $this->result['homonyms.nid'] = $this->checkNid('controller.homonyms.nid', t('G2 homonyms disambiguation page node id'));
-    $this->result['homonyms.route'] = $this->checkRoute('controller.homonyms.route', t('G2 homonyms disambiguation page route'));
+    $this->result['main.nid'] = $this->checkNid('controller.main.nid',
+      t('G2 main page node id'));
+    $this->result['main.route'] = $this->checkRoute('controller.main.route',
+      t('G2 main page route'));
+    $this->result['homonyms.nid'] = $this->checkNid('controller.homonyms.nid',
+      t('G2 homonyms disambiguation page node id'));
+    $this->result['homonyms.route'] = $this->checkRoute('controller.homonyms.route',
+      t('G2 homonyms disambiguation page route'));
   }
 
   /**

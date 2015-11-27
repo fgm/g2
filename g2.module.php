@@ -10,8 +10,9 @@
  * @TODO for D8, in decreasing prioritys
  *  - implement SettingsForm::validateForm() using Requirements
  *  - ensure theme is flushed whenever block.alphabar.row_length config is
- *   updated.
+ *    updated.
  *  - make g2_requirements() less verbose, at least on success.
+ *  - find a way to add the title to the node.add route for ease of creation.
  * @todo TODO test wipes, rss
  *
  * @link http://wiki.audean.com/g2/choosing @endlink
@@ -1277,7 +1278,7 @@ function g2_preprocess_page(&$vars) {
  * @param array $form
  * @param \Drupal\Core\Form\FormStateInterface $form_state
  */
-function g2_referer_wipe_button_submit(array $form, FormStateInterface &$form_state) {
+function g2_referer_wipe_button_submit(array $form, FormStateInterface $form_state) {
   drupal_goto('g2/wipe');
 }
 
@@ -2018,19 +2019,6 @@ function Zg2_delete($node) {
   db_delete('g2_node')
     ->condition('nid', $node->nid)
     ->execute();
-}
-
-/**
- * Implements hook_entity_info_alter().
- */
-function Zg2_entity_info_alter(&$info) {
-  // Add the 'Entry list' view mode for nodes.
-  $info['node']['view modes'] += [
-    'g2_entry_list' => [
-      'label' => t('G2 Entry list'),
-      'custom settings' => TRUE,
-    ],
-  ];
 }
 
 /**

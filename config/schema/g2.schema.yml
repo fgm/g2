@@ -121,7 +121,7 @@ g2.settings:
               label: 'Jump to single match on homonyms/entries pages ?'
             nid:
               type: integer
-              label: 'The nid for the homonyms disambiguation page. See controller.homonyms.route.'
+              label: 'The nid for the homonyms disambiguation page. Deprecated: use a view instead.'
             redirect_status:
               type: integer
               label: 'Default HTTP status code for automatic redirection.'
@@ -130,7 +130,7 @@ g2.settings:
               label: 'The route to the disambiguation page for homonyms. This allows overriding the default node-based mechanism.'
             vid:
               type: string
-              label: 'The default vocabulary id for the homonyms disambiguation page.'
+              label: 'The default view for the homonyms disambiguation page. Select among views tagged as G2 or set to empty for a plain node list in g2_entry_list mode.'
         wotd:
           type: mapping
           label: 'WOTD RSS feed'
