@@ -213,7 +213,7 @@ SQL;
     }
     $sql .= $sq_test . " GROUP BY nfd.status \n";
 
-    $result = $this->database->query($sql, $sq_params);
+    $counts = $this->database->query($sql, $sq_params);
 
     // Avoid empty returns.
     $result = [
@@ -221,7 +221,7 @@ SQL;
       NODE_PUBLISHED     => 0,
     ];
 
-    foreach ($result as $row) {
+    foreach ($counts as $row) {
       $result[intval($row->status)] = intval($row->cnt);
     }
 
