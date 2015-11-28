@@ -1,11 +1,10 @@
 status: true
 dependencies:
   config:
-    - field.storage.node.body
     - field.storage.node.field_g2_context
+    - field.storage.node.field_g2_expansion
   module:
     - node
-    - text
     - user
 id: g2_homonyms
 label: 'G2 Homonyms'
@@ -170,14 +169,14 @@ display:
           entity_type: node
           entity_field: title
           plugin_id: field
-        body:
-          id: body
-          table: node__body
-          field: body
+        field_g2_expansion:
+          id: field_g2_expansion
+          table: node__field_g2_expansion
+          field: field_g2_expansion
           relationship: none
           group_type: group
           admin_label: ''
-          label: Definition
+          label: Expansion
           exclude: false
           alter:
             alter_text: false
@@ -219,8 +218,9 @@ display:
           empty_zero: false
           hide_alter_empty: true
           click_sort_column: value
-          type: text_default
-          settings: {  }
+          type: string
+          settings:
+            link_to_entity: false
           group_column: value
           group_columns: {  }
           group_rows: true
@@ -381,5 +381,5 @@ display:
         - 'user.node_grants:view'
         - user.permissions
       tags:
-        - 'config:field.storage.node.body'
         - 'config:field.storage.node.field_g2_context'
+        - 'config:field.storage.node.field_g2_expansion'

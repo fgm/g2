@@ -180,12 +180,12 @@ class Initial implements ContainerInjectionInterface {
    *
    * @param int $tid
    *   Taxonomy term id.
-   * @param string $initial
+   * @param null|string $initial
    *   Initial segment.
    *
    * @return array<integer,integer>
-   *   - g2 entries having chosen taxonomy term
-   *   - g2 entries starting with chosen initial segment
+   *   - 0: g2 entries having chosen taxonomy term
+   *   - 1: g2 entries starting with chosen initial segment
    */
   protected function getStats($tid = 0, $initial = NULL) {
     $sql = <<<SQL
@@ -216,16 +216,16 @@ SQL;
     $result = $this->database->query($sql, $sq_params);
 
     // Avoid empty returns.
-    $ret = array(
+    $result = [
       NODE_NOT_PUBLISHED => 0,
       NODE_PUBLISHED     => 0,
-    );
+    ];
 
     foreach ($result as $row) {
-      $ret[$row->status] = (int) $row->cnt;
+      $result[intval($row->status)] = intval($row->cnt);
     }
 
-    return $ret;
+    return $result;
   }
 
 }

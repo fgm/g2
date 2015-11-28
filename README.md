@@ -7,9 +7,9 @@ Licensed under the CeCILL version 2.1 and General Public License version 2 and l
 
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FGM/g2/badges/quality-score.png?b=8.x-1.x)](https://scrutinizer-ci.com/g/FGM/g2/?branch=8.x-1.x)
 
-**WARNING** 2015-11-15 : This version of the project is _not_ usable at the
+**WARNING** 2015-11-28 : This version of the project is _not_ usable at the
   moment : it is very much a work in progress. An initial usable version is
-  expected for the Drupal 8.0.0 release due on 2015-11-19.
+  expected before 2016-01-01.
 
 
 
@@ -78,7 +78,7 @@ Its development to this date has been entirely sponsored by OSInet.fr
 | main          | Working                                   |
 | entries       | Working                                   |
 | initial       | Working                                   |
-| node add form |                                           |
+| node add form | Working                                   |
 | settings      | Working                                   |
 | WOTD feed     |                                           |
 
