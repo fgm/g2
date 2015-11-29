@@ -24,7 +24,7 @@ use Drupal\g2\G2;
 use Drupal\node\Entity\Node;
 
 /**
- * Return alphabar data.
+ * XML-RPC callback : returns alphabar data.
  *
  * @return string
  */
@@ -38,12 +38,46 @@ function _g2_alphabar() {
 }
 
 /**
- * Return the current XML-RPC API version.
+ * XML-RPC callback : returns the current XML-RPC API version.
  *
  * @return int
  */
 function _g2_api() {
   return G2::api();
+}
+
+/**
+ * XML-RPC callback : returns a list of the latest n nodes.
+ *
+ * "Latest" nodes are identified by time of latest update.
+ *
+ * @param int|null $count
+ *   The maximum number of entries to return
+ *
+ * @return array
+ *   Note that the results are NOT filtered, and must be filtered when used.
+ */
+function _g2_latest($count = NULL) {
+  $config = \Drupal::config('g2.settings');
+  $service_max = $config->get('service.latest.max_count');
+  $rpc_throttle = $config->get('rpc.server.throttle');
+  $actual_max = $rpc_throttle * $service_max;
+
+  // Limit extraction.
+  if (empty($count) || ($count > $actual_max)) {
+    $count = $actual_max;
+  }
+
+  /* @var \Drupal\g2\Latest $latest */
+  $latest = \Drupal::service('g2.latest');
+  $links = $latest->getLinks($count);
+  $result = [];
+
+  /* @var \Drupal\Core\GeneratedLink $link */
+  foreach ($links as $link) {
+    $result[] = $link->__toString();
+  }
+  return $result;
 }
 
 /**
@@ -249,47 +283,6 @@ function _g2_filter_process($entry) {
     'html' => FALSE,
     'attributes' => $attributes,
   ]);
-  return $ret;
-}
-
-/**
- * Returns a list of the latest n nodes.
- *
- * "Latest" nodes are identified by time of latest update.
- *
- * @param int $max
- *   The maximum number of entries to return
- * @param boolean $include_unpublished
- *   Include unpublished nodes in that list
- *
- * @return array
- *   Note that the results are NOT filtered, and must be filtered when used.
- */
-function _g2_latest($max = NULL, $include_unpublished = FALSE) {
-  $def_max = variable_get(G2VARLATESTITEMCOUNT, G2DEFLATESTITEMCOUNT);
-  $rpc_throttle = variable_get(G2VARRPCTHROTTLE, G2DEFRPCTHROTTLE);
-  // Limit extraction
-  if (empty($max) || ($max > $rpc_throttle * $def_max)) {
-    $max = $def_max;
-  }
-
-  // Only list unpublished nodes if requested and allowed
-  $status = ($include_unpublished && user_access('administer nodes'))
-    ? NODE_NOT_PUBLISHED
-    : NODE_PUBLISHED;
-
-  // Issue #1047248: unused n.changed column is here for PGSQL .
-  $sq = 'SELECT n.nid, n.title, n.status, n.changed '
-    . 'FROM {node} n '
-    . "WHERE (n.type = '%s') AND (n.status >= %d) "
-    . 'ORDER BY n.changed DESC ';
-  $sq = db_rewrite_sql($sq);
-  $q = db_query_range($sq, G2NODETYPE, $status, 0, $max);
-  $ret = [];
-  while (is_object($o = db_fetch_object($q))) {
-    $ret[] = $o;
-  }
-
   return $ret;
 }
 
@@ -627,12 +620,10 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
     $blocks[G2::DELTA_RANDOM]['info'] = variable_get('g2_random_info', t('G2 Random'));
     $blocks[G2::DELTA_TOP]['info'] = variable_get('g2_top_info', t('G2 Top'));
     $blocks[G2::DELTA_WOTD]['info'] = variable_get('g2_wotd_info', t('G2 Word of the day'));
-    $blocks[G2::DELTA_LATEST]['info'] = variable_get('g2_latest_info', t('G2 Latest'));
 
     $blocks[G2::DELTA_RANDOM]['cache'] = BLOCK_NO_CACHE; // Else it couldn't be random
     $blocks[G2::DELTA_TOP]['cache'] = BLOCK_CACHE_PER_ROLE; // Can contain unpublished nodes
     $blocks[G2::DELTA_WOTD]['cache'] = BLOCK_CACHE_GLOBAL;
-    $blocks[G2::DELTA_LATEST]['cache'] = BLOCK_CACHE_PER_ROLE; // Can contain unpublished nodes
     $ret = $blocks;
   }
   elseif ($op == 'configure') {
@@ -769,15 +760,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
         ];
         break;
 
-      case G2::DELTA_LATEST:
-        $form[G2VARLATESTITEMCOUNT] = [
-          '#type' => 'select',
-          '#title' => t('Number of items'),
-          '#default_value' => variable_get(G2VARLATESTITEMCOUNT, G2DEFLATESTITEMCOUNT),
-          '#options' => $count_options,
-        ];
-        break;
-
       default:
         break;
     }
@@ -814,10 +796,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
         variable_set(G2VARWOTDTITLE, $edit[G2VARWOTDTITLE]);
         break;
 
-      case G2::DELTA_LATEST:
-        variable_set(G2VARLATESTITEMCOUNT, $edit[G2VARLATESTITEMCOUNT]);
-        break;
-
       default:
         break;
     }
@@ -840,13 +818,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
       case G2::DELTA_WOTD:
         $block['subject'] = variable_get(G2VARWOTDTITLE, G2DEFWOTDTITLE);
         $block['content'] = theme('g2_wotd', _g2_wotd(variable_get(G2VARWOTDBODYSIZE, G2DEFWOTDBODYSIZE)));
-        break;
-
-      case G2::DELTA_LATEST:
-        $max = variable_get(G2VARLATESTITEMCOUNT, G2DEFLATESTITEMCOUNT);
-        $block['subject'] = t('@count most recently updated G2 glossary entries',
-          ['@count' => $max]);
-        $block['content'] = theme('g2_node_list', _g2_latest($max, TRUE));
         break;
 
       // Should happen only when using a new code version on an older schema
@@ -1500,7 +1471,8 @@ function g2_xmlrpc() {
  * @param body $body
  *   The body itself, filtered by node_prepare().
  *
- * @return string HTML
+ * @return string
+ *   HTML
  */
 function theme_g2_body($title, $body) {
   return theme('box', $title, $body);
@@ -1755,15 +1727,6 @@ function Zg2_block_configure($delta) {
       ];
       break;
 
-    case G2\DELTALATEST:
-      $form[G2\VARLATESTITEMCOUNT] = [
-        '#type' => 'select',
-        '#title' => t('Number of items'),
-        '#default_value' => variable_get(G2\VARLATESTITEMCOUNT, G2\DEFLATESTITEMCOUNT),
-        '#options' => $count_options,
-      ];
-      break;
-
     default:
       break;
   }
@@ -1778,7 +1741,6 @@ function Zg2_block_info() {
   $blocks[G2\DELTARANDOM]['info'] = variable_get('g2_random_info', t('G2 Random'));
   $blocks[G2\DELTATOP]['info'] = variable_get('g2_top_info', t('G2 Top'));
   $blocks[G2\DELTAWOTD]['info'] = variable_get('g2_wotd_info', t('G2 Word of the day'));
-  $blocks[G2\DELTALATEST]['info'] = variable_get('g2_latest_info', t('G2 Latest'));
 
   // Else it couldn't be random.
   $blocks[G2\DELTARANDOM]['cache'] = DRUPAL_NO_CACHE;
@@ -1786,8 +1748,6 @@ function Zg2_block_info() {
   $blocks[G2\DELTATOP]['cache'] = DRUPAL_CACHE_PER_ROLE;
   // Not all roles have g2 view permission.
   $blocks[G2\DELTAWOTD]['cache'] = DRUPAL_CACHE_PER_ROLE;
-  // Can contain unpublished nodes.
-  $blocks[G2\DELTALATEST]['cache'] = DRUPAL_CACHE_PER_ROLE;
   return $blocks;
 }
 
@@ -1824,10 +1784,6 @@ function Zg2_block_save($delta, $edit) {
       variable_set(G2\VARWOTDTITLE, $edit[G2\VARWOTDTITLE]);
       break;
 
-    case G2\DELTALATEST:
-      variable_set(G2\VARLATESTITEMCOUNT, $edit[G2\VARLATESTITEMCOUNT]);
-      break;
-
     default:
       break;
   }
@@ -1854,13 +1810,6 @@ function Zg2_block_view($delta) {
     case G2\DELTAWOTD:
       $block['subject'] = variable_get(G2\VARWOTDTITLE, t('Word of the day in the G2 glossary'));
       $block['content'] = theme('g2_wotd', ['node' => G2\wotd(variable_get(G2\VARWOTDBODYSIZE, G2\DEFWOTDBODYSIZE))]);
-      break;
-
-    case G2\DELTALATEST:
-      $max = variable_get(G2\VARLATESTITEMCOUNT, G2\DEFLATESTITEMCOUNT);
-      $block['subject'] = t('@count most recently updated G2 glossary entries',
-        ['@count' => $max]);
-      $block['content'] = theme('g2_node_list', ['nodes' => G2\latest($max, TRUE)]);
       break;
 
     // Should happen only when using a new code version on an older schema
@@ -2116,7 +2065,6 @@ function Zg2_help($path, $arg) {
       $helps = [
         G2\DELTARANDOM => t('This block displays a pseudo-random entry (different each time) from the G2 glossary.'),
         G2\DELTATOP => t('This block displays a list of the most viewed entries from the G2 glossary.'),
-        G2\DELTALATEST => t('This block displays a list of the most recently updated entries from the G2 glossary.'),
         G2\DELTAWOTD => t('This block displays a once-a-day entry from the G2 glossary.'),
       ];
       if ($arg[4] == 'g2' && isset($helps[$arg[5]])) {

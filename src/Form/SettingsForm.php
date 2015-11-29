@@ -397,6 +397,9 @@ class SettingsForm extends ConfigFormBase {
       '#type' => 'number',
       '#title' => $schema['server']['mapping']['throttle']['label'],
       '#default_value' => $config['server']['throttle'],
+      '#max' => 1.0,
+      '#min' => 0.0,
+      '#step' => 0.1,
     ];
 
     $form['rpc']['local'] = [

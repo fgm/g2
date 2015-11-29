@@ -178,8 +178,8 @@ g2.settings:
               type: boolean
               label: 'Is the XML-RPC API enabled ?'
             throttle:
-              type: integer
-              label: 'Coefficient limit for API operations over block settings.'
+              type: float
+              label: 'Coefficient limit for API operations over block settings. Max: 1.0.'
         # TODO check whether this is one is not actually a constant.
         local:
           type: string
