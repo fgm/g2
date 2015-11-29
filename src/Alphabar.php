@@ -9,8 +9,6 @@ namespace Drupal\g2;
 
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Entity\Query\QueryFactory;
-use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Utility\LinkGenerator;
 
@@ -36,25 +34,11 @@ class Alphabar {
   protected $linkGenerator;
 
   /**
-   * The entity query service.
-   *
-   * @var \Drupal\Core\Entity\Query\QueryFactory
-   */
-  protected $query;
-
-  /**
    * The name of the route to use when building alphabar links.
    *
    * @var string
    */
   protected $routeName;
-
-  /**
-   * The URL generator service.
-   *
-   * @var \Drupal\Core\Routing\UrlGeneratorInterface
-   */
-  protected $urlGenerator;
 
   /**
    * Constructor.
@@ -63,16 +47,9 @@ class Alphabar {
    *   The config factory service.
    * @param \Drupal\Core\Utility\LinkGenerator $link_generator
    *   The link generator service.
-   * @param \Drupal\Core\Entity\Query\QueryFactory $query
-   *   The entity query service.
-   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
-   *   The URL generator service.
    */
-  public function __construct(ConfigFactoryInterface $config, LinkGenerator $link_generator,
-    QueryFactory $query, UrlGeneratorInterface $url_generator) {
+  public function __construct(ConfigFactoryInterface $config, LinkGenerator $link_generator) {
     $this->linkGenerator = $link_generator;
-    $this->query = $query;
-    $this->urlGenerator = $url_generator;
 
     $g2_config = $config->get('g2.settings');
     $this->config = $g2_config->get('service.alphabar');

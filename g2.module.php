@@ -624,13 +624,11 @@ function g2_access($op /* , $node, $account */) {
 function g2_block($op = 'list', $delta = 0, $edit = []) {
   if ($op == 'list') {
     $blocks = [];
-    $blocks[G2::DELTA_ALPHABAR]['info'] = variable_get('g2_alphabar_info', t('G2 Alphabar'));
     $blocks[G2::DELTA_RANDOM]['info'] = variable_get('g2_random_info', t('G2 Random'));
     $blocks[G2::DELTA_TOP]['info'] = variable_get('g2_top_info', t('G2 Top'));
     $blocks[G2::DELTA_WOTD]['info'] = variable_get('g2_wotd_info', t('G2 Word of the day'));
     $blocks[G2::DELTA_LATEST]['info'] = variable_get('g2_latest_info', t('G2 Latest'));
 
-    $blocks[G2::DELTA_ALPHABAR]['cache'] = BLOCK_CACHE_GLOBAL;
     $blocks[G2::DELTA_RANDOM]['cache'] = BLOCK_NO_CACHE; // Else it couldn't be random
     $blocks[G2::DELTA_TOP]['cache'] = BLOCK_CACHE_PER_ROLE; // Can contain unpublished nodes
     $blocks[G2::DELTA_WOTD]['cache'] = BLOCK_CACHE_GLOBAL;
@@ -641,22 +639,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
     $count_options = ['1' => '1', '2' => '2', '5' => '5', '10' => '10'];
 
     switch ($delta) {
-      case G2::DELTA_ALPHABAR:
-        $form[G2VARALPHABAR] = [
-          '#type' => 'textfield',
-          '#title' => t('List of initials to be included in alphabar'),
-          '#default_value' => variable_get(G2VARALPHABAR, G2DEFALPHABAR),
-          '#description' => t('The alphabar lists the initials for which links to initial pages will be included.'),
-        ];
-        $form[G2VARALPHABARROWLEN] = [
-          '#type' => 'textfield',
-          '#title' => t('Maximum length of lines in the alphabar'),
-          '#default_value' => variable_get(G2VARALPHABARROWLEN, G2DEFALPHABARROWLEN),
-          '#size' => 3,
-          '#description' => t('Each line except the last one will have exactly that number of links.'),
-        ];
-        break;
-
       case G2::DELTA_RANDOM:
         $form[G2VARRANDOMSTORE] = [
           '#type' => 'checkbox',
@@ -804,11 +786,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
   elseif ($op == 'save') {
     $ret = NULL;
     switch ($delta) {
-      case G2::DELTA_ALPHABAR:
-        variable_set(G2VARALPHABAR, $edit[G2VARALPHABAR]);
-        variable_set(G2VARALPHABARROWLEN, $edit[G2VARALPHABARROWLEN]);
-        break;
-
       case G2::DELTA_RANDOM:
         variable_set(G2VARRANDOMSTORE, $edit[G2VARRANDOMSTORE]);
         variable_set(G2VARRANDOMTERMS, $edit[G2VARRANDOMTERMS]);
@@ -848,11 +825,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
   elseif ($op == 'view') {
     // watchdog('g2', "hook_block/view/$delta");
     switch ($delta) {
-      case G2::DELTA_ALPHABAR:
-        $block['subject'] = t('G2 Glossary pages');
-        $block['content'] = theme('g2_alphabar', _g2_alphabar());
-        break;
-
       case G2::DELTA_RANDOM:
         $block['subject'] = t('Random G2 glossary entry');
         $block['content'] = theme('g2_random', _g2_random());
@@ -1655,22 +1627,6 @@ function Zg2_block_configure($delta) {
   ];
 
   switch ($delta) {
-    case G2\DELTAALPHABAR:
-      $form[G2\VARALPHABAR] = [
-        '#type' => 'textfield',
-        '#title' => t('List of initials to be included in alphabar'),
-        '#default_value' => variable_get(G2\VARALPHABAR, G2\DEFALPHABAR),
-        '#description' => t('The alphabar lists the initials for which links to initial pages will be included.'),
-      ];
-      $form[G2\VARALPHABARROWLEN] = [
-        '#type' => 'textfield',
-        '#title' => t('Maximum length of lines in the alphabar'),
-        '#default_value' => variable_get(G2\VARALPHABARROWLEN, G2\DEFALPHABARROWLEN),
-        '#size' => 3,
-        '#description' => t('Each line except the last one will have exactly that number of links.'),
-      ];
-      break;
-
     case G2\DELTARANDOM:
       $form[G2\VARRANDOMSTORE] = [
         '#type' => 'checkbox',
@@ -1819,14 +1775,11 @@ function Zg2_block_configure($delta) {
  */
 function Zg2_block_info() {
   $blocks = [];
-  $blocks[G2\DELTAALPHABAR]['info'] = variable_get('g2_alphabar_info', t('G2 Alphabar'));
   $blocks[G2\DELTARANDOM]['info'] = variable_get('g2_random_info', t('G2 Random'));
   $blocks[G2\DELTATOP]['info'] = variable_get('g2_top_info', t('G2 Top'));
   $blocks[G2\DELTAWOTD]['info'] = variable_get('g2_wotd_info', t('G2 Word of the day'));
   $blocks[G2\DELTALATEST]['info'] = variable_get('g2_latest_info', t('G2 Latest'));
 
-  // Not all roles have g2 view permission.
-  $blocks[G2\DELTAALPHABAR]['cache'] = DRUPAL_CACHE_PER_ROLE;
   // Else it couldn't be random.
   $blocks[G2\DELTARANDOM]['cache'] = DRUPAL_NO_CACHE;
   // Can contain unpublished nodes.
@@ -1843,11 +1796,6 @@ function Zg2_block_info() {
  */
 function Zg2_block_save($delta, $edit) {
   switch ($delta) {
-    case G2\DELTAALPHABAR:
-      variable_set(G2\VARALPHABAR, $edit[G2\VARALPHABAR]);
-      variable_set(G2\VARALPHABARROWLEN, $edit[G2\VARALPHABARROWLEN]);
-      break;
-
     case G2\DELTARANDOM:
       variable_set(G2\VARRANDOMSTORE, $edit[G2\VARRANDOMSTORE]);
       variable_set(G2\VARRANDOMTERMS, $edit[G2\VARRANDOMTERMS]);
@@ -1891,11 +1839,6 @@ function Zg2_block_save($delta, $edit) {
 function Zg2_block_view($delta) {
   // watchdog('g2', "hook_block/view/$delta");
   switch ($delta) {
-    case G2\DELTAALPHABAR:
-      $block['subject'] = t('G2 Glossary pages');
-      $block['content'] = theme('g2_alphabar', ['alphabar' => G2\alphabar()]);
-      break;
-
     case G2\DELTARANDOM:
       $block['subject'] = t('Random G2 glossary entry');
       $block['content'] = theme('g2_random', ['node' => G2\random()]);
@@ -2171,7 +2114,6 @@ function Zg2_help($path, $arg) {
 
     case 'admin/structure/block/configure':
       $helps = [
-        G2\DELTAALPHABAR => t('This block displays a clickable list of initials from the G2 glossary.'),
         G2\DELTARANDOM => t('This block displays a pseudo-random entry (different each time) from the G2 glossary.'),
         G2\DELTATOP => t('This block displays a list of the most viewed entries from the G2 glossary.'),
         G2\DELTALATEST => t('This block displays a list of the most recently updated entries from the G2 glossary.'),
@@ -2518,33 +2460,6 @@ function Zg2_views_api() {
     'api' => '3.0',
     'path' => drupal_get_path('module', 'g2') . '/views',
   ];
-}
-
-/**
- * Theme an alphabar for g2_block(view, G2\DELTAALPHABAR)
- *
- * @param array $variables
- *   The available variables for the theme function.
- *
- * @return string
- *   HTML: the formatted alphabar.
- */
-function Ztheme_g2_alphabar($variables) {
-  $alphabar = $variables['alphabar'];
-  $rowlen = $variables['rowlen'];
-  if (empty($rowlen)) {
-    $rowlen = variable_get(G2\VARALPHABARROWLEN, G2\DEFALPHABARROWLEN);
-  }
-  $ret = '';
-  $i = 0;
-  foreach ($alphabar as $initial) {
-    $ret .= $initial . '&nbsp;';
-    if ($i % $rowlen == $rowlen - 1) {
-      $ret .= '<br />';
-    }
-    $i++;
-  }
-  return $ret;
 }
 
 /**

@@ -13,7 +13,7 @@ use Drupal\g2\Alphabar;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class Alphabar is the Alphabar block plugin.
+ * Class AlphabarBlock is the Alphabar block plugin.
  *
  * @Block(
  *   id = "g2_alphabar",
@@ -31,6 +31,13 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
   protected $alphabar;
 
   /**
+   * The g2.settings.block.alphabar configuration.
+   *
+   * @var array
+   */
+  protected $blockConfig;
+
+  /**
    * Constructor.
    *
    * @param array $configuration
@@ -39,15 +46,15 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
    *   The block ID.
    * @param mixed $plugin_definition
    *   The block definition.
-   * @param \Drupal\g2\Alphabar $alphabar
+   * @param \Drupal\g2\Alphabar $latest
    *   The Alphabar service.
    * @param array $block_config
    *   The block configuration.
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition,
-    Alphabar $alphabar, array $block_config) {
+    Alphabar $latest, array $block_config) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->alphabar = $alphabar;
+    $this->alphabar = $latest;
     $this->blockConfig = $block_config;
   }
 

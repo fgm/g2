@@ -5,8 +5,6 @@ services:
     arguments:
       - '@config.factory'
       - '@link_generator'
-      - '@entity.query'
-      - '@url_generator'
 
   paramconverter.g2_match:
     class: Drupal\g2\ParamConverter\NodeMatch
