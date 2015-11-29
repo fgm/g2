@@ -31,7 +31,7 @@ controller:
     nid: 0
     redirect_status: 302
     route: g2.homonyms
-    vid: ''
+    vid: g2_homonyms
   wotd:
     title: 'G2 word of the day RSS feed'
     description: 'One definition a day from the G2 Glossary on :site.'

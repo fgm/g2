@@ -3,10 +3,15 @@ dependencies:
   enforced:
     module:
       - g2
+third_party_settings:
+  menu_ui:
+    available_menus:
+      - main
+    parent: 'main:'
 name: 'G2 Entry'
 type: g2_entry
 description: 'Content of the <em>G2 Entry</em> type has built-in fields for glossary logic. Use for G2 glossaries.'
 help: ''
 new_revision: true
 preview_mode: 1
-display_submitted: true
+display_submitted: false

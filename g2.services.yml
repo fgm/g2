@@ -14,3 +14,11 @@ services:
       - { name: paramconverter }
     arguments: ['@entity_type.manager', '@current_user', '@entity.query']
 
+  # Provides a list of the latest updated G2 entries
+  g2.latest:
+    class: '\Drupal\g2\Latest'
+    arguments:
+      - '@config.factory'
+      - '@link_generator'
+      - '@entity.query'
+      - '@url_generator'

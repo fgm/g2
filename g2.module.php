@@ -81,7 +81,6 @@ function g2_theme() {
     ],
 
     // --- Older versions ------------------------------------------------------
-    'g2_node_list' => ['variables' => ['nodes' => []]],
     'g2_random' => ['variables' => ['node' => NULL]],
     'g2_wotd' => ['variables' => ['node' => NULL]],
 
@@ -1536,28 +1535,6 @@ function theme_g2_body($title, $body) {
 }
 
 /**
- * Themed a G2 entries list, as used by the "latest" and "top" blocks.
- *
- * Node access control is the responsibility of the caller passing the
- * node list.
- *
- * @param array $nodes
- *
- * @return string HTML
- */
-function theme_g2_node_list($nodes = []) {
-  $ar = [];
-  foreach ($nodes as $node) {
-    $class = ($node->status == NODE_PUBLISHED)
-      ? NULL
-      : 'node-unpublished';
-    $ar[] = l($node->title, 'node/' . $node->nid, ['attributes' => ['class' => $class]]);
-  }
-  $ret = theme('item_list', $ar);
-  return $ret;
-}
-
-/**
  * Return a themed g2 node time period.
  *
  * Title and period are filtered prior to invoking this theme function
@@ -2602,30 +2579,6 @@ function Ztheme_g2_field($variables) {
 </div><!-- field ... -->
 EOT;
 
-  return $ret;
-}
-
-/**
- * Theme a G2 entries list, as used by the "latest" and "top" blocks.
- *
- * Node access control is the responsibility of the caller passing the
- * node list.
- *
- * @return string
- *   HTML: the themed entries list.
- */
-function Ztheme_g2_node_list($variables) {
-  $nodes = $variables['nodes'];
-  $ar = [];
-  foreach ($nodes as $node) {
-    $class = ($node->status == NODE_PUBLISHED)
-      ? NULL
-      : 'node-unpublished';
-    $uri = entity_uri('node', $node);
-    $uri['options']['attributes']['class'][] = $class;
-    $ar[] = l($node->title, $uri['path'], $uri['options']);
-  }
-  $ret = theme('item_list', ['items' => $ar]);
   return $ret;
 }
 

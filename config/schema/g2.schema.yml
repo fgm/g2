@@ -76,6 +76,20 @@ g2.settings:
             contents:
               type: string
               label: 'Initials used in the Alphabar'
+        latest:
+          type: mapping
+          label: 'Latest updated entries'
+          mapping:
+            max_count:
+              type: integer
+              label: 'Maximum number of entries in latest(n) list.'
+        top:
+          type: mapping
+          label: 'Most viewed entries'
+          mapping:
+            max_count:
+              type: integer
+              label: 'Maximum number of entries in top(n) list.'
 
     controller:
       type: mapping

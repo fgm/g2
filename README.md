@@ -63,7 +63,7 @@ Its development to this date has been entirely sponsored by OSInet.fr
 |-----------|-------------|-----------|---------------------|
 | Alphabar  | Done        | Working   | Working             |
 | API       | n.a.        | Working   | n.a.                |
-| Latest    |             |           |                     |
+| Latest    | Working     |           | Working             |
 | Random    |             |           |                     |
 | Top       |             |           |                     |
 | WOTD      |             |           |                     |

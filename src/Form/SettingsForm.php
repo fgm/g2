@@ -141,6 +141,7 @@ class SettingsForm extends ConfigFormBase {
   public function buildBlockForm(array $form, array $config, array $schema) {
     $section = 'block';
     $form = $this->prepareTopLevelDetails($form, $schema, $section);
+    $service_config = $this->config(G2::CONFIG_NAME)->get('service');
 
     $element = &$form[$section]['alphabar'];
     $element['row_length'] = [
@@ -154,6 +155,8 @@ class SettingsForm extends ConfigFormBase {
       '#type' => 'number',
       '#title' => $schema['latest']['mapping']['count']['label'],
       '#default_value' => $config['latest']['count'],
+      '#max' => $service_config['latest']['max_count'],
+      '#min' => 1,
     ];
 
     $element = &$form[$section]['random'];
@@ -173,6 +176,8 @@ class SettingsForm extends ConfigFormBase {
       '#type' => 'number',
       '#title' => $schema['top']['mapping']['count']['label'],
       '#default_value' => $config['top']['count'],
+      '#max' => $service_config['top']['max_count'],
+      '#min' => 1,
     ];
 
     $element = &$form[$section]['wotd'];
@@ -416,16 +421,24 @@ class SettingsForm extends ConfigFormBase {
    *   The form array.
    */
   public function buildServiceForm(array $form, array $config, array $schema) {
-    $form['service']['alphabar'] = [
-      '#type' => 'details',
-      '#title' => $schema['alphabar']['label'],
-    ];
-    $form['service']['alphabar']['contents'] = [
+    $section = 'service';
+    $form = $this->prepareTopLevelDetails($form, $schema, $section);
+
+    $element = &$form[$section]['alphabar'];
+    $element['contents'] = [
       '#type' => 'textfield',
       '#title' => $schema['alphabar']['mapping']['contents']['label'],
       '#default_value' => $config['alphabar']['contents'],
     ];
 
+    foreach (['latest', 'top'] as $service) {
+      $element = &$form[$section][$service];
+      $element['max_count'] = [
+        '#type' => 'number',
+        '#title' => $schema[$service]['mapping']['max_count']['label'],
+        '#default_value' => $config[$service]['max_count'],
+      ];
+    }
     return $form;
   }
 
