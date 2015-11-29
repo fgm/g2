@@ -65,7 +65,7 @@ Its development to this date has been entirely sponsored by OSInet.fr
 | API       | n.a.        | Working   | n.a.                |
 | Latest    | Working     | Working   | Working             |
 | Random    |             |           |                     |
-| Top       |             |           |                     |
+| Top       | Working     | Working   | Working             |
 | WOTD      |             |           |                     |
 
 * 'Done' status means working and with high test coverage

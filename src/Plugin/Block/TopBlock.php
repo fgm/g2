@@ -2,40 +2,40 @@
 
 /**
  * @file
- * Contains the Alphabar block plugin.
+ * Contains the Top(n) block plugin.
  */
 
 namespace Drupal\g2\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\g2\Alphabar;
+use Drupal\g2\Top;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class AlphabarBlock is the Alphabar block plugin.
+ * Class TopBlock is the Top(n) block plugin.
  *
  * @Block(
- *   id = "g2_alphabar",
- *   admin_label = @Translation("G2 Alphabar"),
+ *   id = "g2_top",
+ *   admin_label = @Translation("G2 Top(n)"),
  *   category = @Translation("G2")
  * )
  */
-class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface {
+class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
 
   /**
-   * The Alphabar service.
-   *
-   * @var \Drupal\g2\Alphabar
-   */
-  protected $alphabar;
-
-  /**
-   * The g2.settings.block.alphabar configuration.
+   * The g2.settings.block.top configuration.
    *
    * @var array
    */
   protected $blockConfig;
+
+  /**
+   * The g2.top service.
+   *
+   * @var \Drupal\g2\Top
+   */
+  protected $top;
 
   /**
    * Constructor.
@@ -46,40 +46,33 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
    *   The block ID.
    * @param mixed $plugin_definition
    *   The block definition.
-   * @param \Drupal\g2\Alphabar $alphabar
-   *   The Alphabar service.
+   * @param \Drupal\g2\Top $top
+   *   The g2.top service.
    * @param array $block_config
    *   The block configuration.
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition,
-    Alphabar $alphabar, array $block_config) {
+    Top $top, array $block_config) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->alphabar = $alphabar;
+    $this->top = $top;
     $this->blockConfig = $block_config;
+    $this->setConfigurationValue('available', $top->isAvailable());
   }
 
   /**
-   * Builds and returns the renderable array for this block plugin.
-   *
-   * If a block should not be rendered because it has no content, then this
-   * method must also ensure to return no content: it must then only return an
-   * empty array, or an empty array with #cache set (with cacheability metadata
-   * indicating the circumstances for it being empty).
-   *
-   * @return array
-   *   A renderable array representing the content of the block.
-   *
-   * @see \Drupal\block\BlockViewBuilder
+   * {@inheritdoc}
    */
   public function build() {
-    $links = $this->alphabar->getLinks();
+    if (!$this->configuration['available']) {
+      return [];
+    }
+
+    $count = $this->blockConfig['count'];
+    $links = $this->top->getLinks($count);
+
     $result = [
-      '#theme' => 'g2_alphabar',
-      '#alphabar' => $links,
-      '#row_length' => $this->blockConfig['row_length'],
-      '#attached' => [
-        'library' => ['g2/g2-alphabar'],
-      ]
+      '#theme' => 'item_list',
+      '#items' => $links,
     ];
     return $result;
   }
@@ -105,8 +98,8 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
     $plugin_id,
     $plugin_definition
   ) {
-    /* @var \Drupal\g2\Alphabar $alphabar */
-    $alphabar = $container->get('g2.alphabar');
+    /* @var \Drupal\g2\Top $top */
+    $top = $container->get('g2.top');
 
     /* @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $container->get('config.factory');
@@ -114,10 +107,9 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
     /* @var \Drupal\Core\Config\ImmutableConfig $config */
     $config = $config_factory->get('g2.settings');
 
-    $block_config = $config->get('block.alphabar');
+    $block_config = $config->get('block.top');
 
-    return new static($configuration, $plugin_id, $plugin_definition,
-      $alphabar, $block_config);
+    return new static($configuration, $plugin_id, $plugin_definition, $top, $block_config);
   }
 
 }

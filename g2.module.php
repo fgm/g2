@@ -20,8 +20,11 @@
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\GeneratedLink;
+use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\g2\G2;
+use Drupal\g2\Top;
 use Drupal\node\Entity\Node;
+use Drupal\node\NodeInterface;
 
 /**
  * XML-RPC callback : returns alphabar data.
@@ -76,6 +79,88 @@ function _g2_latest($count = NULL) {
   /* @var \Drupal\Core\GeneratedLink $link */
   foreach ($links as $link) {
     $result[] = $link->__toString();
+  }
+  return $result;
+}
+
+/**
+ * Returns a list of the top n nodes as counted by statistics.module.
+ *
+ * - Unpublished nodes are not listed.
+ * - Stickyness is ignored for ordering, but returned in the results for
+ *   client-side ordering if needed.
+ *
+ * @param int|null $count
+ *   Number or entries to return.
+ * @param bool|null $daily_top
+ *   Order by daily views if TRUE, otherwise by total views (default).
+ *
+ * @return array|NULL
+ *   Statistics will empty without statistics module.
+ *   Note that the title of the nodes is NOT filtered.
+ */
+function _g2_top($count = NULL, $daily_top = FALSE) {
+  $config = \Drupal::config('g2.settings');
+  $service_max = $config->get('service.top.max_count');
+  $rpc_throttle = $config->get('rpc.server.throttle');
+  $actual_max = $rpc_throttle * $service_max;
+
+  // Limit extraction.
+  if (empty($count) || ($count > $actual_max)) {
+    $count = $actual_max;
+  }
+
+  /* @var \Drupal\g2\Top $top */
+  $top = \Drupal::service('g2.top');
+  $statistic = $daily_top ? Top::STATISTICS_DAY : Top::STATISTICS_TOTAL;
+  $links = $top->getLinks($count, $statistic);
+  $result = [];
+
+  /* @var \Drupal\Core\GeneratedLink $link */
+  foreach ($links as $link) {
+    $result[] = $link->__toString();
+  }
+  return $result;
+}
+
+/**
+ * Implement hook_help()
+ */
+function g2_help($route_name, RouteMatchInterface $route_match) {
+  $result = '';
+  switch ($route_name) {
+    case 'help.page.g2':
+      $result = t('<p>G2 defines a glossary service for Drupal sites.
+       To compare it with the Glossary and Lexicon modules:</p>
+       <ul>
+         <li>G2 content is node-based, not term-based, provide node access control</li>
+         <li>G2 leverages existing code from glossary for input filtering and node marking</li>
+         <li>G2 RAM use does not significantly increase with larger entry counts, which makes is more suitable for larger glossaries</li>
+         <li>G2 requests much less from the database than the default glossary</li>
+         <li>G2 uses a "G2 Context" taxonomy vocabulary by default, but does not require it.</li>
+         <li>G2 defines optional blocks</li>
+         <li>G2 provides a client and server XML-RPC API</li>
+         <li>G2 does not provide term feeds</li>
+         </ul>');
+      break;
+
+    case 'entity.block.edit_form':
+      /* @var \Drupal\block\Entity\Block $block */
+      $block = $route_match->getParameter('block');
+      $definition = $block->getPlugin()->getPluginDefinition();
+      if ($definition['provider'] === 'g2') {
+        $id = $block->getPluginId();
+        $delta = \Drupal\Component\Utility\Unicode::substr($id, 3);
+        $helps = [
+          G2::DELTA_ALPHABAR => t('This block displays a clickable list of initials from the G2 glossary.'),
+          G2::DELTA_RANDOM => t('This block displays a pseudo-random entry from the G2 glossary.'),
+          G2::DELTA_TOP => t('This block displays a list of the most viewed entries in the G2 glossary.'),
+          G2::DELTA_LATEST => t('This block displays a list of the most recently updated entries in the G2 glossary.'),
+          G2::DELTA_WOTD => t('This block displays a once-a-day entry from the G2 glossary.'),
+        ];
+        $result = isset($helps[$delta]) ? $helps[$delta] : NULL;
+      }
+      break;
   }
   return $result;
 }
@@ -479,60 +564,6 @@ function _g2_referer_wipe($nid = NULL) {
 }
 
 /**
- * Returns a list of the top n nodes as counted by statistics.module.
- *
- * - Unpublished nodes are not listed.
- * - Stickyness is ignored for ordering, but returned in the results for
- *   client-side ordering if needed.
- *
- * @param $max
- *   Number or entries to return.
- * @param $daily_top
- *   Order by daily views if TRUE, otherwise by total views (default).
- *
- * @return array|NULL
- *   Statistics will empty without statistics module.
- *   Note that the title of the nodes is NOT filtered.
- */
-function _g2_top($max = NULL, $daily_top = FALSE, $include_unpublished = FALSE) {
-  $def_max = variable_get(G2VARTOPITEMCOUNT, G2DEFTOPITEMCOUNT);
-  $rpc_throttle = variable_get(G2VARRPCTHROTTLE, G2DEFRPCTHROTTLE);
-
-  // Limit extraction.
-  if (empty($max) or ($max > $rpc_throttle * $def_max)) {
-    $max = $def_max;
-  }
-
-  // Only list unpublished nodes if requested and allowed.
-  $status = ($include_unpublished && user_access('administer nodes'))
-    ? NODE_NOT_PUBLISHED
-    : NODE_PUBLISHED;
-
-  $ret = [];
-  if (function_exists('statistics_nodeapi')) {
-    $ordering = $daily_top
-      ? 'c.daycount DESC'
-      : 'c.totalcount DESC';
-
-    // Issue #1047248: unused n.changed column is here for PGSQL.
-    $sq = 'SELECT n.nid, n.title, n.status, n.sticky, n.changed, '
-      . '  c.daycount, c.totalcount '
-      . 'FROM {node} n '
-      . '  INNER JOIN {node_counter} c ON n.nid = c.nid '
-      . "WHERE (n.type = '%s') AND (n.status >= %d) "
-      . '  AND (c.totalcount is not NULL) '
-      . 'ORDER BY ' . $ordering . ', n.changed DESC';
-    $sq = db_rewrite_sql($sq);
-    $q = db_query_range($sq, G2NODETYPE, $status, 0, $max);
-    while (is_object($o = db_fetch_object($q))) {
-      $ret[(int) $o->nid] = $o;
-    }
-  }
-
-  return $ret;
-}
-
-/**
  * Returns a structure for the WOTD.
  *
  * @param int $bodysize
@@ -618,17 +649,14 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
   if ($op == 'list') {
     $blocks = [];
     $blocks[G2::DELTA_RANDOM]['info'] = variable_get('g2_random_info', t('G2 Random'));
-    $blocks[G2::DELTA_TOP]['info'] = variable_get('g2_top_info', t('G2 Top'));
     $blocks[G2::DELTA_WOTD]['info'] = variable_get('g2_wotd_info', t('G2 Word of the day'));
 
-    $blocks[G2::DELTA_RANDOM]['cache'] = BLOCK_NO_CACHE; // Else it couldn't be random
-    $blocks[G2::DELTA_TOP]['cache'] = BLOCK_CACHE_PER_ROLE; // Can contain unpublished nodes
+    // Else it couldn't be random.
+    $blocks[G2::DELTA_RANDOM]['cache'] = BLOCK_NO_CACHE;
     $blocks[G2::DELTA_WOTD]['cache'] = BLOCK_CACHE_GLOBAL;
     $ret = $blocks;
   }
   elseif ($op == 'configure') {
-    $count_options = ['1' => '1', '2' => '2', '5' => '5', '10' => '10'];
-
     switch ($delta) {
       case G2::DELTA_RANDOM:
         $form[G2VARRANDOMSTORE] = [
@@ -647,15 +675,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
           '#default_value' => variable_get(G2VARRANDOMTERMS, G2DEFRANDOMTERMS),
           '#description' => t('The taxonomy terms will be returned by XML-RPC and made available to the theme.
            Default G2 themeing will display them.'),
-        ];
-        break;
-
-      case G2::DELTA_TOP:
-        $form[G2VARTOPITEMCOUNT] = [
-          '#type' => 'select',
-          '#title' => t('Number of items'),
-          '#default_value' => variable_get(G2VARTOPITEMCOUNT, G2DEFTOPITEMCOUNT),
-          '#options' => $count_options,
         ];
         break;
 
@@ -773,10 +792,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
         variable_set(G2VARRANDOMTERMS, $edit[G2VARRANDOMTERMS]);
         break;
 
-      case G2::DELTA_TOP:
-        variable_set(G2VARTOPITEMCOUNT, $edit[G2VARTOPITEMCOUNT]);
-        break;
-
       case G2::DELTA_WOTD:
         // Convert "some title [<nid>, sticky]" to nid
         $entry = $edit[G2VARWOTDENTRY];
@@ -806,13 +821,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
       case G2::DELTA_RANDOM:
         $block['subject'] = t('Random G2 glossary entry');
         $block['content'] = theme('g2_random', _g2_random());
-        break;
-
-      case G2::DELTA_TOP:
-        $max = variable_get(G2VARTOPITEMCOUNT, G2DEFTOPITEMCOUNT);
-        $block['subject'] = t('@count most popular G2 glossary entries',
-          ['@count' => $max]);
-        $block['content'] = theme('g2_node_list', _g2_top($max, FALSE, TRUE));
         break;
 
       case G2::DELTA_WOTD:
@@ -993,41 +1001,6 @@ function g2_form(&$node, $form_state) {
   ];
 
   return $form;
-}
-
-/**
- * Implement hook_help()
- */
-function g2_help($path, $arg) {
-  $ret = '';
-  switch ($path) {
-    case 'admin/help#g2': // works in D6
-      $ret = t('<p>G2 defines a glossary service for Drupal sites. To compare it with the default Drupal glossary:</p>
-       <ul><li>G2 content is node-based, not term-based</li>
-         <li>G2 leverages existing code from glossary for input filtering and node marking</li>
-         <li>G2 RAM use does not significantly increase with larger entry counts, which makes is more suitable for larger glossaries</li>
-         <li>G2 requests much less from the database than the default glossary</li>
-         <li>G2 uses three taxonomy vocabularies: context, period, and grammatical nature.</li>
-         <li>G2 defines optional blocks</li>
-         <li>G2 is remotely usable via XML-RPC</li>
-         <li>G2 does not provide term feeds</li>
-         <li>G2 access control is simplistic, targeted to non-community sites</li></ul>');
-      break;
-
-    case 'admin/build/block/configure':
-      $helps = [
-        G2::DELTA_ALPHABAR => t('This block displays a clickable list of initials from the G2 glossary.'),
-        G2::DELTA_RANDOM => t('This block displays a pseudo-random entry (different each time) from the G2 glossary.'),
-        G2::DELTA_TOP => t('This block displays a list of the most viewed entries from the G2 glossary.'),
-        G2::DELTA_LATEST => t('This block displays a list of the most recently updated entries from the G2 glossary.'),
-        G2::DELTA_WOTD => t('This block displays a once-a-day entry from the G2 glossary.'),
-      ];
-      if ($arg[4] == 'g2' && array_key_exists($arg[5], $helps)) {
-        $ret = $helps[$arg[5]];
-      }
-      break;
-  }
-  return $ret;
 }
 
 /**
@@ -1229,12 +1202,15 @@ function g2_referer_wipe_button_submit(array $form, FormStateInterface $form_sta
  *
  * This is the same form for both global wipe and individual node wipe.
  *
- * @param $form_state
- * @param $node
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The form state.
+ * @param null|\Drupal\node\NodeInterface $node
+ *   The node from which to erase.
  *
  * @return array
+ *   A render array for the confirm form.
  */
-function g2_referer_wipe_confirm_form(&$form_state, $node = NULL) {
+function g2_referer_wipe_confirm_form(FormStateInterface $form_state, NodeInterface $node = NULL) {
   $form = [];
 
   if (is_object($node) && isset($node->nid)) {
@@ -1266,14 +1242,11 @@ function g2_referer_wipe_confirm_form(&$form_state, $node = NULL) {
  *
  * @param array $form
  * @param array $form_state
- *
- * @return array
  */
 function g2_referer_wipe_confirm_form_submit($form, &$form_state) {
   _g2_referer_wipe();
   drupal_set_message(t('Referer information has been erased on all G2 entries'));
   $form_state['redirect'] = G2PATHSETTINGS;
-  return;
 }
 
 /**
@@ -1530,7 +1503,8 @@ function theme_g2_random($node = NULL) {
  * @param string $teaser
  *   The teaser itself, filtered by node_prepare().
  *
- * @return string HTML
+ * @return string
+ *   HTML
  */
 function theme_g2_teaser($title, $teaser) {
   return theme('box', $title, "<p>$teaser</p>");
@@ -2039,48 +2013,6 @@ function Zg2_form(&$node, $form_state) {
   ];
 
   return $form;
-}
-
-/**
- * Implements hook_help().
- */
-function Zg2_help($path, $arg) {
-  $ret = '';
-  switch ($path) {
-    // Works in D6.
-    case 'admin/help#g2':
-      $ret = t('<p>G2 defines a glossary service for Drupal sites. To compare it with the default Drupal glossary:</p>
-       <ul><li>G2 content is node-based, not term-based</li>
-         <li>G2 leverages existing code from glossary for input filtering and node marking</li>
-         <li>G2 RAM use does not significantly increase with larger entry counts, which makes is more suitable for larger glossaries</li>
-         <li>G2 requests much less from the database than the default glossary</li>
-         <li>G2 uses three taxonomy vocabularies: context, period, and grammatical nature.</li>
-         <li>G2 defines optional blocks</li>
-         <li>G2 is remotely usable via XML-RPC</li>
-         <li>G2 does not provide term feeds</li>
-         <li>G2 access control is simplistic, targeted to non-community sites</li></ul>');
-      break;
-
-    case 'admin/structure/block/configure':
-      $helps = [
-        G2\DELTARANDOM => t('This block displays a pseudo-random entry (different each time) from the G2 glossary.'),
-        G2\DELTATOP => t('This block displays a list of the most viewed entries from the G2 glossary.'),
-        G2\DELTAWOTD => t('This block displays a once-a-day entry from the G2 glossary.'),
-      ];
-      if ($arg[4] == 'g2' && isset($helps[$arg[5]])) {
-        $ret = $helps[$arg[5]];
-      }
-      break;
-  }
-  return $ret;
-}
-
-/**
- * Implements hook_init().
- */
-function Zg2_init() {
-  $main = variable_get(G2\VARPATHMAIN, G2\DEFPATHMAIN);
-
 }
 
 /**

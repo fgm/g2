@@ -6,6 +6,10 @@ services:
       - '@config.factory'
       - '@link_generator'
 
+  logger.channel.g2:
+    parent: logger.channel_base
+    arguments: ['g2']
+
   paramconverter.g2_match:
     class: Drupal\g2\ParamConverter\NodeMatch
     tags:
@@ -20,3 +24,16 @@ services:
       - '@link_generator'
       - '@entity.query'
       - '@url_generator'
+
+  # Provides a list of the most visited G2 entries
+  g2.top:
+    class: '\Drupal\g2\Top'
+    arguments:
+      - '@config.factory'
+      - '@link_generator'
+      - '@entity.query'
+      - '@url_generator'
+      - '@module_handler'
+      - '@database'
+      - '@logger.channel.g2'
+
