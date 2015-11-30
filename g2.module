@@ -31,10 +31,10 @@ use Drupal\views\ViewExecutable;
 /**
  * XML-RPC callback : returns alphabar data.
  *
- * @return string
+ * @return string[]
  *   The alphabar data, to be serialized in XML.
  */
-function _g2_alphabar() {
+function _g2_alphabar(): array {
   /** @var \Drupal\g2\Alphabar $alphabar */
   $alphabar = Drupal::service(G2::SVC_ALPHABAR);
   $ret = array_map(fn(GeneratedLink $link) => "$link", $alphabar->getLinks());

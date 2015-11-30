@@ -10,7 +10,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\g2\G2;
-use Drupal\node\Entity\Node;
+use Drupal\node\NodeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -98,17 +98,17 @@ class Initial implements ContainerInjectionInterface {
     $stats_basic = $this->t("<p>Displaying @count entries starting with '%initial' from a total number of @total entries.</p>",
       [
         // _g2_stats() does not return empty arrays, so no need to check values.
-        '@count' => $ar_initial[Node::PUBLISHED],
+        '@count' => $ar_initial[NodeInterface::PUBLISHED],
         '%initial' => $initial,
-        '@total' => $ar_total[Node::PUBLISHED],
+        '@total' => $ar_total[NodeInterface::PUBLISHED],
       ]
     );
 
     if ($this->currentUser->hasPermission(G2::PERM_ADMIN)) {
       $stats_admin = $this->t('<p>Admin info: there are also @count unpublished matching entries from a total number of @total unpublished entries.</p>',
         [
-          '@count' => $ar_initial[Node::NOT_PUBLISHED],
-          '@total' => $ar_total[Node::NOT_PUBLISHED],
+          '@count' => $ar_initial[NodeInterface::NOT_PUBLISHED],
+          '@total' => $ar_total[NodeInterface::NOT_PUBLISHED],
         ]
       );
     }
@@ -236,8 +236,8 @@ SQL;
 
     // Avoid empty returns.
     $result = [
-      Node::NOT_PUBLISHED => 0,
-      Node::PUBLISHED => 0,
+      NodeInterface::NOT_PUBLISHED => 0,
+      NodeInterface::PUBLISHED => 0,
     ];
 
     foreach ($counts as $row) {

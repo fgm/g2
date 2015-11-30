@@ -15,7 +15,7 @@ services:
       - '@entity_type.manager'
       - '@keyvalue'
 
-  # Provides a list of the latest updated G2 entries
+  # Provides a list of the latest updated G2 entries.
   g2.latest:
     class: '\Drupal\g2\Latest'
     arguments:
@@ -41,7 +41,7 @@ services:
   g2.test.logger:
     class: '\Drupal\g2\TestLogger'
 
-  # Provides a list of the most visited G2 entries
+  # Provides a list of the most visited G2 entries.
   g2.top:
     class: '\Drupal\g2\Top'
     arguments:
@@ -53,6 +53,7 @@ services:
       - '@database'
       - '@logger.channel.g2'
 
+  # Provides the word of the day.
   g2.wotd:
     class: '\Drupal\g2\WOTD'
     arguments:
