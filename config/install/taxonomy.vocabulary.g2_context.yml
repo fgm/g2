@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - g2
+name: 'G2 Context'
+vid: g2_context
+description: 'The contexts in which G2 definitions apply'
+weight: 0

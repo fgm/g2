@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.g2_expansion
+    - node.type.g2_entry
+  enforced:
+    module:
+      - g2
+  module:
+    - text
+id: node.g2_entry.g2_expansion
+field_name: g2_expansion
+entity_type: node
+bundle: g2_entry
+label: 'G2 Expansion'
+description: 'For acronyms/initialisms, this is the expansion of the initials to full words'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: text

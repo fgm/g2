@@ -1,32 +1,42 @@
+langcode: en
 status: true
 dependencies:
   config:
     - core.entity_view_mode.node.g2_entry_list
     - field.field.node.g2_entry.body
-    - field.field.node.g2_entry.field_g2_context
-    - field.field.node.g2_entry.field_g2_expansion
+    - field.field.node.g2_entry.g2_complement
+    - field.field.node.g2_entry.g2_context
+    - field.field.node.g2_entry.g2_expansion
+    - field.field.node.g2_entry.g2_origin
     - node.type.g2_entry
+  enforced:
+    module:
+      - g2
   module:
+    - text
     - user
 id: node.g2_entry.g2_entry_list
 targetEntityType: node
 bundle: g2_entry
 mode: g2_entry_list
 content:
-  field_g2_context:
+  g2_context:
     type: entity_reference_label
     weight: 1
     label: hidden
     settings:
       link: true
     third_party_settings: {  }
-  field_g2_expansion:
-    type: string
+    region: content
+  g2_expansion:
+    type: text_default
     weight: 0
+    region: content
     label: hidden
-    settings:
-      link_to_entity: false
+    settings: {  }
     third_party_settings: {  }
 hidden:
   body: true
+  g2_complement: true
+  g2_origin: true
   links: true

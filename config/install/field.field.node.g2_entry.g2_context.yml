@@ -1,0 +1,31 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.g2_context
+    - node.type.g2_entry
+    - taxonomy.vocabulary.g2_context
+  enforced:
+    module:
+      - g2
+id: node.g2_entry.g2_context
+field_name: g2_context
+entity_type: node
+bundle: g2_entry
+label: 'G2 Context'
+description: ''
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:taxonomy_term'
+  handler_settings:
+    target_bundles:
+      g2_context: g2_context
+    sort:
+      field: name
+      direction: asc
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

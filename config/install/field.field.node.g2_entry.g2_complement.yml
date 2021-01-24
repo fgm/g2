@@ -1,0 +1,23 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.g2_complement
+    - node.type.g2_entry
+  enforced:
+    module:
+      - g2
+  module:
+    - text
+id: node.g2_entry.g2_complement
+field_name: g2_complement
+entity_type: node
+bundle: g2_entry
+label: 'G2 Complement'
+description: 'Additional non-versioned editor-only meta-information about the definition'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: text_long

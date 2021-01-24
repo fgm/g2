@@ -1,8 +1,11 @@
+langcode: en
 status: true
 dependencies:
   enforced:
     module:
       - g2
+  module:
+    - menu_ui
 third_party_settings:
   menu_ui:
     available_menus:

@@ -1,20 +1,35 @@
-status: false
+langcode: en
+status: true
 dependencies:
   config:
     - core.entity_view_mode.node.g2_homonyms_page
     - field.field.node.g2_entry.body
-    - field.field.node.g2_entry.field_g2_context
-    - field.field.node.g2_entry.field_g2_expansion
+    - field.field.node.g2_entry.g2_complement
+    - field.field.node.g2_entry.g2_context
+    - field.field.node.g2_entry.g2_expansion
+    - field.field.node.g2_entry.g2_origin
     - node.type.g2_entry
+  enforced:
+    module:
+      - g2
   module:
+    - text
     - user
 id: node.g2_entry.g2_homonyms_page
 targetEntityType: node
 bundle: g2_entry
 mode: g2_homonyms_page
-content: {  }
+content:
+  g2_expansion:
+    type: text_default
+    weight: 0
+    region: content
+    label: hidden
+    settings: {  }
+    third_party_settings: {  }
 hidden:
   body: true
-  field_g2_context: true
-  field_g2_expansion: true
+  g2_complement: true
+  g2_context: true
+  g2_origin: true
   links: true

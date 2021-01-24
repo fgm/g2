@@ -1,10 +1,16 @@
+langcode: en
 status: true
 dependencies:
   config:
     - field.field.node.g2_entry.body
-    - field.field.node.g2_entry.field_g2_context
-    - field.field.node.g2_entry.field_g2_expansion
+    - field.field.node.g2_entry.g2_complement
+    - field.field.node.g2_entry.g2_context
+    - field.field.node.g2_entry.g2_expansion
+    - field.field.node.g2_entry.g2_origin
     - node.type.g2_entry
+  enforced:
+    module:
+      - g2
   module:
     - text
     - user
@@ -14,27 +20,32 @@ bundle: g2_entry
 mode: default
 content:
   body:
-    weight: 102
+    weight: 1
     label: above
     settings: {  }
     third_party_settings: {  }
     type: text_default
-  field_g2_context:
-    weight: 101
+    region: content
+  g2_context:
+    type: entity_reference_label
+    weight: 2
+    region: content
     label: above
     settings:
       link: true
     third_party_settings: {  }
-    type: entity_reference_label
-  field_g2_expansion:
-    weight: 104
+  g2_expansion:
+    type: text_default
+    weight: 0
+    region: content
     label: above
-    settings:
-      link_to_entity: false
-    third_party_settings: {  }
-    type: string
-  links:
-    weight: 100
     settings: {  }
     third_party_settings: {  }
-hidden: {  }
+  links:
+    weight: 3
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+hidden:
+  g2_complement: true
+  g2_origin: true
