@@ -158,19 +158,19 @@ function g2_admin_settings() {
   );
   $form['advanced'][G2VARXMLRPC] = array(
     '#type'          => 'checkbox',
-    '#title'         => t('Enable G2 remote XML-RPC services'),
+    '#title'         => t('Enable G2 remote API services'),
     '#default_value' => variable_get(G2VARXMLRPC, G2DEFXMLRPC),
-    '#description'   => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC services.
+    '#description'   => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC API.
        Enabling it without additional access control is typically not a good idea.
-       Local XML-RPC is not enabled by default.'),
+       Local XML-RPC API is not enabled by default.'),
   );
 
   $form['advanced'][G2VARRPCTHROTTLE] = array(
     '#type'          => 'textfield',
-    '#title'         => t('RPC throttle'),
+    '#title'         => t('API throttle'),
     '#default_value' => variable_get(G2VARRPCTHROTTLE, G2DEFRPCTHROTTLE),
-    '#description'   => t('This setting is a coefficient applied to the Top and Latest block for their XML-RPC services.
-        It defines the maximum number of entries an XML-RPC client is allowed to return
+    '#description'   => t('This setting is a coefficient applied to the Top and Latest block for their API services.
+        It defines the maximum number of entries an API client is allowed to return
         in just one call as the product of the block setting and this coefficient.'),
   );
   $form['advanced'][G2VERSION] = array(
@@ -246,7 +246,7 @@ function g2_admin_settings_validate($form, &$form_state) {
       array('@nid' => $nid)));
   }
 
-  // Sanitize RPC throttle
+  // Sanitize API throttle
   $form_state['values']['g2_rpc_throttle'] = (int) $form_state['values']['g2_rpc_throttle'];
 
   // Make sure tooltips are not enabled for remote glossaries

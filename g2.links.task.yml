@@ -18,10 +18,10 @@ g2.settings.formatting_tab:
   route_name: g2.settings.formatting
   title: 'Formatting'
   weight: 2
-g2.settings.rpc_tab:
+g2.settings.api_tab:
   base_route: g2.settings.block
-  route_name: g2.settings.rpc
-  title: 'RPC'
+  route_name: g2.settings.api
+  title: 'API'
   weight: 3
 g2.settings.service_tab:
   base_route: g2.settings.block

@@ -34,16 +34,16 @@ controller:
     vid: g2_homonyms
   wotd:
     title: 'G2 word of the day RSS feed'
-    description: 'One definition a day from the G2 Glossary on :site.'
+    description: 'One definition a day from the G2 Glossary on !site.'
     feed_author: false
 formatting:
   hidden_extra_title: true
   hide_free_tagging: true
   tooltips_level: 0
   title: 'G2 Glossary on @title'
-rpc:
+api:
   client:
-    remote: 'http://www.riff.org/g2/entries'
+    remote: 'https://riff.org/g2/entries'
   server:
     enabled: false
     throttle: 1.0

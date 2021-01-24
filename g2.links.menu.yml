@@ -16,10 +16,10 @@ g2.settings.formatting:
   title: "Formatting"
   parent: "g2.settings.block"
 
-g2.settings.rpc:
-  description: "Configure the G2 RPC"
-  route_name: "g2.settings.rpc"
-  title: "RPC"
+g2.settings.api:
+  description: "Configure the G2 API"
+  route_name: "g2.settings.api"
+  title: "API"
   parent: "g2.settings.block"
 
 g2.settings.service:

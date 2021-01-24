@@ -258,7 +258,7 @@ class Requirements implements ContainerInjectionInterface {
       );
     }
     else {
-      $items[] = t('G2 relies on statistics.module to provide data for the G2 "Top" block and XML-RPC service.
+      $items[] = t('G2 relies on statistics.module to provide data for the G2 "Top" block and API.
 If you do not use either block, you can leave statistics.module disabled.');
     }
     $description = [

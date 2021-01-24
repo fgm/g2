@@ -6,6 +6,7 @@
  */
 
 namespace Drupal\g2\Form;
+
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\ConfigFormBase;
@@ -25,6 +26,7 @@ use Symfony\Component\HttpFoundation\Response;
  * @TODO Relate service.alphabar.contents configuration with routes like g2.initial.
  */
 class SettingsForm extends ConfigFormBase {
+
   /**
    * The schema information for the module configuration.
    *
@@ -58,8 +60,12 @@ class SettingsForm extends ConfigFormBase {
    * @param \Drupal\Core\Routing\RouteBuilderInterface $router_builder
    *   The router.builder service.
    */
-  public function __construct(QueryFactory $entity_query, ConfigFactoryInterface $config_factory, array $config_schema,
-    RouteBuilderInterface $router_builder) {
+  public function __construct(
+    QueryFactory $entity_query,
+    ConfigFactoryInterface $config_factory,
+    array $config_schema,
+    RouteBuilderInterface $router_builder
+  ) {
     parent::__construct($config_factory);
     $this->entityQuery = $entity_query;
     $this->configSchema = $config_schema;
@@ -73,7 +79,7 @@ class SettingsForm extends ConfigFormBase {
     /* @var \Drupal\Core\Entity\Query\QueryFactory $entity_query */
     $entity_query = $container->get('entity.query');
 
-    /* @var \Drupal\Core\Config\ConfigFactoryInterface  $config_factory */
+    /* @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
     $config_factory = $container->get('config.factory');
 
     /* @var \Drupal\Core\Routing\RouteBuilderInterface $router_builder */
@@ -106,6 +112,27 @@ class SettingsForm extends ConfigFormBase {
       ];
     }
     return $form;
+  }
+
+  /**
+   * Split a config label in two parts: title and description, if available.
+   *
+   * @param string $label
+   *
+   * @return string[]
+   */
+  protected function getInfoFromLabel(string $label): array {
+    // Merge a 2-element array to guarantee the destructuring assignment below.
+    $exploded = array_merge(preg_split('/(\.|\?)/', $label, 2), [NULL, NULL]);
+    [$title, $description] = $exploded;
+    $info = [];
+    if (!empty($title)) {
+      $info['#title'] = $title;
+    }
+    if (!empty($description)) {
+      $info['#description'] = $description;
+    }
+    return $info;
   }
 
   /**
@@ -162,14 +189,12 @@ class SettingsForm extends ConfigFormBase {
     $element = &$form[$section]['random'];
     $element['show_terms'] = [
       '#type' => 'checkbox',
-      '#title' => $schema['random']['mapping']['show_terms']['label'],
       '#default_value' => $config['random']['show_terms'],
-    ];
+    ] + $this->getInfoFromLabel($schema['random']['mapping']['show_terms']['label']);
     $element['store'] = [
       '#type' => 'checkbox',
-      '#title' => $schema['random']['mapping']['store']['label'],
       '#default_value' => $config['random']['store'],
-    ];
+    ] + $this->getInfoFromLabel($schema['random']['mapping']['store']['label']);
 
     $element = &$form[$section]['top'];
     $element['count'] = [
@@ -226,34 +251,31 @@ class SettingsForm extends ConfigFormBase {
   public function buildControllerForm(array $form, array $config, array $schema) {
     $section = 'controller';
     $form = $this->prepareTopLevelDetails($form, $schema, $section);
-    drupal_set_message(t('Be aware that saving this configuration will rebuild the router.'));
+    $this->messenger()->addMessage($this->t('Be aware that saving this configuration will rebuild the router.'));
     $element = &$form['controller']['main'];
     $element['nid'] = [
       '#type' => 'number',
-      '#title' => $schema['main']['mapping']['nid']['label'],
-      '#default_value' => $config['main']['nid']
-    ];
+      '#default_value' => $config['main']['nid'],
+    ] + $this->getInfoFromLabel($schema['main']['mapping']['nid']['label']);
 
     foreach (['main', 'entries', 'initial', 'adder', 'homonyms'] as $top) {
       $element = &$form['controller'][$top];
       $element['route'] = [
         '#type' => 'textfield',
-        '#title' => $schema[$top]['mapping']['route']['label'],
-        '#default_value' => $config[$top]['route']
-      ];
+        '#default_value' => $config[$top]['route'],
+      ] + $this->getInfoFromLabel($schema[$top]['mapping']['route']['label']);
     }
 
     $element = &$form['controller']['homonyms'];
     $element['redirect_on_single_match'] = [
       '#type' => 'checkbox',
-      '#title' => $schema['homonyms']['mapping']['redirect_on_single_match']['label'],
-      '#default_value' => $config['homonyms']['redirect_on_single_match']
-    ];
+      '#default_value' => $config['homonyms']['redirect_on_single_match'],
+    ] + $this->getInfoFromLabel($schema['homonyms']['mapping']['redirect_on_single_match']['label']);
     $element['nid'] = [
       '#type' => 'number',
-      '#title' => $schema['homonyms']['mapping']['nid']['label'],
-      '#default_value' => $config['homonyms']['nid']
-    ];
+      '#default_value' => $config['homonyms']['nid'],
+    ] + $this->getInfoFromLabel($schema['homonyms']['mapping']['nid']['label']);
+
     $redirects = [
       Response::HTTP_MOVED_PERMANENTLY,
       Response::HTTP_FOUND,
@@ -262,16 +284,19 @@ class SettingsForm extends ConfigFormBase {
     ];
     $options = [];
     foreach ($redirects as $redirect) {
-      $options[$redirect] = t('@status: @text', [
-        '@status' => $redirect,
-        '@text' => Response::$statusTexts[$redirect],
-      ]);
+      $options[$redirect] = t(
+        '@status: @text',
+        [
+          '@status' => $redirect,
+          '@text' => Response::$statusTexts[$redirect],
+        ]
+      );
     }
     $element['redirect_status'] = [
       '#type' => 'select',
       '#title' => $schema['homonyms']['mapping']['redirect_status']['label'],
       '#options' => $options,
-      '#default_value' => $config['homonyms']['redirect_status']
+      '#default_value' => $config['homonyms']['redirect_status'],
     ];
 
     $view_ids = $this->entityQuery->get('view')
@@ -285,27 +310,24 @@ class SettingsForm extends ConfigFormBase {
     }
     $element['vid'] = [
       '#type' => 'select',
-      '#title' => $schema['homonyms']['mapping']['vid']['label'],
       '#options' => $options,
-      '#default_value' => $config['homonyms']['vid']
-    ];
+      '#default_value' => $config['homonyms']['vid'],
+    ] + $this->getInfoFromLabel($schema['homonyms']['mapping']['vid']['label']);
 
     $element = &$form['controller']['wotd'];
     $element['title'] = [
       '#type' => 'textfield',
       '#title' => $schema['wotd']['mapping']['title']['label'],
-      '#default_value' => $config['wotd']['title']
+      '#default_value' => $config['wotd']['title'],
     ];
     $element['description'] = [
       '#type' => 'textfield',
-      '#title' => $schema['wotd']['mapping']['description']['label'],
-      '#default_value' => $config['wotd']['description']
-    ];
+      '#default_value' => $config['wotd']['description'],
+    ] + $this->getInfoFromLabel($schema['wotd']['mapping']['description']['label']);
     $element['feed_author'] = [
       '#type' => 'checkbox',
-      '#title' => $schema['wotd']['mapping']['feed_author']['label'],
-      '#default_value' => $config['wotd']['feed_author']
-    ];
+      '#default_value' => $config['wotd']['feed_author'],
+    ] + $this->getInfoFromLabel($schema['wotd']['mapping']['feed_author']['label']);
 
     return $form;
   }
@@ -341,27 +363,25 @@ class SettingsForm extends ConfigFormBase {
     $element = 'tooltips_level';
     $form['formatting'][$element] = [
       '#type' => 'select',
-      '#title' => $schema[$element]['label'],
       '#options' => [
         0 => t('None'),
         1 => t('Titles'),
         2 => t('Teasers'),
       ],
       '#default_value' => $config[$element],
-    ];
+    ] + $this->getInfoFromLabel($schema[$element]['label']);
 
     $element = 'title';
     $form['formatting'][$element] = [
       '#type' => 'textfield',
-      '#title' => $schema[$element]['label'],
       '#default_value' => $config[$element],
-    ];
+    ] + $this->getInfoFromLabel($schema[$element]['label']);
 
     return $form;
   }
 
   /**
-   * Build the RPC configuration form.
+   * Build the API configuration form.
    *
    * @param array $form
    *   The form array.
@@ -373,36 +393,35 @@ class SettingsForm extends ConfigFormBase {
    * @return array
    *   The form array.
    */
-  public function buildRpcForm(array $form, array $config, array $schema) {
-    $form['rpc']['client'] = [
+  public function buildApiForm(array $form, array $config, array $schema) {
+    $form['api']['client'] = [
       '#type' => 'details',
       '#title' => $schema['client']['label'],
     ];
-    $form['rpc']['client']['remote'] = [
+    $form['api']['client']['remote'] = [
       '#type' => 'textfield',
       '#title' => $schema['client']['mapping']['remote']['label'],
       '#default_value' => $config['client']['remote'],
     ];
 
-    $form['rpc']['server'] = [
+    $form['api']['server'] = [
       '#type' => 'details',
       '#title' => $schema['server']['label'],
     ];
-    $form['rpc']['server']['enabled'] = [
+    $form['api']['server']['enabled'] = [
       '#type' => 'checkbox',
       '#title' => $schema['server']['mapping']['enabled']['label'],
       '#default_value' => $config['server']['enabled'],
     ];
-    $form['rpc']['server']['throttle'] = [
-      '#type' => 'number',
-      '#title' => $schema['server']['mapping']['throttle']['label'],
+    $form['api']['server']['throttle'] = [
+      '#type' => 'range',
       '#default_value' => $config['server']['throttle'],
       '#max' => 1.0,
       '#min' => 0.0,
       '#step' => 0.1,
-    ];
+    ] + $this->getInfoFromLabel($schema['server']['mapping']['throttle']['label']);
 
-    $form['rpc']['local'] = [
+    $form['api']['local'] = [
       '#type' => 'textfield',
       '#title' => $schema['local']['label'],
       '#default_value' => $config['local'],

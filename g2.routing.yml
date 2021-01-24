@@ -32,12 +32,12 @@ g2.main:
     _permission: 'view g2 entries'
 
 # Settings-related routes.
-g2.settings.rpc:
-  path: "admin/config/content/g2/rpc"
+g2.settings.api:
+  path: "admin/config/content/g2/api"
   defaults:
     _form: 'Drupal\g2\Form\SettingsForm'
-    _title: "G2 RPC configuration"
-    section: "rpc"
+    _title: "G2 api configuration"
+    section: "api"
   options:
     _admin_route: TRUE
   requirements:

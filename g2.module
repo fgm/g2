@@ -66,8 +66,8 @@ function _g2_api() {
 function _g2_latest($count = NULL) {
   $config = \Drupal::config('g2.settings');
   $service_max = $config->get('service.latest.max_count');
-  $rpc_throttle = $config->get('rpc.server.throttle');
-  $actual_max = $rpc_throttle * $service_max;
+  $api_throttle = $config->get('api.server.throttle');
+  $actual_max = $api_throttle * $service_max;
 
   // Limit extraction.
   if (empty($count) || ($count > $actual_max)) {
@@ -105,8 +105,8 @@ function _g2_latest($count = NULL) {
 function _g2_top($count = NULL, $daily_top = FALSE) {
   $config = \Drupal::config('g2.settings');
   $service_max = $config->get('service.top.max_count');
-  $rpc_throttle = $config->get('rpc.server.throttle');
-  $actual_max = $rpc_throttle * $service_max;
+  $api_throttle = $config->get('api.server.throttle');
+  $actual_max = $api_throttle * $service_max;
 
   // Limit extraction.
   if (empty($count) || ($count > $actual_max)) {
@@ -691,7 +691,7 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
           '#title' => t('Return taxonomy terms for the current entry'),
           '#default_value' => variable_get(G2VARRANDOMTERMS, G2DEFRANDOMTERMS),
           '#description' => t(
-            'The taxonomy terms will be returned by XML-RPC and made available to the theme.
+            'The taxonomy terms will be returned by the API and made available to the theme.
            Default G2 themeing will display them.'
           ),
         ];
@@ -747,7 +747,7 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
           '#title' => t('Return taxonomy terms for the current entry'),
           '#default_value' => variable_get(G2VARWOTDTERMS, G2DEFWOTDTERMS),
           '#description' => t(
-            'The taxonomy terms will be returned by XML-RPC and made available to the theme.
+            'The taxonomy terms will be returned by the API and made available to the theme.
            Default G2 themeing will display them.'
           ),
         ];
@@ -1473,7 +1473,7 @@ function g2_xmlrpc() {
     'g2.wotd' => '_g2_wotd',
   ];
 
-  $enabled = \Drupal::config('g2.settings')->get('rpc.server.enabled');
+  $enabled = \Drupal::config('g2.settings')->get('api.server.enabled');
   if (!$enabled) {
     $mapping = [];
   }
@@ -1645,7 +1645,7 @@ function Zg2_block_configure($delta) {
         '#title' => t('Return taxonomy terms for the current entry'),
         '#default_value' => variable_get(G2\VARRANDOMTERMS, G2\DEFRANDOMTERMS),
         '#description' => t(
-          'The taxonomy terms will be returned by XML-RPC and made available to the theme.
+          'The taxonomy terms will be returned by the API and made available to the theme.
          Default G2 themeing will display them.'
         ),
       ];
@@ -1707,7 +1707,7 @@ function Zg2_block_configure($delta) {
         '#title' => t('Return taxonomy terms for the current entry'),
         '#default_value' => variable_get(G2\VARWOTDTERMS, G2\DEFWOTDTERMS),
         '#description' => t(
-          'The taxonomy terms will be returned by XML-RPC and made available to the theme.
+          'The taxonomy terms will be returned by the API and made available to the theme.
          Default G2 themeing will display them.'
         ),
       ];

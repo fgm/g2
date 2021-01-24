@@ -1,13 +1,13 @@
 #! /usr/bin/env ruby
 #
-# Example of a non-Drupal (Ruby) XML-RPC client for the 
+# Example of a non-Drupal (Ruby) XML-RPC API client for the
 # {G2 Glossary module}[http://drupal.org/project/g2]
 #
 # It can connect to G2 version 4.6, 4.7, 5.x, and 6.x, and includes a
 # way to differentiate between old (<= 5.x) and 6.x servers, thanks to
 # the api() method.
 #
-# @copyright Copyright (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet, OSI)
+# @copyright Copyright (C) 2005-2021 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet, OSI)
 #
 # @license Licensed under the CeCILL, version 2 and General Public License version 2 or later
 #
@@ -25,10 +25,10 @@
 require 'xmlrpc/client' # This is needed to use XML-RPC
 require 'yaml'          # Needed for the to_yaml() methods at the end
 
-#  A simple XML-RPC client aware of the XML-RPC versions in the 
+#  A simple XML-RPC client aware of the XML-RPC versions in the
 #  Drupal 6 version of the G2 Glossary.
 class G2_client
-  
+
   # client constructor:
   # sets up the host and list of allowed methods, both actual (api) and
   # simulated (all the other ones).
@@ -36,15 +36,15 @@ class G2_client
     @host = host || 'localhost'
     @methods = %w[api alphabar latest random stats top wotd]
   end
-  
+
   # api() was not implemented in versions of G2 prior to version 6, so
   # we need to simulate it.
   def api
-    @querable_server = TRUE
-    begin 
+    @querable_server = true
+    begin
       server_api = @querable_server ? invoke('api') : 4
     rescue XMLRPC::FaultException
-      @querable_server = FALSE
+      @querable_server = false
       retry
     ensure
       server_api
@@ -53,10 +53,10 @@ class G2_client
 
   # invoke a named method on the chosen server
   def invoke(method)
-    server = XMLRPC::Client.new(@host, '/xmlrpc.php')
+    server = XMLRPC::Client.new2(@host)
     server.call('g2.' + method) unless not @methods.include? method
   end
-  
+
   # we have methods for every remote method on the G2 server, be they
   # real of simulated.
   def respond_to?(symbol, include_private = false)

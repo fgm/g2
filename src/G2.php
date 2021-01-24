@@ -93,7 +93,7 @@ class G2 {
   }
 
   /**
-   * Return the RPC API version.
+   * Return the API version.
    *
    * @return int
    *   The version of the API format.
