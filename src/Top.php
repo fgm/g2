@@ -90,9 +90,15 @@ class Top {
    * @param \Psr\Log\LoggerInterface $logger
    *   The logger.channel.g2 service.
    */
-  public function __construct(ConfigFactoryInterface $config, LinkGenerator $link_generator,
-    QueryFactory $entity_query, UrlGeneratorInterface $url_generator,
-    ModuleHandlerInterface $module_handler, Connection $connection, LoggerInterface $logger) {
+  public function __construct(
+    ConfigFactoryInterface $config,
+    LinkGenerator $link_generator,
+    QueryFactory $entity_query,
+    UrlGeneratorInterface $url_generator,
+    ModuleHandlerInterface $module_handler,
+    Connection $connection,
+    LoggerInterface $logger
+  ) {
     $this->available = $module_handler->moduleExists('statistics');
     $this->database = $connection;
     $this->entityQuery = $entity_query;
@@ -127,7 +133,7 @@ class Top {
     $count = min($count, $count_limit);
 
     $result = [];
-    /* @var \Drupal\g2\TopRecord $record */
+    /** @var \Drupal\g2\TopRecord $record */
     foreach ($this->statisticsTitleList($statistic, $count) as $record) {
       $record->normalize();
       $result[$record->nid] = $record;
@@ -167,7 +173,7 @@ class Top {
 
     /* Query chaining split to work around incorrect type hinting in DBTNG. */
 
-    /* @var \Drupal\Core\Database\Query\SelectInterface $query */
+    /** @var \Drupal\Core\Database\Query\SelectInterface $query */
     $query = $query
       ->fields('n', ['nid', 'title'])
       ->fields('u', ['uid', 'name'])
@@ -217,7 +223,7 @@ class Top {
       'html' => TRUE,
     ];
     $route_name = 'entity.node.canonical';
-    /* @var \Drupal\g2\TopRecord $record */
+    /** @var \Drupal\g2\TopRecord $record */
     foreach ($this->getEntries($count, $statistic) as $record) {
       $parameters = ['node' => $record->nid];
       $url = Url::fromRoute($route_name, $parameters, $options);

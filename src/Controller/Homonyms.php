@@ -5,10 +5,9 @@ namespace Drupal\g2\Controller;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
 use Drupal\g2\G2;
-use Drupal\node\Entity\Node;
-use Drupal\views\Entity\View;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -20,6 +19,8 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
  * - Entries by initial.
  */
 class Homonyms implements ContainerInjectionInterface {
+  use StringTranslationTrait;
+
   const CONFIG_REDIRECT_SINGLE = 'redirect_on_single_match';
 
   const CONFIG_REDIRECT_STATUS = 'redirect_status';
@@ -43,7 +44,7 @@ class Homonyms implements ContainerInjectionInterface {
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected $entityManager;
+  protected $etm;
 
   /**
    * Homonyms constructor.
@@ -54,7 +55,7 @@ class Homonyms implements ContainerInjectionInterface {
    *   The g2.settings/controller.homonyms configuration.
    */
   public function __construct(EntityTypeManagerInterface $entity_manager, array $config) {
-    $this->entityManager = $entity_manager;
+    $this->etm = $entity_manager;
     $this->config = $config;
   }
 
@@ -62,12 +63,12 @@ class Homonyms implements ContainerInjectionInterface {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /* @var \Drupal\Core\Config\ConfigFactoryInterface  $config_factory */
+    /** @var \Drupal\Core\Config\ConfigFactoryInterface  $config_factory */
     $config_factory = $container->get('config.factory');
 
     $config = $config_factory->get(G2::CONFIG_NAME)->get('controller.homonyms');
 
-    /* @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager */
+    /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager */
     $entity_manager = $container->get('entity.manager');
     return new static($entity_manager, $config);
   }
@@ -78,15 +79,15 @@ class Homonyms implements ContainerInjectionInterface {
    * @param string $raw_match
    *   The raw, unsafe string requested.
    *
-   * @return array<string,array|string>
+   * @return array<stringarray|string>
    *   A render array.
    *
    * @FIXME passing "+" (unquoted) causes notice in getAliasByPath().
    */
   protected function indexNoMatch($raw_match) {
-    $message = t('There are currently no entries for %entry.', ['%entry' => $raw_match]);
+    $message = $this->t('There are currently no entries for %entry.', ['%entry' => $raw_match]);
 
-    $may_create = $this->entityManager->getAccessControlHandler('node')->createAccess(G2::NODE_TYPE);
+    $may_create = $this->etm->getAccessControlHandler('node')->createAccess(G2::NODE_TYPE);
     if ($may_create) {
       $arguments = [
         'node_type' => G2::NODE_TYPE,
@@ -94,7 +95,7 @@ class Homonyms implements ContainerInjectionInterface {
       $options = [
         'query' => ['title' => urlencode($raw_match)],
       ];
-      $offer = t('Would you like to <a href=":url" title="Create new entry for @entry">create one</a> ?', [
+      $offer = $this->t('Would you like to <a href=":url" title="Create new entry for @entry">create one</a> ?', [
         ':url'   => Url::fromRoute('node.add', $arguments, $options)->toString(),
         '@entry' => $raw_match,
       ]);
@@ -125,7 +126,7 @@ class Homonyms implements ContainerInjectionInterface {
     $status = $this->config[static::CONFIG_REDIRECT_STATUS];
     assert('is_int($status) && ($status === 201 || $status >= 300 && $status <= 399)', 'redirect is a redirect');
     assert('count($g2_match) === 0');
-    /* @var \Drupal\Core\Entity\EntityInterface $node */
+    /** @var \Drupal\Core\Entity\EntityInterface $node */
     $node = reset($g2_match);
     $redirect = $node->toUrl()->toString();
     $response = new RedirectResponse($redirect, $status);
@@ -140,7 +141,7 @@ class Homonyms implements ContainerInjectionInterface {
    * @param \Drupal\node\NodeInterface[] $g2_match
    *   The match array, containing node entities indexed by nid.
    *
-   * @return array<string,array|string>
+   * @return array<stringarray|string>
    *   A render array.
    */
   protected function indexMatches($raw_match, array $g2_match) {
@@ -163,14 +164,15 @@ class Homonyms implements ContainerInjectionInterface {
    * @param int $nid
    *   The node to use to build the page.
    *
-   * @return array<string,array|string>
+   * @return array<stringarray|string>
    *   A render array.
    *
-   * @deprecated in Drupal 8.x. Will be removed before 9.x. Use a view instead.
+   * @deprecated in drupal:8.1.0 and is removed from drupal:9.0.0. Use a view instead.
+   * @see https://www.drupal.org/node/2832191
    */
   protected function indexUsingNode($nid) {
-    /* @var \Drupal\node\NodeInterface $node */
-    $node = Node::load($nid);
+    /** @var \Drupal\node\NodeInterface $node */
+    $node = $this->etm->getStorage('node')->load($nid);
     $result = node_view($node, 'g2_homonyms_page');
     return $result;
   }
@@ -185,12 +187,12 @@ class Homonyms implements ContainerInjectionInterface {
    * @param int $view_id
    *   The id of the view to use.
    *
-   * @return array<string,array|string>
+   * @return array<stringarray|string>
    *   A render array.
    */
   protected function indexUsingView($raw_match, $view_id) {
-    /* @var \Drupal\views\ViewEntityInterface $view */
-    $view = View::load($view_id);
+    /** @var \Drupal\views\ViewEntityInterface $view */
+    $this->etm->getStorage('view')->load($view_id);
     assert('$view instanceof \Drupal\views\ViewEntityInterface');
 
     $executable = $view->getExecutable();
@@ -212,7 +214,7 @@ class Homonyms implements ContainerInjectionInterface {
    * @param \Drupal\node\NodeInterface[] $g2_match
    *   Unsafe. The entry for which to find matching G2 entries.
    *
-   * @return array<string,array|string>|\Symfony\Component\HttpFoundation\RedirectResponse
+   * @return array<stringarray|string>|\Symfony\Component\HttpFoundation\RedirectResponse
    *   Render array or redirect response.
    */
   public function indexAction(RouteMatchInterface $route, array $g2_match) {
@@ -259,12 +261,12 @@ class Homonyms implements ContainerInjectionInterface {
    * @param \Drupal\Core\Routing\RouteMatchInterface $route
    *   The current route match.
    *
-   * @return \Drupal\Core\StringTranslation\TranslatableMarkup The page title.
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
    *   The page title.
    */
   public function indexTitle(RouteMatchInterface $route) {
     $raw_match = $route->getRawParameter('g2_match');
-    return t('G2 entries matching %entry', ['%entry' => $raw_match]);
+    return $this->t('G2 entries matching %entry', ['%entry' => $raw_match]);
   }
 
 }

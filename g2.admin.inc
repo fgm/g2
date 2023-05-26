@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Administrative form for the G2 Glossary module.

@@ -3,11 +3,11 @@
 namespace Drupal\g2;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Utility\LinkGenerator;
-use Drupal\node\Entity\Node;
 
 /**
  * Class Latest implements the g2.latest service.
@@ -38,6 +38,13 @@ class Latest {
   protected $entityQuery;
 
   /**
+   * The entity.type.manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $etm;
+
+  /**
    * The URL generator service.
    *
    * @var \Drupal\Core\Routing\UrlGeneratorInterface
@@ -55,9 +62,17 @@ class Latest {
    *   The entity.query service.
    * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
    *   The URL generator service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
+   *   The entity.type.manager service.
    */
-  public function __construct(ConfigFactoryInterface $config, LinkGenerator $link_generator,
-    QueryFactory $entity_query, UrlGeneratorInterface $url_generator) {
+  public function __construct(
+    ConfigFactoryInterface $config,
+    LinkGenerator $link_generator,
+    QueryFactory $entity_query,
+    UrlGeneratorInterface $url_generator,
+    EntityTypeManagerInterface $etm
+  ) {
+    $this->etm = $etm;
     $this->linkGenerator = $link_generator;
     $this->entityQuery = $entity_query;
     $this->urlGenerator = $url_generator;
@@ -73,8 +88,11 @@ class Latest {
    *   The maximum number of entries to return. Limited both by the configured
    *   maximum number of entries and the actual number of entries available.
    *
-   * @return array<integer,\Drupal\node\NodeInterface>
+   * @return array<integer\Drupal\node\NodeInterface>
    *   A node-by-nid hash, ordered by latest change timestamp.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function getEntries($count) {
     $count_limit = $this->config['max_count'];
@@ -85,7 +103,7 @@ class Latest {
       ->sort('changed', 'DESC')
       ->range(0, $count);
     $ids = $query->execute();
-    $result = Node::loadMultiple($ids);
+    $result = $this->etm->getStorage('node')->loadMultiple($ids);
     return $result;
   }
 

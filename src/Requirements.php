@@ -2,7 +2,6 @@
 
 namespace Drupal\g2;
 
-
 use Drupal\Component\Render\MarkupInterface;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;

@@ -2,7 +2,6 @@
 
 namespace Drupal\g2\Controller;
 
-
 use Drupal\Core\Database\Connection;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Session\AccountInterface;

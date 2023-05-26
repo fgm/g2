@@ -24,6 +24,7 @@ services:
       - '@link_generator'
       - '@entity.query'
       - '@url_generator'
+      - '@entity_type.manager'
 
   # Provides a list of the most visited G2 entries
   g2.top:
@@ -36,4 +37,3 @@ services:
       - '@module_handler'
       - '@database'
       - '@logger.channel.g2'
-
