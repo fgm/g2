@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Alphabar.
- */
-
 namespace Drupal\g2;
 
 use Drupal\Component\Utility\Unicode;

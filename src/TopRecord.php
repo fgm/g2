@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contain Top(n) record type.
- */
-
 namespace Drupal\g2;
 
 /**

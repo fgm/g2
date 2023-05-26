@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains the G2 settings form.
- */
-
 namespace Drupal\g2\Form;
 
 use Drupal\Core\Config\ConfigFactoryInterface;

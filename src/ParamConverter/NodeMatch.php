@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains the G2 Node ParamConverter.
- */
-
 namespace Drupal\g2\ParamConverter;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;

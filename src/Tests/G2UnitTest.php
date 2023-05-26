@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains G2UnitTest.
- */
-
 namespace Drupal\g2\Tests;
 
 use Drupal\g2\G2;

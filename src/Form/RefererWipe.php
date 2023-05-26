@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains the Referer Wipe form.
- */
-
 namespace Drupal\g2;
 
 /**

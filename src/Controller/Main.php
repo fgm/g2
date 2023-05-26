@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains the G2 Main page controller.
- */
-
 namespace Drupal\g2\Controller;
 
 use Drupal\Core\Config\ImmutableConfig;

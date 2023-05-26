@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Contains AlphabarTest.
- */
 
 namespace Drupal\g2\Tests;
 

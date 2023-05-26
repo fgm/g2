@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains the G2 entries-by-initial page controller.
- */
-
 namespace Drupal\g2\Controller;
 
 

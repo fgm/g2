@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains G2 Top service.
- */
-
 namespace Drupal\g2;
 
 use Drupal\Core\Config\ConfigFactoryInterface;

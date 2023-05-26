@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains G2 homonyms controller.
- */
-
 namespace Drupal\g2\Controller;
 
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;

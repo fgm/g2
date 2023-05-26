@@ -1,12 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains the G2 Random block plugin.
- *
- * @copyright 2005-2015 Frédéric G. Marand, for Ouest Systemes Informatiques.
- */
-
 namespace Drupal\g2\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;

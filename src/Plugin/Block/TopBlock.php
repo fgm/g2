@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains the Top(n) block plugin.
- */
-
 namespace Drupal\g2\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;

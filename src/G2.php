@@ -1,12 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains G2.
- *
- * @copyright 2005-2015 Frédéric G. Marand, for Ouest Systemes Informatiques.
- */
-
 namespace Drupal\g2;
 
 /**

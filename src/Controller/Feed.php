@@ -1,10 +1,4 @@
 <?php
-/**
- * @file
- * Contains the G2 Feed controller.
- *
- * @copyright 2005-2015 Frédéric G. Marand, for Ouest Systemes Informatiques.
- */
 
 namespace Drupal\g2\Controller;
 
