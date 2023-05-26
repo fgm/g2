@@ -288,7 +288,7 @@ function zg2_block_view($delta) {
  * This is a ctools plugins hook.
  */
 function zg2_context_plugins() {
-  module_load_include('inc', 'g2', 'context/g2.plugins');
+  Drupal::moduleHandler()->loadInclude('g2', 'inc', 'context/g2.plugins');
   return _g2_context_plugins();
 }
 
@@ -296,7 +296,7 @@ function zg2_context_plugins() {
  * Implements hook_context_registry().
  */
 function zg2_context_registry() {
-  module_load_include('inc', 'g2', 'context/g2.plugins');
+  Drupal::moduleHandler()->loadInclude('g2', 'inc', 'context/g2.plugins');
   return _g2_context_registry();
 }
 
@@ -326,7 +326,7 @@ function zg2_ctools_plugin_api($module, $api) {
   if ($module == 'context' && $api == 'context') {
     $ret = [
       'version' => 3,
-      'path' => drupal_get_path('module', 'g2') . '/context',
+      'path' => ExtensionPathResolver::getPath('module', 'g2') . '/context',
       // Not until http://drupal.org/node/1242632 is fixed
       // 'file' => 'g2.context_defaults.inc'.
     ];
@@ -482,7 +482,7 @@ function zg2_form(&$node, $form_state) {
     '#weight' => -5,
     '#access' => $admin,
     '#attached' => [
-      'js' => [drupal_get_path('module', 'g2') . '/g2.js'],
+      'js' => [ExtensionPathResolver::getPath('module', 'g2') . '/g2.js'],
     ],
   ];
   $form['publishing']['complement'] = [
@@ -846,7 +846,7 @@ function zg2_view($node, $view_mode) {
 function zg2_views_api() {
   return [
     'api' => '3.0',
-    'path' => drupal_get_path('module', 'g2') . '/views',
+    'path' => ExtensionPathResolver::getPath('module', 'g2') . '/views',
   ];
 }
 

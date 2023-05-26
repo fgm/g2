@@ -30,7 +30,7 @@ class AlphabarTest extends KernelTestBase {
    *
    * @var string[]
    */
-  public static $modules = self::MODULES;
+  protected static $modules = self::MODULES;
 
   /**
    * The G2 Alphabar service.
@@ -47,7 +47,7 @@ class AlphabarTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
     $this->installConfig(static::MODULES);
     $this->installSchema('system', 'router');

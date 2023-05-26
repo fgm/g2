@@ -187,14 +187,14 @@ SQL;
  */
 function g2_update_6001() {
   $count = 0;
-  $wotd_author = variable_get(G2VARWOTDFEEDAUTHOR, G2DEFWOTDFEEDAUTHOR);
+  $wotd_author = variable_get(G2::VARWOTDFEEDAUTHOR, G2::DEFWOTDFEEDAUTHOR);
   if (strpos($wotd_author, '%author') !== FALSE) {
-    variable_set(G2VARWOTDFEEDAUTHOR, str_replace('%author', '@author', $wotd_author));
+    variable_set(G2::VARWOTDFEEDAUTHOR, str_replace('%author', '@author', $wotd_author));
     $count++;
   }
-  $wotd_descr = variable_get(G2VARWOTDFEEDDESCR, G2DEFWOTDFEEDDESCR);
+  $wotd_descr = variable_get(G2::VARWOTDFEEDDESCR, G2::DEFWOTDFEEDDESCR);
   if (strpos($wotd_descr, '%site') !== FALSE) {
-    variable_set(G2VARWOTDFEEDDESCR, str_replace('%site', ':site', $wotd_descr));
+    variable_set(G2::VARWOTDFEEDDESCR, str_replace('%site', ':site', $wotd_descr));
     $count++;
   }
 

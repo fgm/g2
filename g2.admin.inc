@@ -212,7 +212,7 @@ function g2_admin_settings() {
  *   The form state.
  */
 function g2_admin_settings_submit(&$form, &$form_state) {
-  if ($form_state['values'][G2VARPATHMAIN] != variable_get(G2VARPATHMAIN, G2DEFPATHMAIN)) {
+  if ($form_state['values'][G2::VARPATHMAIN] != variable_get(G2::VARPATHMAIN, G2::DEFPATHMAIN)) {
     cache_clear_all('variables', 'cache');
     variable_set('menu_rebuild_needed', TRUE);
   }
@@ -229,19 +229,19 @@ function g2_admin_settings_submit(&$form, &$form_state) {
 function g2_admin_settings_validate($form, &$form_state) {
   $main = $form_state['values']['g2_main'];
   if (is_numeric($main)) {
-    if ($main != 0 && !is_object(node_load($main))) {
+    if ($main != 0 && !is_object(\Drupal::service('entity_type.manager')->getStorage('node')->load($main))) {
       form_set_error('g2_main', t('The node chosen for the main page must be a valid one, or 0: "@nid" is not a valid node id.',
-        ['@nid' => $main]));
+          ['@nid' => $main]));
+      }
     }
-  }
   elseif (!function_exists($main)) {
     form_set_error('g2_main', t('The function chosen for the main page must visible to G2: "@function" is not a valid function name.',
       ['@function' => $main]));
   }
 
   $nid = $form_state['values']['g2_homonyms'];
-  if ($nid != 0 && !is_object(node_load($nid))) {
-    form_set_error('g2_homonyms', t('The node chosen for the homonyms disambiguation page must be a valid one, or 0: "@nid" is not a valid node id.',
+  if ($nid != 0 && !is_object(\Drupal::service('entity_type.manager')->getStorage('node')->load($nid))) {
+      form_set_error('g2_homonyms', t('The node chosen for the homonyms disambiguation page must be a valid one, or 0: "@nid" is not a valid node id.',
       ['@nid' => $nid]));
   }
 

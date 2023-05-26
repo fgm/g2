@@ -167,7 +167,7 @@ class Homonyms implements ContainerInjectionInterface {
    * @return array<stringarray|string>
    *   A render array.
    *
-   * @deprecated in drupal:8.1.0 and is removed from drupal:9.0.0. Use a view instead.
+   * @deprecated in drupal:8.1.0 and is removed from drupal:11.0.0. Use a view instead.
    * @see https://www.drupal.org/node/2832191
    */
   protected function indexUsingNode($nid) {

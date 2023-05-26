@@ -17,6 +17,7 @@
  * @link http://wiki.audean.com/g2/choosing @endlink
  */
 
+use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\GeneratedLink;
 use Drupal\Core\Routing\RouteMatchInterface;
@@ -340,14 +341,14 @@ function _g2_entry_terms($node) {
 function _g2_filter_process($entry) {
   // [0] is the original string.
   $entry = $entry[1];
-  $target = variable_get(G2VARREMOTEG2, G2DEFREMOTEG2);
+  $target = variable_get(G2::VARREMOTEG2, G2::DEFREMOTEG2);
 
   // If we are not using a remote glossary.
-  if ($target == G2DEFREMOTENO) {
+  if ($target == G2::DEFREMOTENO) {
     $target = G2PATHENTRIES;
 
     // No tooltips on remote glossaries: too slow.
-    if (variable_get(G2VARTOOLTIPS, G2DEFTOOLTIPS)) {
+    if (variable_get(G2::VARTOOLTIPS, G2::DEFTOOLTIPS)) {
       $nodes = g2_entry_load($entry);
       $count = count($nodes);
       if ($count == 1) {
@@ -401,10 +402,10 @@ function _g2_filter_process($entry) {
  * @see \Drupal\g2\Controller\Main::indexAction()
  */
 function _g2_override_site_name() {
-  if (variable_get(G2VARPAGETITLE, G2DEFPAGETITLE)) {
+  if (variable_get(G2::VARPAGETITLE, G2::DEFPAGETITLE)) {
     global $conf;
     $conf['site_name'] = strtr(
-      variable_get(G2VARPAGETITLE, G2DEFPAGETITLE),
+      variable_get(G2::VARPAGETITLE, G2::DEFPAGETITLE),
       ['@title' => variable_get('site_name', 'Drupal')]
     );
   }
@@ -422,11 +423,11 @@ function _g2_override_site_name() {
  *   Title / nid / teaser. Unfiltered contents.
  */
 function _g2_random() {
-  $wotd_nid = variable_get(G2VARWOTDENTRY, G2DEFWOTDENTRY);
+  $wotd_nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
 
   // Do we have a stored previous random to exclude ?
-  $random = variable_get(G2VARRANDOMSTORE, G2DEFRANDOMSTORE)
-    ? variable_get(G2VARRANDOMENTRY, G2DEFRANDOMENTRY)
+  $random = variable_get(G2::VARRANDOMSTORE, G2::DEFRANDOMSTORE)
+    ? variable_get(G2::VARRANDOMENTRY, G2::DEFRANDOMENTRY)
     // We don't, so just avoid untitled nodes, which should not exist anyway.
     : '';
 
@@ -610,7 +611,7 @@ function _g2_referer_wipe($nid = NULL) {
  */
 function _g2_wotd($bodysize = 0) {
   // No need for a static: this function is normally never called twice.
-  $nid = variable_get(G2VARWOTDENTRY, G2DEFWOTDENTRY);
+  $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
   $node = \Drupal::service('entity_type.manager')
     ->getStorage('node')
     ->load($nid);
@@ -618,7 +619,7 @@ function _g2_wotd($bodysize = 0) {
     return NULL;
   }
 
-  if (variable_get(G2VARWOTDTERMS, G2DEFWOTDTERMS)) {
+  if (variable_get(G2::VARWOTDTERMS, G2::DEFWOTDTERMS)) {
     $node->taxonomy = _g2_comb_taxonomy(taxonomy_node_get_terms($node));
   }
 
@@ -651,16 +652,16 @@ function _g2_wotd_feed() {
     // Link element:  Drupal 4.7->6 defaults to $base url.
     // Language: Drupal 6 defaults to to $language->language.
     // Title: Drupal 6 defaults to site name.
-    'title' => variable_get(G2VARWOTDFEEDTITLE,
-      variable_get(G2VARWOTDTITLE, G2DEFWOTDTITLE)),
+    'title' => variable_get(G2::VARWOTDFEEDTITLE,
+      variable_get(G2::VARWOTDTITLE, G2::DEFWOTDTITLE)),
 
     // Description: Drupal defaults to $site_mission.
-    'description' => strtr(variable_get(G2VARWOTDFEEDDESCR, G2DEFWOTDFEEDDESCR),
+    'description' => strtr(variable_get(G2::VARWOTDFEEDDESCR, G2::DEFWOTDFEEDDESCR),
       ['!site' => $base_url]),
     'managingEditor' => variable_get('site_mail', 'nobody@example.com'),
   ];
 
-  $items = [variable_get(G2VARWOTDENTRY, G2DEFWOTDENTRY)];
+  $items = [variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY)];
   $ret = node_feed($items, $channelinfo);
   return $ret;
 }
@@ -703,10 +704,10 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
   elseif ($op == 'configure') {
     switch ($delta) {
       case G2::DELTA_RANDOM:
-        $form[G2VARRANDOMSTORE] = [
+        $form[G2::VARRANDOMSTORE] = [
           '#type' => 'checkbox',
           '#title' => t('Store latest random entry'),
-          '#default_value' => variable_get(G2VARRANDOMSTORE, G2DEFRANDOMSTORE),
+          '#default_value' => variable_get(G2::VARRANDOMSTORE, G2::DEFRANDOMSTORE),
           '#description' => t(
             'When this setting is TRUE (default value),
            the latest random value is kept in the DB to avoid showing the same pseudo-random
@@ -715,10 +716,10 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
            For larger sites, unchecking this setting will remove one database write with locking.'
           ),
         ];
-        $form[G2VARRANDOMTERMS] = [
+        $form[G2::VARRANDOMTERMS] = [
           '#type' => 'checkbox',
           '#title' => t('Return taxonomy terms for the current entry'),
-          '#default_value' => variable_get(G2VARRANDOMTERMS, G2DEFRANDOMTERMS),
+          '#default_value' => variable_get(G2::VARRANDOMTERMS, G2::DEFRANDOMTERMS),
           '#description' => t(
             'The taxonomy terms will be returned by the API and made available to the theme.
            Default G2 themeing will display them.'
@@ -729,7 +730,7 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
       case G2::DELTA_WOTD:
         // Convert nid to "title [<nid>]" even if missing.
         // @see _g2_autocomplete()
-        $nid = variable_get(G2VARWOTDENTRY, G2DEFWOTDENTRY);
+        $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
         $node = \Drupal::service('entity_type.manager')
           ->getStorage('node')
           ->load($nid);
@@ -738,7 +739,7 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
           $node->nid = 0;
           $node->title = NULL;
         }
-        $form[G2VARWOTDENTRY] = [
+        $form[G2::VARWOTDENTRY] = [
           '#type' => 'textfield',
           '#title' => t('Entry for the day'),
           '#maxlength' => 60,
@@ -755,88 +756,88 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
             ]
           ),
         ];
-        $form[G2VARWOTDBODYSIZE] = [
+        $form[G2::VARWOTDBODYSIZE] = [
           '#type' => 'textfield',
           '#title' => t('Number of text characters to be displayed from entry definition body, if one exists'),
           '#size' => 4,
           '#maxlength' => 4,
           '#required' => TRUE,
-          '#default_value' => variable_get(G2VARWOTDBODYSIZE,
-            G2DEFWOTDBODYSIZE),
+          '#default_value' => variable_get(G2::VARWOTDBODYSIZE,
+            G2::DEFWOTDBODYSIZE),
         ];
-        $form[G2VARWOTDAUTOCHANGE] = [
+        $form[G2::VARWOTDAUTOCHANGE] = [
           '#type' => 'checkbox',
           '#title' => t('Auto-change daily'),
           '#required' => TRUE,
-          '#default_value' => variable_get(G2VARWOTDAUTOCHANGE,
-            G2DEFWOTDAUTOCHANGE),
+          '#default_value' => variable_get(G2::VARWOTDAUTOCHANGE,
+            G2::DEFWOTDAUTOCHANGE),
           '#description' => t('This setting will only work if cron or poormanscron is used.'),
         ];
-        $form[G2VARWOTDTERMS] = [
+        $form[G2::VARWOTDTERMS] = [
           '#type' => 'checkbox',
           '#title' => t('Return taxonomy terms for the current entry'),
-          '#default_value' => variable_get(G2VARWOTDTERMS, G2DEFWOTDTERMS),
+          '#default_value' => variable_get(G2::VARWOTDTERMS, G2::DEFWOTDTERMS),
           '#description' => t(
             'The taxonomy terms will be returned by the API and made available to the theme.
            Default G2 themeing will display them.'
           ),
         ];
-        $form[G2VARWOTDTITLE] = [
+        $form[G2::VARWOTDTITLE] = [
           '#type' => 'textfield',
           '#title' => t('Title for the WOTD block'),
           '#description' => t(
             'This title is also the default title for the WOTD feed, if none is defined. It is overridden by the default Drupal block title, if the latter is not empty.'
           ),
           '#required' => TRUE,
-          '#default_value' => variable_get(G2VARWOTDTITLE, G2DEFWOTDTITLE),
+          '#default_value' => variable_get(G2::VARWOTDTITLE, G2::DEFWOTDTITLE),
         ];
 
         $form['wotd_feed'] = [
           '#type' => 'fieldset',
           '#title' => t('RSS Feed'),
         ];
-        $form['wotd_feed'][G2VARWOTDFEEDLINK] = [
+        $form['wotd_feed'][G2::VARWOTDFEEDLINK] = [
           '#type' => 'checkbox',
           '#title' => t('Display feed link'),
-          '#default_value' => variable_get(G2VARWOTDFEEDLINK,
-            G2DEFWOTDFEEDLINK),
+          '#default_value' => variable_get(G2::VARWOTDFEEDLINK,
+            G2::DEFWOTDFEEDLINK),
           '#description' => t('Should the theme display the link to the RSS feed for this block ?'),
         ];
-        $form['wotd_feed'][G2VARWOTDFEEDTITLE] = [
+        $form['wotd_feed'][G2::VARWOTDFEEDTITLE] = [
           '#type' => 'textfield',
           '#title' => t('The feed title'),
           '#size' => 60,
           '#maxlength' => 60,
           '#required' => TRUE,
-          '#default_value' => variable_get(G2VARWOTDFEEDTITLE,
-            variable_get(G2VARWOTDTITLE, G2DEFWOTDTITLE)),
+          '#default_value' => variable_get(G2::VARWOTDFEEDTITLE,
+            variable_get(G2::VARWOTDTITLE, G2::DEFWOTDTITLE)),
           '#description' => t(
             'The title for the feed itself.
            This will typically be used by aggregators to remind users of the feed and link to it.
            If nulled, G2 will reset it to the title of the block.'
           ),
         ];
-        $form['wotd_feed'][G2VARWOTDFEEDAUTHOR] = [
+        $form['wotd_feed'][G2::VARWOTDFEEDAUTHOR] = [
           '#type' => 'textfield',
           '#title' => t('The feed item author'),
           '#size' => 60,
           '#maxlength' => 60,
           '#required' => TRUE,
-          '#default_value' => variable_get(G2VARWOTDFEEDAUTHOR,
-            G2DEFWOTDFEEDAUTHOR),
+          '#default_value' => variable_get(G2::VARWOTDFEEDAUTHOR,
+            G2::DEFWOTDFEEDAUTHOR),
           '#description' => t(
             'The author name to be included in the feed entries.
         In this string @author will be replaced by the actual author information.'
           ),
         ];
-        $form['wotd_feed'][G2VARWOTDFEEDDESCR] = [
+        $form['wotd_feed'][G2::VARWOTDFEEDDESCR] = [
           '#type' => 'textfield',
           '#title' => t('The feed description'),
           '#size' => 60,
           '#maxlength' => 60,
           '#required' => TRUE,
-          '#default_value' => variable_get(G2VARWOTDFEEDDESCR,
-            G2DEFWOTDFEEDDESCR),
+          '#default_value' => variable_get(G2::VARWOTDFEEDDESCR,
+            G2::DEFWOTDFEEDDESCR),
           '#description' => t(
             'The description for the feed itself.
         This will typically be used by aggregators when describing the feed prior to subscription.
@@ -854,27 +855,27 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
     $ret = NULL;
     switch ($delta) {
       case G2::DELTA_RANDOM:
-        variable_set(G2VARRANDOMSTORE, $edit[G2VARRANDOMSTORE]);
-        variable_set(G2VARRANDOMTERMS, $edit[G2VARRANDOMTERMS]);
+        variable_set(G2::VARRANDOMSTORE, $edit[G2::VARRANDOMSTORE]);
+        variable_set(G2::VARRANDOMTERMS, $edit[G2::VARRANDOMTERMS]);
         break;
 
       case G2::DELTA_WOTD:
         // Convert "some title [<nid>, sticky]" to nid.
-        $entry = $edit[G2VARWOTDENTRY];
+        $entry = $edit[G2::VARWOTDENTRY];
         $matches = [];
         $count = preg_match('/.*\[(\d*).*\]$/', $entry, $matches);
         $nid = $count ? $matches[1] : 0;
 
-        variable_set(G2VARWOTDENTRY, $nid);
-        variable_set(G2VARWOTDBODYSIZE, $edit[G2VARWOTDBODYSIZE]);
-        variable_set(G2VARWOTDAUTOCHANGE, $edit[G2VARWOTDAUTOCHANGE]);
-        variable_set(G2VARWOTDDATE, mktime());
-        variable_set(G2VARWOTDTERMS, $edit[G2VARWOTDTERMS]);
-        variable_set(G2VARWOTDFEEDLINK, $edit[G2VARWOTDFEEDLINK]);
-        variable_set(G2VARWOTDFEEDTITLE, $edit[G2VARWOTDFEEDTITLE]);
-        variable_set(G2VARWOTDFEEDDESCR, $edit[G2VARWOTDFEEDDESCR]);
-        variable_set(G2VARWOTDFEEDAUTHOR, $edit[G2VARWOTDFEEDAUTHOR]);
-        variable_set(G2VARWOTDTITLE, $edit[G2VARWOTDTITLE]);
+        variable_set(G2::VARWOTDENTRY, $nid);
+        variable_set(G2::VARWOTDBODYSIZE, $edit[G2::VARWOTDBODYSIZE]);
+        variable_set(G2::VARWOTDAUTOCHANGE, $edit[G2::VARWOTDAUTOCHANGE]);
+        variable_set(G2::VARWOTDDATE, mktime());
+        variable_set(G2::VARWOTDTERMS, $edit[G2::VARWOTDTERMS]);
+        variable_set(G2::VARWOTDFEEDLINK, $edit[G2::VARWOTDFEEDLINK]);
+        variable_set(G2::VARWOTDFEEDTITLE, $edit[G2::VARWOTDFEEDTITLE]);
+        variable_set(G2::VARWOTDFEEDDESCR, $edit[G2::VARWOTDFEEDDESCR]);
+        variable_set(G2::VARWOTDFEEDAUTHOR, $edit[G2::VARWOTDFEEDAUTHOR]);
+        variable_set(G2::VARWOTDTITLE, $edit[G2::VARWOTDTITLE]);
         break;
 
       default:
@@ -889,9 +890,9 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
         break;
 
       case G2::DELTA_WOTD:
-        $block['subject'] = variable_get(G2VARWOTDTITLE, G2DEFWOTDTITLE);
+        $block['subject'] = variable_get(G2::VARWOTDTITLE, G2::DEFWOTDTITLE);
         $block['content'] = theme('g2_wotd',
-          _g2_wotd(variable_get(G2VARWOTDBODYSIZE, G2DEFWOTDBODYSIZE)));
+          _g2_wotd(variable_get(G2::VARWOTDBODYSIZE, G2::DEFWOTDBODYSIZE)));
         break;
 
       // Should happen only when using a new code version on an older schema
@@ -1089,7 +1090,7 @@ function g2_form(&$node, $form_state) {
  * - place paths starting by the current G2 main path in G2 context.
  */
 function g2_init() {
-  if (arg(0) == variable_get(G2VARPATHMAIN, G2DEFPATHMAIN)) {
+  if (arg(0) == variable_get(G2::VARPATHMAIN, G2::DEFPATHMAIN)) {
     $GLOBALS['g2-context'] = TRUE;
   }
 }
@@ -1230,10 +1231,10 @@ function g2_nodeapi(&$node, $op) {
   if (($op == 'rss item') && ($node->type == G2NODETYPE)
     && ($q == G2PATHWOTDFEED)
   ) {
-    $node->created = variable_get(G2VARWOTDDATE, time());
+    $node->created = variable_get(G2::VARWOTDDATE, time());
     $node->name = filter_xss_admin(
       strtr(
-        variable_get(G2VARWOTDFEEDAUTHOR, '@author'),
+        variable_get(G2::VARWOTDFEEDAUTHOR, '@author'),
         ['@author' => check_plain($node->name)]
       )
     );
@@ -1420,7 +1421,7 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE) {
   if ($page) {
     $bc = drupal_get_breadcrumb();
     $bc[] = l(G2TITLEMAIN,
-      $g2_home = variable_get(G2VARPATHMAIN, G2DEFPATHMAIN));
+      $g2_home = variable_get(G2::VARPATHMAIN, G2::DEFPATHMAIN));
     $initial = drupal_substr($title, 0, 1);
     $bc[] = l($title[0], G2PATHINITIAL . '/' . $initial);
     unset($initial);
@@ -1454,7 +1455,7 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE) {
   // The following line adds invisible text that will be prepended to
   // the node in case some search routine favors the beginning of the
   // body. It can be turned off in case search engines frown upon this.
-  if (variable_get(G2VARHIDDENTITLE, G2DEFHIDDENTITLE)) {
+  if (variable_get(G2::VARHIDDENTITLE, G2::DEFHIDDENTITLE)) {
     $node->content['extra_title'] = [
       '#prefix' => '<div style="display: none">',
       '#value' => check_plain($node->title),
@@ -1512,7 +1513,7 @@ SQL;
 function g2_views_api() {
   return [
     'api' => '2.0',
-    'path' => drupal_get_path('module', 'g2') . '/views',
+    'path' =>  ExtensionPathResolver::getPath('module', 'g2') . '/views',
   ];
 }
 
@@ -1669,7 +1670,7 @@ function theme_g2_wotd(Node $node = NULL) {
   // No need to test: it won't change anything if no taxonomy was returned.
   $ret .= _g2_entry_terms($node);
   $ret .= theme('more_link', url('node/' . $node->nid), t('&nbsp;(+)'));
-  if (variable_get(G2VARWOTDFEEDLINK, G2DEFWOTDFEEDLINK)) {
+  if (variable_get(G2::VARWOTDFEEDLINK, G2::DEFWOTDFEEDLINK)) {
     $ret .= theme(
       'feed_icon',
       url(G2PATHWOTDFEED, ['absolute' => TRUE]),

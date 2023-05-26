@@ -91,8 +91,8 @@ class G2IssuesTest extends DrupalWebTestCase {
    * HTML test being generated in the "title" attribute on node auto-creation.
    */
   public function test1243170version7() {
-    variable_set(G2VARREMOTEG2, '<local>');
-    variable_set(G2VARTOOLTIPS, TRUE);
+    variable_set(G2::VARREMOTEG2, '<local>');
+    variable_set(G2::VARTOOLTIPS, TRUE);
 
     // Default format on testing profile.
     $format_name = 'Text with G2 format';
