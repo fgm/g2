@@ -251,7 +251,7 @@ class SettingsForm extends ConfigFormBase {
   public function buildControllerForm(array $form, array $config, array $schema) {
     $section = 'controller';
     $form = $this->prepareTopLevelDetails($form, $schema, $section);
-    $this->messenger()->addMessage($this->t('Be aware that saving this configuration will rebuild the router.'));
+    $this->messenger()->addStatus($this->t('Be aware that saving this configuration will rebuild the router.'));
     $element = &$form['controller']['main'];
     $element['nid'] = [
       '#type' => 'number',
@@ -500,7 +500,7 @@ class SettingsForm extends ConfigFormBase {
   public function submitControllerForm() {
     // @TODO Really necessary ? We change selected routes, not modifying them.
     $this->routerBuilder->rebuild();
-    drupal_set_message($this->t('The router has been rebuilt.'));
+    $this->messenger()->addStatus($this->t('The router has been rebuilt.'));
   }
 
   /**
@@ -518,7 +518,7 @@ class SettingsForm extends ConfigFormBase {
       $this->{$handler}();
     }
 
-    drupal_set_message($this->t('The configuration options have been saved.'));
+    $this->messenger()->addStatus($this->t('The configuration options have been saved.'));
   }
 
 }

@@ -131,7 +131,9 @@ WHERE v.name LIKE 'g2_%%info' OR v.name LIKE 'g2_%%title'
   OR v.name LIKE 'g2/%%'
 SQL;
 
-  $result = db_query($sql);
+  // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+  // You will need to use `\Drupal\core\Database\Database::getConnection()` if you do not yet have access to the container here.
+  $result = \Drupal::database()->query($sql);
 
   $count = 0;
   while (is_object($row = db_fetch_object($result))) {
@@ -145,6 +147,8 @@ SQL;
   else {
     $message = t('No obsolete variable to clean.');
   }
+  // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+  // This needs to be replaced, but Rector was not yet able to replace this because the type of message was set with a variable. If you need to continue to use a variable, you might consider using a switch statement.
   drupal_set_message($message, status);
 
   /* Convert Drupal 4.7.x/5.x block deltas
@@ -161,7 +165,7 @@ SQL;
   $sql = "UPDATE {blocks} b SET delta = '%s' WHERE module = '%s' AND delta = %d ";
   $count = 0;
   foreach ($delta_changes as $old => $new) {
-    db_query($sql, $new, 'g2', $old);
+    \Drupal::database()->query($sql, $new, 'g2', $old);
     $count += db_affected_rows();
   }
 
@@ -173,7 +177,7 @@ SQL;
     $message = t('No obsolete delta to convert.');
   }
 
-  drupal_set_message($message, 'status');
+  \Drupal::messenger()->addStatus($message);
   return array();
 }
 
@@ -209,7 +213,7 @@ function g2_update_6001() {
   else {
     $message = t('No old token to convert for the WOTD feed settings.');
   }
-  drupal_set_message($message, 'status');
+  \Drupal::messenger()->addStatus($message);
   return array();
 }
 
@@ -233,6 +237,6 @@ function g2_update_6002() {
   else {
     $message = t('g2_referer table was there. No need to recreate it.');
   }
-  drupal_set_message($message, 'status');
+  \Drupal::messenger()->addStatus($message);
   return $ret;
 }

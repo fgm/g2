@@ -85,8 +85,8 @@ class Alphabar {
     $initials = $this->config['contents'];
     $route_name = $this->routeName;
 
-    for ($i = 0; $i < Unicode::strlen($initials); $i++) {
-      $initial = Unicode::substr($initials, $i, 1);
+    for ($i = 0; $i < mb_strlen($initials); $i++) {
+      $initial = mb_substr($initials, $i, 1);
       $path = G2::encodeTerminal($initial);
       $parameters = ['g2_initial' => $path];
       $url = Url::fromRoute($route_name, $parameters, $options);

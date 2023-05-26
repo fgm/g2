@@ -254,4 +254,3 @@ function g2_admin_settings_validate($form, &$form_state) {
     form_set_error(G2VARTOOLTIPS, t('Tooltips are only available on local glossaries'));
   }
 }
-

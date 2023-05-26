@@ -62,7 +62,7 @@ class AlphabarTest extends KernelTestBase {
     $links = $this->alphabar->getLinks();
     $this->assertTrue(is_array($links));
 
-    $expected = Unicode::strlen($this->alphabar->getContents());
+    $expected = mb_strlen($this->alphabar->getContents());
     $actual = count($links);
     $this->assertEquals($expected, $actual, 'The number of links matches the number of runes in alphabar.contents');
   }
