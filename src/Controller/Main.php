@@ -9,7 +9,6 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\g2\Alphabar;
 use Drupal\g2\G2;
 
-use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -42,21 +41,26 @@ class Main implements ContainerInjectionInterface {
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected $entityTypeManager;
+  protected EntityTypeManagerInterface $etm;
 
   /**
    * Main constructor.
    *
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
+   *   The entity_type.manager service.
    * @param \Drupal\g2\Alphabar $alphabar
    *   The g2.alphabar service.
    * @param \Drupal\Core\Config\ImmutableConfig $config
    *   The module configuration.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager,
-    Alphabar $alphabar, ImmutableConfig $config) {
+  public function __construct(
+    EntityTypeManagerInterface $etm,
+    Alphabar $alphabar,
+    ImmutableConfig $config,
+  ) {
     $this->alphabar = $alphabar;
     $this->config = $config;
-    $this->entityTypeManager = $entity_type_manager;
+    $this->etm = $etm;
   }
 
   /**
@@ -74,11 +78,11 @@ class Main implements ContainerInjectionInterface {
     ];
 
     $generator = $this->config->get('controller.main.nid');
-    $node = Node::load($generator);
+    $node = $this->etm->getStorage('node')->load($generator);
     if ($node instanceof NodeInterface) {
       $title = $node->label();
 
-      // @TODO Ensure we still want to override the site name.
+      // @todo Ensure we still want to override the site name.
       /* _g2_override_site_name(); */
 
       if (!$node->body->isEmpty()) {
@@ -86,7 +90,7 @@ class Main implements ContainerInjectionInterface {
         $node->setPublished(NODE_PUBLISHED);
         // Remove the title : we used it for the page title.
         $node->setTitle(NULL);
-        $builder = $this->entityTypeManager->getViewBuilder($node->getEntityTypeId());
+        $builder = $this->etm->getViewBuilder($node->getEntityTypeId());
         $text = $builder->view($node);
       }
       else {
@@ -99,11 +103,11 @@ class Main implements ContainerInjectionInterface {
       $text = [];
     }
 
-    $ret = array(
+    $ret = [
       '#theme' => 'g2_main',
       '#alphabar' => $alphabar,
       '#text' => $text,
-    );
+    ];
 
     if (!empty($title)) {
       $ret['#title'] = $title;
@@ -116,19 +120,19 @@ class Main implements ContainerInjectionInterface {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /* @var \Drupal\g2\Alphabar $alphabar */
+    /** @var \Drupal\g2\Alphabar $alphabar */
     $alphabar = $container->get('g2.alphabar');
 
-    /* @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
+    /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
     $config_factory = $container->get('config.factory');
 
-    /* @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager */
-    $entity_type_manager = $container->get('entity_type.manager');
+    /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
+    $etm = $container->get('entity_type.manager');
 
-    /* @var \Drupal\Core\Config\ImmutableConfig $config */
+    /** @var \Drupal\Core\Config\ImmutableConfig $config */
     $config = $config_factory->get(G2::CONFIG_NAME);
 
-    return new static($entity_type_manager, $alphabar, $config);
+    return new static($etm, $alphabar, $config);
   }
 
 }

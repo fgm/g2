@@ -46,8 +46,13 @@ class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
    * @param array $block_config
    *   The block configuration.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition,
-    Top $top, array $block_config) {
+  public function __construct(
+    array $configuration,
+    $plugin_id,
+    array $plugin_definition,
+    Top $top,
+    array $block_config,
+  ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->top = $top;
     $this->blockConfig = $block_config;
@@ -93,18 +98,19 @@ class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
     $plugin_id,
     $plugin_definition
   ) {
-    /* @var \Drupal\g2\Top $top */
+    /** @var \Drupal\g2\Top $top */
     $top = $container->get('g2.top');
 
-    /* @var \Drupal\Core\Config\ConfigFactory $config_factory */
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $container->get('config.factory');
 
-    /* @var \Drupal\Core\Config\ImmutableConfig $config */
+    /** @var \Drupal\Core\Config\ImmutableConfig $config */
     $config = $config_factory->get('g2.settings');
 
     $block_config = $config->get('block.top');
 
-    return new static($configuration, $plugin_id, $plugin_definition, $top, $block_config);
+    return new static($configuration, $plugin_id, $plugin_definition, $top,
+      $block_config);
   }
 
 }

@@ -38,7 +38,7 @@ class Latest {
   protected $entityQuery;
 
   /**
-   * The entity.type.manager service.
+   * The entity_type.manager service.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
@@ -63,7 +63,7 @@ class Latest {
    * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
    *   The URL generator service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
-   *   The entity.type.manager service.
+   *   The entity_type.manager service.
    */
   public function __construct(
     ConfigFactoryInterface $config,

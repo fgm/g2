@@ -75,13 +75,13 @@ class G2 {
    *   The encoded terminal.
    */
   public static function encodeTerminal($terminal) {
-    $terminal = strtr($terminal, array(
+    $terminal = strtr($terminal, [
       '.' => '%2E',
       '/' => '%2F',
       '#' => '%23',
       '&' => '%26',
       '+' => '%2B',
-    ));
+    ]);
     return $terminal;
   }
 

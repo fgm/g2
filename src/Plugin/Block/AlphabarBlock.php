@@ -46,8 +46,13 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
    * @param array $block_config
    *   The block configuration.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition,
-    Alphabar $alphabar, array $block_config) {
+  public function __construct(
+    array $configuration,
+    $plugin_id,
+    $plugin_definition,
+    Alphabar $alphabar,
+    array $block_config
+  ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->alphabar = $alphabar;
     $this->blockConfig = $block_config;
@@ -74,7 +79,7 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
       '#row_length' => $this->blockConfig['row_length'],
       '#attached' => [
         'library' => ['g2/g2-alphabar'],
-      ]
+      ],
     ];
     return $result;
   }
@@ -100,13 +105,13 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
     $plugin_id,
     $plugin_definition
   ) {
-    /* @var \Drupal\g2\Alphabar $alphabar */
+    /** @var \Drupal\g2\Alphabar $alphabar */
     $alphabar = $container->get('g2.alphabar');
 
-    /* @var \Drupal\Core\Config\ConfigFactory $config_factory */
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $container->get('config.factory');
 
-    /* @var \Drupal\Core\Config\ImmutableConfig $config */
+    /** @var \Drupal\Core\Config\ImmutableConfig $config */
     $config = $config_factory->get('g2.settings');
 
     $block_config = $config->get('block.alphabar');

@@ -1,9 +1,6 @@
 <?php
 
-/**
- * @file
- * Test for regression of fixed issues.
- */
+namespace Drupal\g2\Tests;
 
 /**
  * Class G2IssuesTest contains G2 non-regression tests.
@@ -13,6 +10,14 @@
  * @group G2
  */
 class G2IssuesTest extends DrupalWebTestCase {
+
+  use \Drupal\Core\StringTranslation\StringTranslationTrait;
+
+  /**
+   * The name of the test group.
+   *
+   * @var string
+   */
   static public $group = 'Initialization';
 
   /**
@@ -30,7 +35,7 @@ class G2IssuesTest extends DrupalWebTestCase {
    */
   public function setUp() {
     parent::setUp('taxonomy', 'g2');
-    $this->admin = $this->drupalCreateUser(array(G2PERMVIEW, G2PERMADMIN));
+    $this->admin = $this->drupalCreateUser([G2PERMVIEW, G2PERMADMIN]);
     $this->root = $this->drupalCreateUser(module_invoke_all('perm'));
   }
 
@@ -48,22 +53,24 @@ class G2IssuesTest extends DrupalWebTestCase {
   public function createG2Format($format_name, $filter_name) {
     $this->drupalLogin($this->root);
 
-    $edit = array(
+    $edit = [
       'name' => $format_name,
       "filters[$filter_name]" => 1,
-    );
+    ];
     $roles = user_roles();
     foreach ($roles as $rid => $role) {
-      if (!in_array($rid, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID))) {
+      if (!in_array($rid, [DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID])) {
         $edit["roles[$rid]"] = 1;
       }
     }
 
-    $this->drupalPost('admin/settings/filters/add', $edit, t('Save configuration'));
-    $this->assertResponse(200, t('Created new format %format including filter %filter', array(
-      '%format' => $edit['name'],
-      '%filter' => $filter_name,
-      )), self::$group);
+    $this->drupalPost('admin/settings/filters/add', $edit,
+      $this->t('Save configuration'));
+    $this->assertResponse(200,
+      $this->t('Created new format %format including filter %filter', [
+        '%format' => $edit['name'],
+        '%filter' => $filter_name,
+      ]), self::$group);
     $formats = filter_formats();
     $ret = NULL;
     foreach ($formats as $fid => $format) {
@@ -72,10 +79,11 @@ class G2IssuesTest extends DrupalWebTestCase {
         break;
       }
     }
-    $this->assertTrue(is_numeric($ret) && $ret > 0, t('Valid format number %fid allocated to %name format', array(
-      '%fid' => $ret,
-      '%name' => $format_name,
-    )));
+    $this->assertTrue(is_numeric($ret) && $ret > 0,
+      $this->t('Valid format number %fid allocated to %name format', [
+        '%fid' => $ret,
+        '%name' => $format_name,
+      ]));
     return $ret;
   }
 
@@ -91,18 +99,19 @@ class G2IssuesTest extends DrupalWebTestCase {
     $filter_name = 'g2/0';
     $fid = $this->createG2Format($format_name, $filter_name);
 
-    $settings = array(
+    $settings = [
       'type' => G2NODETYPE,
       'title' => 'CSS',
       'body' => 'A style language for <dfn>HTML</dfn>',
       'format' => $fid,
-    );
+    ];
     $node = $this->drupalCreateNode($settings);
 
-    self::$group = t('User interaction');
+    self::$group = $this->t('User interaction');
     $this->drupalLogin($this->admin);
     $this->drupalGet("node/$node->nid");
-    $this->assertLink('HTML', 0, t('Found G2 "HTML" link on node page'), self::$group);
+    $this->assertLink('HTML', 0, $this->t('Found G2 "HTML" link on node page'),
+      self::$group);
     $link = $this->xpath("//a[@class='g2-dfn-link']");
     if (empty($link)) {
       return;
@@ -111,7 +120,8 @@ class G2IssuesTest extends DrupalWebTestCase {
     $attributes = $link[0]->attributes();
     $href = (string) $attributes['href'];
     $this->drupalGet($href);
-    $this->assertLink('create', 0, t('Found G2 "create" link on g2/entries/HTML'), self::$group);
+    $this->assertLink('create', 0,
+      $this->t('Found G2 "create" link on g2/entries/HTML'), self::$group);
     $link = $this->xpath('//a[text()="create"]');
     if (empty($link)) {
       return;
@@ -119,7 +129,8 @@ class G2IssuesTest extends DrupalWebTestCase {
 
     $attributes = $link[0]->attributes();
     $href = (string) $attributes['href'];
-    $this->assertEqual($href, url('node/add/g2-entry/HTML'), t('Found G2 node creation link on g2/entries/HTML'), self::$group);
+    $this->assertEqual($href, url('node/add/g2-entry/HTML'),
+      $this->t('Found G2 node creation link on g2/entries/HTML'), self::$group);
   }
 
 }

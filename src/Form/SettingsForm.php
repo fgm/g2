@@ -3,24 +3,25 @@
 namespace Drupal\g2\Form;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteBuilderInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\g2\G2;
-use Drupal\views\Entity\View;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Response;
-
 
 /**
  * Class SettingsForm contains the G2 configuration form.
  *
- * @TODO Refactor like \Drupal\config_inspector\Form\ConfigInspectorItemForm.
- * @TODO Relate service.alphabar.contents configuration with routes like g2.initial.
+ * @todo Refactor like \Drupal\config_inspector\Form\ConfigInspectorItemForm.
+ * @todo Relate service.alphabar.contents configuration with routes like g2.initial.
  */
 class SettingsForm extends ConfigFormBase {
+  use StringTranslationTrait;
 
   /**
    * The schema information for the module configuration.
@@ -35,6 +36,13 @@ class SettingsForm extends ConfigFormBase {
    * @var \Drupal\Core\Entity\Query\QueryFactory
    */
   protected $entityQuery;
+
+  /**
+   * The entity_type.manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $etm;
 
   /**
    * The router.builder service.
@@ -54,15 +62,19 @@ class SettingsForm extends ConfigFormBase {
    *   The schema array for the configuration data.
    * @param \Drupal\Core\Routing\RouteBuilderInterface $router_builder
    *   The router.builder service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
+   *   The entity_type.manager service.
    */
   public function __construct(
     QueryFactory $entity_query,
     ConfigFactoryInterface $config_factory,
     array $config_schema,
-    RouteBuilderInterface $router_builder
+    RouteBuilderInterface $router_builder,
+    EntityTypeManagerInterface $etm,
   ) {
     parent::__construct($config_factory);
     $this->entityQuery = $entity_query;
+    $this->etm = $etm;
     $this->configSchema = $config_schema;
     $this->routerBuilder = $router_builder;
   }
@@ -71,16 +83,16 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /* @var \Drupal\Core\Entity\Query\QueryFactory $entity_query */
+    /** @var \Drupal\Core\Entity\Query\QueryFactory $entity_query */
     $entity_query = $container->get('entity.query');
 
-    /* @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
+    /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
     $config_factory = $container->get('config.factory');
 
-    /* @var \Drupal\Core\Routing\RouteBuilderInterface $router_builder */
+    /** @var \Drupal\Core\Routing\RouteBuilderInterface $router_builder */
     $router_builder = $container->get('router.builder');
 
-    /* @var \Drupal\Core\Config\TypedConfigManagerInterface $typed_config */
+    /** @var \Drupal\Core\Config\TypedConfigManagerInterface $typed_config */
     $typed_config = $container->get('config.typed');
 
     return new static($entity_query, $config_factory, $typed_config->getDefinition(G2::CONFIG_NAME), $router_builder);
@@ -113,8 +125,10 @@ class SettingsForm extends ConfigFormBase {
    * Split a config label in two parts: title and description, if available.
    *
    * @param string $label
+   *   The combined title and description, to be split.
    *
    * @return string[]
+   *   A ['#title' => $title, '#description' => $description] array.
    */
   protected function getInfoFromLabel(string $label): array {
     // Merge a 2-element array to guarantee the destructuring assignment below.
@@ -240,8 +254,8 @@ class SettingsForm extends ConfigFormBase {
    * @return array
    *   The form array.
    *
-   * @TODO provide an auto-complete for routes instead of using a plain string.
-   * @TODO provide an auto-complete for node ids instead of using a plain number.
+   * @todo provide an auto-complete for routes instead of using a plain string.
+   * @todo provide an auto-complete for node ids instead of using a plain number.
    */
   public function buildControllerForm(array $form, array $config, array $schema) {
     $section = 'controller';
@@ -279,7 +293,7 @@ class SettingsForm extends ConfigFormBase {
     ];
     $options = [];
     foreach ($redirects as $redirect) {
-      $options[$redirect] = t(
+      $options[$redirect] = $this->t(
         '@status: @text',
         [
           '@status' => $redirect,
@@ -297,9 +311,9 @@ class SettingsForm extends ConfigFormBase {
     $view_ids = $this->entityQuery->get('view')
       ->condition('tag', 'G2')
       ->execute();
-    $views = View::loadMultiple($view_ids);
-    $options = ['' => t('-- Use plain node list --')];
-    /* @var \Drupal\views\ViewEntityInterface $view */
+    $views = $this->etm->getStorage('view')->loadMultiple($view_ids);
+    $options = ['' => $this->t('-- Use plain node list --')];
+    /** @var \Drupal\views\ViewEntityInterface $view */
     foreach ($views as $vid => $view) {
       $options[$vid] = $view->label();
     }
@@ -359,9 +373,9 @@ class SettingsForm extends ConfigFormBase {
     $form['formatting'][$element] = [
       '#type' => 'select',
       '#options' => [
-        0 => t('None'),
-        1 => t('Titles'),
-        2 => t('Teasers'),
+        0 => $this->t('None'),
+        1 => $this->t('Titles'),
+        2 => $this->t('Teasers'),
       ],
       '#default_value' => $config[$element],
     ] + $this->getInfoFromLabel($schema[$element]['label']);
@@ -464,9 +478,9 @@ class SettingsForm extends ConfigFormBase {
    *
    * @param array $form
    *   The form array.
-   * @param FormStateInterface $form_state
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The configuration for which to build a form.
-   * @param RouteMatchInterface|NULL $route
+   * @param \Drupal\Core\Routing\RouteMatchInterface|null $route
    *   The current_route_match service.
    *
    * @return array
@@ -493,7 +507,7 @@ class SettingsForm extends ConfigFormBase {
    * Additional submit handler for the block configuration form.
    */
   public function submitControllerForm() {
-    // @TODO Really necessary ? We change selected routes, not modifying them.
+    // @todo Really necessary ? We change selected routes, not modifying them.
     $this->routerBuilder->rebuild();
     $this->messenger()->addStatus($this->t('The router has been rebuilt.'));
   }

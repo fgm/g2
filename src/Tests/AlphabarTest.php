@@ -2,7 +2,6 @@
 
 namespace Drupal\g2\Tests;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\KernelTests\KernelTestBase;
 
 /**
@@ -17,7 +16,7 @@ class AlphabarTest extends KernelTestBase {
     'system',
     // Service node_preview (proxied) needs user.private_tempstore.
     'user',
-    // Needed by text.module
+    // Needed by text.module.
     'field',
     // Needed by node module.
     'text',
@@ -26,6 +25,11 @@ class AlphabarTest extends KernelTestBase {
     'g2',
   ];
 
+  /**
+   * The modules to enable for the test.
+   *
+   * @var string[]
+   */
   public static $modules = self::MODULES;
 
   /**
@@ -35,6 +39,9 @@ class AlphabarTest extends KernelTestBase {
    */
   protected $alphabar;
 
+  /**
+   * {@inheritdoc}
+   */
   protected $runTestInSeparateProcess = FALSE;
 
   /**
@@ -60,7 +67,8 @@ class AlphabarTest extends KernelTestBase {
 
     $expected = mb_strlen($this->alphabar->getContents());
     $actual = count($links);
-    $this->assertEquals($expected, $actual, 'The number of links matches the number of runes in alphabar.contents');
+    $this->assertEquals($expected, $actual,
+      'The number of links matches the number of runes in alphabar.contents');
   }
 
 }

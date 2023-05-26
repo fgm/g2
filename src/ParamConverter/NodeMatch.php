@@ -7,7 +7,6 @@ use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\ParamConverter\ParamConverterInterface;
 use Drupal\Core\Session\AccountProxy;
 use Drupal\g2\G2;
-use Drupal\node\Entity\Node;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -29,14 +28,14 @@ class NodeMatch implements ParamConverterInterface {
   /**
    * The entity.query service.
    */
-  protected $entityQuery;
+  protected QueryFactory $entityQuery;
 
   /**
    * The entity_type.manager service.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected $entityTypeManager;
+  protected $etm;
 
   /**
    * NodeMatch constructor.
@@ -48,11 +47,14 @@ class NodeMatch implements ParamConverterInterface {
    * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
    *   The entity.query service.
    */
-  public function __construct(EntityTypeManagerInterface $etm, AccountProxy $current_user,
-    QueryFactory $entity_query) {
+  public function __construct(
+    EntityTypeManagerInterface $etm,
+    AccountProxy $current_user,
+    QueryFactory $entity_query,
+  ) {
     $this->currentUser = $current_user;
     $this->entityQuery = $entity_query;
-    $this->entityTypeManager = $etm;
+    $this->etm = $etm;
   }
 
   /**
@@ -76,7 +78,7 @@ class NodeMatch implements ParamConverterInterface {
       ->condition('title', $value . '%', 'LIKE');
 
     $ids = $query->execute();
-    $nodes = Node::loadMultiple($ids);
+    $nodes = $this->etm->getStorage('node')->loadMultiple($ids);
 
     return $nodes;
   }

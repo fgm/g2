@@ -27,9 +27,8 @@ class Wotd extends BlockBase implements ContainerFactoryPluginInterface {
   /**
    * Default G2 WOTD entry, for both block and feed. Translatable.
    *
-   * TODO: check whether this needn't be moved to a WOTD service used by both
-   * block and feed.
-   * TODO: check whether this is not redundant with the plugin title.
+   * @todo Check whether this should move to a WOTD service used by block+feed.
+   * @todo Check whether this is redundant with the plugin title.
    */
   const DEFAULT_TITLE = 'Word of the day in the G2 glossary';
 
@@ -40,6 +39,9 @@ class Wotd extends BlockBase implements ContainerFactoryPluginInterface {
     return [];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function create(
     ContainerInterface $container,
     array $configuration,

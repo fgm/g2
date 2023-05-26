@@ -18,6 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @state g2.random.entry
  */
 class Random extends BlockBase implements ContainerFactoryPluginInterface {
+
   /**
    * The default (state) random entry displayed by the block: none.
    */
@@ -30,6 +31,9 @@ class Random extends BlockBase implements ContainerFactoryPluginInterface {
     return [];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function create(
     ContainerInterface $container,
     array $configuration,

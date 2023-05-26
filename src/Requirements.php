@@ -5,10 +5,11 @@ namespace Drupal\g2;
 use Drupal\Component\Render\MarkupInterface;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
-use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
@@ -18,23 +19,35 @@ use Symfony\Component\Routing\Exception\RouteNotFoundException;
  */
 class Requirements implements ContainerInjectionInterface {
 
+  use StringTranslationTrait;
+
   /**
    * The g2.settings configuration.
    *
    * @var \Drupal\Core\Config\ImmutableConfig
    */
-  protected $g2Config;
+  protected ImmutableConfig $g2Config;
 
   /**
    * The module_handler service.
    *
    * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
-  protected $moduleHandler;
+  protected ModuleHandlerInterface $moduleHandler;
 
-  protected $result = [];
+  /**
+   * The accumulated results of requirements checks.
+   *
+   * @var array
+   */
+  protected array $result = [];
 
-  protected $routeProvider;
+  /**
+   * The router.route_provider service.
+   *
+   * @var \Drupal\Core\Routing\RouteProviderInterface
+   */
+  protected RouteProviderInterface $routeProvider;
 
   /**
    * The statistics.settings configuration.
@@ -54,9 +67,17 @@ class Requirements implements ContainerInjectionInterface {
    *   The statistics.settings configuration.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module_handler service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
+   *   The entity_type.manager service.
    */
-  public function __construct(ImmutableConfig $g2_config, RouteProviderInterface $route_provider,
-    ImmutableConfig $statistics_config, ModuleHandlerInterface $module_handler) {
+  public function __construct(
+    ImmutableConfig $g2_config,
+    RouteProviderInterface $route_provider,
+    ImmutableConfig $statistics_config,
+    ModuleHandlerInterface $module_handler,
+    EntityTypeManagerInterface $etm,
+  ) {
+    $this->etm = $etm;
     $this->g2Config = $g2_config;
     $this->routeProvider = $route_provider;
     $this->statisticsConfig = $statistics_config;
@@ -78,19 +99,23 @@ class Requirements implements ContainerInjectionInterface {
    *   A new instance every time.
    */
   public static function create(ContainerInterface $container) {
-    /* @var \Drupal\Core\Extension\ModuleHandlerInterface $module_handler */
+    /** @var \Drupal\Core\Extension\ModuleHandlerInterface $module_handler */
     $module_handler = $container->get('module_handler');
 
-    /* @var \Drupal\Core\Routing\RouteProvider $route_provider */
+    /** @var \Drupal\Core\Routing\RouteProvider $route_provider */
     $route_provider = $container->get('router.route_provider');
 
-    /* @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
+    /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
+    $etm = $container->get('entity_type.manager');
+
+    /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
     $config_factory = $container->get('config.factory');
 
     $g2_config = $config_factory->get('g2.settings');
     $statistics_settings = $config_factory->get('statistics.settings');
 
-    return new static($g2_config, $route_provider, $statistics_settings, $module_handler);
+    return new static($g2_config, $route_provider, $statistics_settings,
+      $module_handler, $etm);
   }
 
   /**
@@ -110,10 +135,10 @@ class Requirements implements ContainerInjectionInterface {
 
     assert('is_numeric($main)');
     if ($main) {
-      $node = Node::load($main);
+      $node = $this->etm->getStorage('node')->load($main);
       if (!($node instanceof NodeInterface)) {
         $result += [
-          'value' => t('The chosen node must be a valid one, or 0: "@nid" is not a valid node id.',
+          'value' => $this->t('The chosen node must be a valid one, or 0: "@nid" is not a valid node id.',
             ['@nid' => $main]),
           'severity' => REQUIREMENT_ERROR,
         ];
@@ -122,14 +147,15 @@ class Requirements implements ContainerInjectionInterface {
         $url = Url::fromRoute('entity.node.canonical', ['node' => $main])
           ->toString();
         $result += [
-          'value' => t('Valid node: <a href=":url">:url</a>', [':url' => $url]),
+          'value' => $this->t('Valid node: <a href=":url">:url</a>',
+            [':url' => $url]),
           'severity' => REQUIREMENT_OK,
         ];
       }
     }
     else {
       $result += [
-        'value' => t('Node set to empty'),
+        'value' => $this->t('Node set to empty'),
         'severity' => REQUIREMENT_INFO,
       ];
     }
@@ -155,12 +181,13 @@ class Requirements implements ContainerInjectionInterface {
     try {
       $route = $this->routeProvider->getRouteByName($name);
       if ($route->hasOption('parameters')) {
-        $value = t('Valid parametric route %route', $arguments);
+        $value = $this->t('Valid parametric route %route', $arguments);
       }
       else {
-        $value = t('Valid static route <a href="url">%route</a>', $arguments + [
+        $value = $this->t('Valid static route <a href="url">%route</a>',
+          $arguments + [
             ':url' => Url::fromRoute($name)->toString(),
-        ]);
+          ]);
       }
       $result += [
         'value' => $value,
@@ -168,10 +195,11 @@ class Requirements implements ContainerInjectionInterface {
       ];
     }
     catch (RouteNotFoundException $e) {
-      $result += array(
-        'value' => t('The chosen route is not available: %route', $arguments),
+      $result += [
+        'value' => $this->t('The chosen route is not available: %route',
+          $arguments),
         'severity' => REQUIREMENT_ERROR,
-      );
+      ];
     }
     return $result;
   }
@@ -181,13 +209,13 @@ class Requirements implements ContainerInjectionInterface {
    */
   public function checkControllers() {
     $this->result['main.nid'] = $this->checkNid('controller.main.nid',
-      t('G2 main page node id'));
+      $this->t('G2 main page node id'));
     $this->result['main.route'] = $this->checkRoute('controller.main.route',
-      t('G2 main page route'));
+      $this->t('G2 main page route'));
     $this->result['homonyms.nid'] = $this->checkNid('controller.homonyms.nid',
-      t('G2 homonyms disambiguation page node id'));
+      $this->t('G2 homonyms disambiguation page node id'));
     $this->result['homonyms.route'] = $this->checkRoute('controller.homonyms.route',
-      t('G2 homonyms disambiguation page route'));
+      $this->t('G2 homonyms disambiguation page route'));
   }
 
   /**
@@ -206,17 +234,17 @@ class Requirements implements ContainerInjectionInterface {
     if (!$stats && !$count) {
       // This one is a (questionable) choice.
       $severity = REQUIREMENT_INFO;
-      $value = t('G2 statistics disabled.');
+      $value = $this->t('G2 statistics disabled.');
     }
     elseif ($stats xor $count) {
       // This one is inconsistent.
       $severity = REQUIREMENT_WARNING;
-      $value = t('G2 statistics incorrectly configured.');
+      $value = $this->t('G2 statistics incorrectly configured.');
     }
     else {
       // Both on: optimal.
       $severity = REQUIREMENT_OK;
-      $value = t('G2 statistics configured correctly.');
+      $value = $this->t('G2 statistics configured correctly.');
     }
 
     return [$stats, $count, $severity, $value];
@@ -226,31 +254,31 @@ class Requirements implements ContainerInjectionInterface {
    * Perform statistics-related requirements checks.
    */
   public function checkStatistics() {
-    list($stats, $count, $severity, $value) = $this->prepareStatisticCheck();
-    $items = array();
+    [$stats, $count, $severity, $value] = $this->prepareStatisticCheck();
+    $items = [];
     $modules_url = [
       ':link' => Url::fromRoute('system.modules_list', [], [
         'fragment' => 'module-statistics',
       ])->toString(),
     ];
     $items[] = $stats
-      ? t('<a href=":link">Statistics module</a> installed and activated: OK.', $modules_url)
-      : t('<a href=":link">Statistics module</a> not installed or not activated.', $modules_url);
-    $link_text = $count ? t('ON') : t('OFF');
+      ? $this->t('<a href=":link">Statistics module</a> installed and activated: OK.',
+        $modules_url)
+      : $this->t('<a href=":link">Statistics module</a> not installed or not activated.',
+        $modules_url);
+    $link_text = $count ? $this->t('ON') : $this->t('OFF');
     if ($stats) {
       $stats_url = [
         ':stats_url' => Url::fromRoute('statistics.settings', [], [
           'fragment' => 'edit-content',
         ])->toString(),
       ];
-      $items[] = t('Count content views" setting is <a href=":stats_url">@on_off</a>',
-        $stats_url + [
-        '@on_off' => $link_text,
-        ]
+      $items[] = $this->t('Count content views" setting is <a href=":stats_url">@on_off</a>',
+        $stats_url + ['@on_off' => $link_text]
       );
     }
     else {
-      $items[] = t('G2 relies on statistics.module to provide data for the G2 "Top" block and API.
+      $items[] = $this->t('G2 relies on statistics.module to provide data for the G2 "Top" block and API.
 If you do not use either block, you can leave statistics.module disabled.');
     }
     $description = [
@@ -259,7 +287,7 @@ If you do not use either block, you can leave statistics.module disabled.');
     ];
 
     $this->result['statistics'] = [
-      'title' => t('G2 Statistics'),
+      'title' => $this->t('G2 Statistics'),
       'value' => $value,
       'description' => $description,
       'severity' => $severity,

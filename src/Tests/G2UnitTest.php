@@ -11,6 +11,7 @@ use Drupal\Tests\UnitTestCase;
  * @group G2
  */
 class G2UnitTest extends UnitTestCase {
+
   /**
    * Test encodeTerminal().
    */

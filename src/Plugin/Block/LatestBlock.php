@@ -46,8 +46,13 @@ class LatestBlock extends BlockBase implements ContainerFactoryPluginInterface {
    * @param array $block_config
    *   The block configuration.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition,
-    Latest $latest, array $block_config) {
+  public function __construct(
+    array $configuration,
+    string $plugin_id,
+    array $plugin_definition,
+    Latest $latest,
+    array $block_config,
+  ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->latest = $latest;
     $this->blockConfig = $block_config;
@@ -88,13 +93,13 @@ class LatestBlock extends BlockBase implements ContainerFactoryPluginInterface {
     $plugin_id,
     $plugin_definition
   ) {
-    /* @var \Drupal\g2\Latest $latest */
+    /** @var \Drupal\g2\Latest $latest */
     $latest = $container->get('g2.latest');
 
-    /* @var \Drupal\Core\Config\ConfigFactory $config_factory */
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $container->get('config.factory');
 
-    /* @var \Drupal\Core\Config\ImmutableConfig $config */
+    /** @var \Drupal\Core\Config\ImmutableConfig $config */
     $config = $config_factory->get('g2.settings');
 
     $block_config = $config->get('block.latest');

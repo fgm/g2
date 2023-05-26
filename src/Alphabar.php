@@ -2,7 +2,6 @@
 
 namespace Drupal\g2;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Utility\LinkGenerator;
@@ -65,7 +64,7 @@ class Alphabar {
   /**
    * Return an array of links to entries-by-initial pages.
    *
-   * @return array<string,\Drupal\Core\GeneratedLink>
+   * @return array<string\Drupal\Core\GeneratedLink>
    *   A hash of initials to entry pages.
    */
   public function getLinks() {

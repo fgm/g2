@@ -4,15 +4,17 @@ namespace Drupal\g2\Controller;
 
 use Drupal\Core\Database\Connection;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\g2\G2;
-use Drupal\node\Entity\Node;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class Initial contains the controller for the items-by-initial page.
  */
 class Initial implements ContainerInjectionInterface {
+  use StringTranslationTrait;
 
   /**
    * The current_user service.
@@ -29,27 +31,43 @@ class Initial implements ContainerInjectionInterface {
   protected $database;
 
   /**
+   * The entity_type.manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected EntityTypeManagerInterface $etm;
+
+  /**
    * Initial constructor.
    *
    * @param \Drupal\Core\Database\Connection $database
    *   The database service.
    * @param \Drupal\Core\Session\AccountInterface $current_user
    *   The current_user service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
+   *   The entity_type.manager service.
    */
-  public function __construct(Connection $database, AccountInterface $current_user) {
+  public function __construct(
+    Connection $database,
+    AccountInterface $current_user,
+    EntityTypeManagerInterface $etm,
+  ) {
     $this->currentUser = $current_user;
     $this->database = $database;
+    $this->etm = $etm;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /* @var \Drupal\Core\Session\AccountInterface $current_user */
+    /** @var \Drupal\Core\Session\AccountInterface $current_user */
     $current_user = $container->get('current_user');
-    /* @var \Drupal\Core\Database\Connection $database */
+    /** @var \Drupal\Core\Database\Connection $database */
     $database = $container->get('database');
-    return new static($database, $current_user);
+    /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
+    $etm = $container->get('entity_type.manager');
+    return new static($database, $current_user, $etm);
   }
 
   /**
@@ -66,28 +84,28 @@ class Initial implements ContainerInjectionInterface {
    *   Usually a single letter. Assumed to be safe, so do not call this method
    *   on raw user input.
    *
-   * @return array<string,array>
+   * @return array<stringarray>
    *   A render array.
    */
   protected function getByInitial($initial) {
     $ar_total   = $this->getStats();
     $ar_initial = $this->getStats(0, $initial);
 
-    $stats_basic = t("<p>Displaying @count entries starting with '%initial' from a total number of @total entries.</p>",
-      array(
+    $stats_basic = $this->t("<p>Displaying @count entries starting with '%initial' from a total number of @total entries.</p>",
+      [
         // _g2_stats() does not return empty arrays, so no need to check values.
         '@count' => $ar_initial[NODE_PUBLISHED],
         '%initial' => $initial,
         '@total' => $ar_total[NODE_PUBLISHED],
-      )
+      ]
     );
 
     if ($this->currentUser->hasPermission(G2::PERM_ADMIN)) {
-      $stats_admin = t('<p>Admin info: there are also @count unpublished matching entries from a total number of @total unpublished entries.</p>',
-        array(
+      $stats_admin = $this->t('<p>Admin info: there are also @count unpublished matching entries from a total number of @total unpublished entries.</p>',
+        [
           '@count' => $ar_initial[NODE_NOT_PUBLISHED],
           '@total' => $ar_total[NODE_NOT_PUBLISHED],
-        )
+        ]
       );
     }
     else {
@@ -99,8 +117,8 @@ class Initial implements ContainerInjectionInterface {
 
     $query = $this->database->select('node', 'n');
     $query->innerJoin('node_field_revision', 'nfv', 'n.vid = nfv.vid');
-    /* @var \Drupal\Core\Database\Query\SelectInterface $query */
-    $query = $query->fields('n', array('nid'))
+    /** @var \Drupal\Core\Database\Query\SelectInterface $query */
+    $query = $query->fields('n', ['nid'])
       ->orderBy('nfv.title')
       ->addTag('node_access');
     $query
@@ -108,16 +126,16 @@ class Initial implements ContainerInjectionInterface {
       ->condition('nfv.status', 1)
       ->condition('nfv.title', $initial . '%', 'LIKE');
 
-    $node_ids = array();
+    $node_ids = [];
     $result = $query->execute();
     foreach ($result as $row) {
       $node_ids[] = $row->nid;
     }
 
-    $nodes = Node::loadMultiple($node_ids);
+    $nodes = $this->etm->getStorage('node')->loadMultiple($node_ids);
     if (empty($nodes)) {
       $result = [
-        'entries' => ['#markup' => t('No entry found for %initial.', ['%initial' => $initial])],
+        'entries' => ['#markup' => $this->t('No entry found for %initial.', ['%initial' => $initial])],
       ];
     }
     else {
@@ -139,7 +157,7 @@ class Initial implements ContainerInjectionInterface {
    * @param string $g2_initial
    *   The raw initial matching the route regexp.
    *
-   * @return array<string,string|array<string,array>>
+   * @return array<stringstring|array<stringarray>>
    *   The render array.
    */
   public function indexAction($g2_initial) {
@@ -162,7 +180,7 @@ class Initial implements ContainerInjectionInterface {
    *   The page title.
    */
   public function indexTitle($g2_initial = '@') {
-    $result = t('Entries starting with initial %initial', [
+    $result = $this->t('Entries starting with initial %initial', [
       '%initial' => $g2_initial,
     ]);
 
@@ -177,7 +195,7 @@ class Initial implements ContainerInjectionInterface {
    * @param null|string $initial
    *   Initial segment.
    *
-   * @return array<integer,integer>
+   * @return array<integerinteger>
    *   - 0: g2 entries having chosen taxonomy term
    *   - 1: g2 entries starting with chosen initial segment
    */
@@ -190,7 +208,7 @@ FROM {node} n
 
 SQL;
 
-    $sq_params = array();
+    $sq_params = [];
     $sq_test = "WHERE n.type = :node_type \n";
 
     $sq_params[':node_type'] = G2::NODE_TYPE;
