@@ -3,10 +3,10 @@
 namespace Drupal\g2\ParamConverter;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\ParamConverter\ParamConverterInterface;
 use Drupal\Core\Session\AccountProxy;
 use Drupal\g2\G2;
+use Drupal\node\Entity\Node;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -26,11 +26,6 @@ class NodeMatch implements ParamConverterInterface {
   protected $currentUser;
 
   /**
-   * The entity.query service.
-   */
-  protected QueryFactory $entityQuery;
-
-  /**
    * The entity_type.manager service.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
@@ -44,16 +39,12 @@ class NodeMatch implements ParamConverterInterface {
    *   The entity_type.manager service.
    * @param \Drupal\Core\Session\AccountProxy $current_user
    *   The current_user service.
-   * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
-   *   The entity.query service.
    */
   public function __construct(
     EntityTypeManagerInterface $etm,
     AccountProxy $current_user,
-    QueryFactory $entity_query,
   ) {
     $this->currentUser = $current_user;
-    $this->entityQuery = $entity_query;
     $this->etm = $etm;
   }
 
@@ -62,16 +53,21 @@ class NodeMatch implements ParamConverterInterface {
    *
    * Only returns unpublished nodes to users with "administer g2 entries".
    *
-   * @return \Drupal\node\NodeInterface[]
+   * @return \Drupal\Core\Entity\EntityInterface[]|mixed|null
    *   A possibly empty array of nodes.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function convert($value, $definition, $name, array $defaults) {
     // XXX earlier versions used "administer nodes". Which one is better ?
     $min_status = $this->currentUser->hasPermission(G2::PERM_ADMIN)
-      ? NODE_NOT_PUBLISHED
-      : NODE_PUBLISHED;
+      ? Node::NOT_PUBLISHED
+      : Node::PUBLISHED;
 
-    $query = $this->entityQuery->get('node')
+    $query = $this->etm
+      ->getStorage('node')
+      ->getQuery()
       ->addTag('node_access')
       ->condition('type', G2::NODE_TYPE)
       ->condition('status', $min_status, '>=')

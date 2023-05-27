@@ -4,7 +4,6 @@ namespace Drupal\g2;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Utility\LinkGenerator;
@@ -31,13 +30,6 @@ class Latest {
   protected $linkGenerator;
 
   /**
-   * The entity query service.
-   *
-   * @var \Drupal\Core\Entity\Query\QueryFactory
-   */
-  protected $entityQuery;
-
-  /**
    * The entity_type.manager service.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
@@ -58,8 +50,6 @@ class Latest {
    *   The config factory service.
    * @param \Drupal\Core\Utility\LinkGenerator $link_generator
    *   The link generator service.
-   * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
-   *   The entity.query service.
    * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
    *   The URL generator service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
@@ -68,13 +58,11 @@ class Latest {
   public function __construct(
     ConfigFactoryInterface $config,
     LinkGenerator $link_generator,
-    QueryFactory $entity_query,
     UrlGeneratorInterface $url_generator,
     EntityTypeManagerInterface $etm
   ) {
     $this->etm = $etm;
     $this->linkGenerator = $link_generator;
-    $this->entityQuery = $entity_query;
     $this->urlGenerator = $url_generator;
 
     $g2_config = $config->get('g2.settings');
@@ -88,7 +76,7 @@ class Latest {
    *   The maximum number of entries to return. Limited both by the configured
    *   maximum number of entries and the actual number of entries available.
    *
-   * @return array<integer\Drupal\node\NodeInterface>
+   * @return arrayinteger\Drupal\node\NodeInterface
    *   A node-by-nid hash, ordered by latest change timestamp.
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
@@ -98,7 +86,9 @@ class Latest {
     $count_limit = $this->config['max_count'];
     $count = min($count, $count_limit);
 
-    $query = $this->entityQuery->get('node')
+    $query = $this->etm
+      ->getStorage('node')
+      ->getQuery()
       ->condition('type', G2::NODE_TYPE)
       ->sort('changed', 'DESC')
       ->range(0, $count);
@@ -114,7 +104,7 @@ class Latest {
    *   The maximum number of entries to return. Limited both by the configured
    *   maximum number of entries and the actual number of entries available.
    *
-   * @return array <string,\Drupal\Core\GeneratedLink>
+   * @return array<string\Drupal\Core\GeneratedLink>
    *   A hash of nid to to entry links.
    */
   public function getLinks($count) {

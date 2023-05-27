@@ -6,6 +6,7 @@ namespace Drupal\g2;
  * Class TopRecord contains the top(n) individual record type.
  */
 class TopRecord {
+
   /**
    * The author login name.
    *

@@ -6,11 +6,11 @@ dependencies:
       - g2
   module:
     - menu_ui
-third_party_settings:
-  menu_ui:
-    available_menus:
-      - main
-    parent: 'main:'
+third_party_settings: []
+#  menu_ui:
+#    available_menus:
+#      - main
+#    parent: 'main:'
 name: 'G2 Entry'
 type: g2_entry
 description: 'Content of the <em>G2 Entry</em> type has built-in fields for glossary logic. Use for G2 glossaries.'

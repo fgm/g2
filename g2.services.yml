@@ -14,7 +14,9 @@ services:
     class: Drupal\g2\ParamConverter\NodeMatch
     tags:
       - { name: paramconverter }
-    arguments: ['@entity_type.manager', '@current_user', '@entity.query']
+    arguments:
+      - '@entity_type.manager'
+      - '@current_user'
 
   # Provides a list of the latest updated G2 entries
   g2.latest:
@@ -22,7 +24,6 @@ services:
     arguments:
       - '@config.factory'
       - '@link_generator'
-      - '@entity.query'
       - '@url_generator'
       - '@entity_type.manager'
 
@@ -32,7 +33,6 @@ services:
     arguments:
       - '@config.factory'
       - '@link_generator'
-      - '@entity.query'
       - '@url_generator'
       - '@module_handler'
       - '@database'

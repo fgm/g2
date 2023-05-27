@@ -2,6 +2,7 @@
 
 namespace Drupal\g2\Tests;
 
+use Drupal\g2\Alphabar;
 use Drupal\KernelTests\KernelTestBase;
 
 /**
@@ -22,6 +23,9 @@ class AlphabarTest extends KernelTestBase {
     'text',
     // Needed by g2.module.
     'node',
+    'path_alias',
+    'taxonomy',
+    'views',
     'g2',
   ];
 
@@ -37,12 +41,7 @@ class AlphabarTest extends KernelTestBase {
    *
    * @var \Drupal\g2\Alphabar
    */
-  protected $alphabar;
-
-  /**
-   * {@inheritdoc}
-   */
-  protected $runTestInSeparateProcess = FALSE;
+  protected Alphabar $alphabar;
 
   /**
    * {@inheritdoc}
@@ -50,7 +49,6 @@ class AlphabarTest extends KernelTestBase {
   public function setUp(): void {
     parent::setUp();
     $this->installConfig(static::MODULES);
-    $this->installSchema('system', 'router');
 
     // @see https://www.drupal.org/node/2605684
     $this->container->get('router.builder')->rebuild();
@@ -62,6 +60,7 @@ class AlphabarTest extends KernelTestBase {
    * Tests alphabar generation.
    */
   public function testAlphabar() {
+    $this->assertEquals(1, 1);
     $links = $this->alphabar->getLinks();
     $this->assertTrue(is_array($links));
 

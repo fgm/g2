@@ -4,7 +4,6 @@ namespace Drupal\g2;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
-use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Url;
@@ -45,13 +44,6 @@ class Top {
   protected $database;
 
   /**
-   * The entity query service.
-   *
-   * @var \Drupal\Core\Entity\Query\QueryFactory
-   */
-  protected $entityQuery;
-
-  /**
    * The link generator service.
    *
    * @var \Drupal\Core\Utility\LinkGenerator
@@ -79,8 +71,6 @@ class Top {
    *   The config factory service.
    * @param \Drupal\Core\Utility\LinkGenerator $link_generator
    *   The link generator service.
-   * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
-   *   The entity.query service.
    * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
    *   The URL generator service.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
@@ -93,7 +83,6 @@ class Top {
   public function __construct(
     ConfigFactoryInterface $config,
     LinkGenerator $link_generator,
-    QueryFactory $entity_query,
     UrlGeneratorInterface $url_generator,
     ModuleHandlerInterface $module_handler,
     Connection $connection,
@@ -101,7 +90,6 @@ class Top {
   ) {
     $this->available = $module_handler->moduleExists('statistics');
     $this->database = $connection;
-    $this->entityQuery = $entity_query;
     $this->linkGenerator = $link_generator;
     $this->logger = $logger;
     $this->urlGenerator = $url_generator;
@@ -121,7 +109,7 @@ class Top {
    *   The type of statistic by which to order. Must be one of the
    *   self::STATISTICS_* individual statistics.
    *
-   * @return array <integer,\Drupal\g2\TopRecord>
+   * @return array<integer\Drupal\g2\TopRecord>
    *   A node-by-nid hash, ordered by latest change timestamp.
    */
   public function getEntries($count, $statistic = self::STATISTICS_DAY) {
@@ -207,7 +195,7 @@ class Top {
    *   The type of statistic by which to order. Must be one of the
    *   self::STATISTICS_* individual statistics.
    *
-   * @return array <string,\Drupal\Core\GeneratedLink>
+   * @return array<string\Drupal\Core\GeneratedLink>
    *   A hash of nid to to entry links.
    */
   public function getLinks($count, $statistic = self::STATISTICS_DAY) {
