@@ -446,7 +446,7 @@ class SettingsForm extends ConfigFormBase {
    * @return array
    *   The form array.
    */
-  public function buildServiceForm(array $form, array $config, array $schema) {
+  public function buildServicesForm(array $form, array $config, array $schema) {
     $section = 'services';
     $form = $this->prepareTopLevelDetails($form, $schema, $section);
 
