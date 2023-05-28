@@ -2,6 +2,8 @@
 
 namespace Drupal\g2\Tests;
 
+use Drupal\g2\G2;
+
 /**
  * Class G2IssuesTest contains G2 non-regression tests.
  *
@@ -35,7 +37,7 @@ class G2IssuesTest extends DrupalWebTestCase {
    */
   public function setUp() {
     parent::setUp('taxonomy', 'g2');
-    $this->admin = $this->drupalCreateUser([G2PERMVIEW, G2PERMADMIN]);
+    $this->admin = $this->drupalCreateUser([G2::PERM_VIEW, G2::PERM_ADMIN]);
     $this->root = $this->drupalCreateUser(module_invoke_all('perm'));
   }
 
@@ -100,7 +102,7 @@ class G2IssuesTest extends DrupalWebTestCase {
     $fid = $this->createG2Format($format_name, $filter_name);
 
     $settings = [
-      'type' => G2NODETYPE,
+      'type' => G2::NODE_TYPE,
       'title' => 'CSS',
       'body' => 'A style language for <dfn>HTML</dfn>',
       'format' => $fid,

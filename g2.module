@@ -248,7 +248,7 @@ WHERE LOWER(n.title) LIKE '%s%%'
 ORDER BY n.sticky DESC, LOWER(n.title) ASC;
 SQL;
     $sq = db_rewrite_sql($sq);
-    $q = db_query_range($sq, $us_string, G2NODETYPE, 0, 10);
+    $q = db_query_range($sq, $us_string, G2::NODE_TYPE, 0, 10);
     while (is_object($o = db_fetch_object($q))) {
       $title = $o->sticky
         ? t('@title [@nid, sticky]', ['@title' => $o->title, '@nid' => $o->nid])
@@ -272,7 +272,7 @@ SQL;
 function _g2_comb_taxonomy($taxonomy = []) {
   // Filter tag vocabularies for non-G2 admins if this is requested.
   if (variable_get(G2::VARNOFREETAGGING,
-      G2::DEFNOFREETAGGING) && !user_access(G2::PERMADMIN)) {
+      G2::DEFNOFREETAGGING) && !user_access(G2::PERM_ADMIN)) {
     // No static cache here: there is already one in taxonomy_vocabulary_load().
     $vocabs = [];
 
@@ -345,7 +345,7 @@ function _g2_filter_process($entry) {
 
   // If we are not using a remote glossary.
   if ($target == G2::DEFREMOTENO) {
-    $target = G2PATHENTRIES;
+    $target = G2::PATH_ENTRIES;
 
     // No tooltips on remote glossaries: too slow.
     if (variable_get(G2::VARTOOLTIPS, G2::DEFTOOLTIPS)) {
@@ -438,7 +438,7 @@ WHERE n.type = '%s' AND (n.status = 1)
   AND NOT (n.title = '%s' OR n.nid = %d);
 SQL;
   $sq = db_rewrite_sql($sq);
-  $q = \Drupal::database()->query($sq, G2NODETYPE, $random, $wotd_nid);
+  $q = \Drupal::database()->query($sq, G2::NODE_TYPE, $random, $wotd_nid);
   $n = db_result($q);
 
   // No need to mt_srand() since PHP 4.2.
@@ -454,7 +454,7 @@ WHERE n.type = '%s' AND (n.status = 1)
   AND NOT (n.title = '%s' OR n.nid = %d);
 SQL;
   $sq = db_rewrite_sql($sq);
-  $q = db_query_range($sq, G2::NODETYPE, $random, $wotd_nid, $rand, 1);
+  $q = db_query_range($sq, G2::NODE_TYPE, $random, $wotd_nid, $rand, 1);
   $nid = db_result($q);
   $node = \Drupal::service('entity_type.manager')
     ->getStorage('node')
@@ -674,11 +674,11 @@ function g2_access($op /* , $node, $account */) {
     case 'create':
     case 'delete':
     case 'update':
-      $ret = user_access(G2PERMADMIN);
+      $ret = user_access(G2::PERM_ADMIN);
       break;
 
     case 'view':
-      $ret = user_access(G2PERMVIEW);
+      $ret = user_access(G2::PERM_VIEW);
       break;
   }
 
@@ -743,7 +743,7 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
           '#type' => 'textfield',
           '#title' => t('Entry for the day'),
           '#maxlength' => 60,
-          '#autocomplete_path' => G2PATHAUTOCOMPLETE,
+          '#autocomplete_path' => G2::PATH_AUTOCOMPLETE,
           '#required' => TRUE,
           // !title: we don't filter since this is input, not output,
           // and can contain normally escaped characters, to accommodate
@@ -953,9 +953,9 @@ SQL;
   $sq = db_rewrite_sql($sq);
 
   $min_status = user_access('administer nodes')
-    ? NODE_NOT_PUBLISHED
-    : NODE_PUBLISHED;
-  $q = \Drupal::database()->query($sq, G2NODETYPE, $min_status, $title);
+    ? Node::NOT_PUBLISHED
+    : Node::PUBLISHED;
+  $q = \Drupal::database()->query($sq, G2::NODE_TYPE, $min_status, $title);
   $nodes = [];
   while (is_object($node = db_fetch_object($q))) {
     $nodes[$node->nid] = \Drupal::service('entity_type.manager')
@@ -1013,12 +1013,12 @@ function g2_form(&$node, $form_state) {
     $node->title = check_plain(
       drupal_substr(
         $q,
-        drupal_strlen(G2PATHNODEADD) + 1
+        drupal_strlen(G2::PATH_NODE_ADD) + 1
       )
     );
   }
 
-  $type = node_get_types('type', G2NODETYPE);
+  $type = node_get_types('type', G2::NODE_TYPE);
   $form = [];
   $form['content'] = [
     '#type' => 'fieldset',
@@ -1123,7 +1123,7 @@ function g2_load($node) {
 function g2_menu() {
   $items = [];
 
-  $items[G2PATHSETTINGS] = [
+  $items[G2::PATH_SETTINGS] = [
     'title' => 'G2 glossary',
     'description' => 'Define the various parameters used by the G2 module',
     'file' => 'g2.admin.inc',
@@ -1133,16 +1133,16 @@ function g2_menu() {
   ];
 
   // AJAX autocomplete callback, so no menu entry.
-  $items[G2PATHAUTOCOMPLETE] = [
+  $items[G2::PATH_AUTOCOMPLETE] = [
     'page callback' => '_g2_autocomplete',
-    'access arguments' => [G2PERMVIEW],
+    'access arguments' => [G2::PERM_VIEW],
     'type' => MENU_CALLBACK,
   ];
 
-  $items[G2PATHWOTDFEED] = [
-    'title' => G2TITLEWOTDFEED,
+  $items[G2::PATH_WOTD_FEED] = [
+    'title' => G2::TITLE_WOTD_FEED,
     'page callback' => '_g2_wotd_feed',
-    'access arguments' => [G2PERMVIEW],
+    'access arguments' => [G2::PERM_VIEW],
     'type' => MENU_CALLBACK,
   ];
 
@@ -1150,7 +1150,7 @@ function g2_menu() {
   $items['g2/wipe'] = [
     'page callback' => 'drupal_get_form',
     'page arguments' => ['g2_referer_wipe_confirm_form'],
-    'access arguments' => [G2PERMADMIN],
+    'access arguments' => [G2::PERM_ADMIN],
     'type' => MENU_CALLBACK,
   ];
 
@@ -1158,7 +1158,7 @@ function g2_menu() {
   $items['g2/wipe/%g2_node'] = [
     'page callback' => 'drupal_get_form',
     'page arguments' => ['g2_referer_wipe_confirm_form', 2],
-    'access arguments' => [G2PERMADMIN],
+    'access arguments' => [G2::PERM_ADMIN],
     'type' => MENU_CALLBACK,
   ];
 
@@ -1166,7 +1166,7 @@ function g2_menu() {
     'title' => 'Referers',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['_g2_referer_links', 1],
-    'access arguments' => [G2PERMADMIN],
+    'access arguments' => [G2::PERM_ADMIN],
     'type' => MENU_LOCAL_TASK,
     'weight' => 2,
   ];
@@ -1179,7 +1179,7 @@ function g2_menu() {
  */
 function g2_node_info() {
   $ret = [
-    G2NODETYPE => [
+    G2::NODE_TYPE => [
       'name' => t('G2 entry'),
       'module' => 'g2',
       'description' => t(
@@ -1207,7 +1207,7 @@ function g2_node_load($us_nid = 0) {
   else {
     $node = reset($us_nid);
   }
-  if ($node->type != G2::NODE_TYPE) {
+  if ($node->getEntityTypeId() != G2::NODE_TYPE) {
     $node = NULL;
   }
 
@@ -1228,8 +1228,8 @@ function g2_node_load($us_nid = 0) {
  */
 function g2_nodeapi(&$node, $op) {
   $q = \Drupal::requestStack()->getCurrentRequest()->query->get('q');
-  if (($op == 'rss item') && ($node->type == G2NODETYPE)
-    && ($q == G2PATHWOTDFEED)
+  if (($op == 'rss item') && ($node->type == G2::NODE_TYPE)
+    && ($q == G2::PATH_WOTD_FEED)
   ) {
     $node->created = variable_get(G2::VARWOTDDATE, time());
     $node->name = filter_xss_admin(
@@ -1249,13 +1249,13 @@ function g2_nodeapi(&$node, $op) {
 function g2_perm() {
   $ret = array_keys(
     [
-      G2PERMADMIN => [
+      G2::PERM_ADMIN => [
         'title' => t('Administer G2 entries'),
         'description' => t(
           'Access administrative information on G2 entries. This permission does not grant access to the module settings, which are controlled by the "administer site configuration" permission.'
         ),
       ],
-      G2PERMVIEW => [
+      G2::PERM_VIEW => [
         'title' => t('View G2 entries'),
         'description' => t('This permission allows viewing G2 entries, subject to additional node access control.'),
       ],
@@ -1327,7 +1327,7 @@ function g2_referer_wipe_confirm_form(
   }
   else {
     $question = t('Are you sure to want to erase the referer information on all G2 entries ?');
-    $cancel = G2PATHSETTINGS;
+    $cancel = G2::PATH_SETTINGS;
   }
 
   $ret = confirm_form(
@@ -1353,7 +1353,7 @@ function g2_referer_wipe_confirm_form_submit($form, &$form_state) {
   _g2_referer_wipe();
   \Drupal::messenger()
     ->addStatus(t('Referer information has been erased on all G2 entries'));
-  $form_state['redirect'] = G2PATHSETTINGS;
+  $form_state['redirect'] = G2::PATH_SETTINGS;
 }
 
 /**
@@ -1379,7 +1379,7 @@ WHERE n.type = '%s' AND n.status  = 1 AND n.uid = %d
 ORDER BY n.changed DESC, n.created DESC;
 SQL;
       $sq = db_rewrite_sql($sq);
-      $q = db_query_range($sq, G2NODETYPE, $account->uid, 0, 10);
+      $q = db_query_range($sq, G2::NODE_TYPE, $account->uid, 0, 10);
       $account->nodes = [];
       while (is_object($o = db_fetch_object($q))) {
         $account->nodes[] = [
@@ -1420,10 +1420,10 @@ function g2_view(&$node, $teaser = FALSE, $page = FALSE) {
 
   if ($page) {
     $bc = drupal_get_breadcrumb();
-    $bc[] = l(G2TITLEMAIN,
+    $bc[] = l(G2::TITLE_MAIN,
       $g2_home = variable_get(G2::VARPATHMAIN, G2::DEFPATHMAIN));
     $initial = drupal_substr($title, 0, 1);
-    $bc[] = l($title[0], G2PATHINITIAL . '/' . $initial);
+    $bc[] = l($title[0], G2::PATH_INITIAL . '/' . $initial);
     unset($initial);
     drupal_set_breadcrumb($bc);
     _g2_override_site_name();
@@ -1673,7 +1673,7 @@ function theme_g2_wotd(Node $node = NULL) {
   if (variable_get(G2::VARWOTDFEEDLINK, G2::DEFWOTDFEEDLINK)) {
     $ret .= theme(
       'feed_icon',
-      url(G2PATHWOTDFEED, ['absolute' => TRUE]),
+      url(G2::PATH_WOTD_FEED, ['absolute' => TRUE]),
       t('A word a day in your RSS reader')
     );
   }

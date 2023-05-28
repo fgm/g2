@@ -5,6 +5,8 @@
  * This is unported code for the module.
  */
 
+use Drupal\g2\G2;
+
 /**
  * Implements hook_block_configure().
  */
@@ -23,7 +25,7 @@ function zg2_block_configure($delta) {
   ];
 
   switch ($delta) {
-    case G2::DELTARANDOM:
+    case G2::DELTA_RANDOM:
       $form[G2::VARRANDOMSTORE] = [
         '#type' => 'checkbox',
         '#title' => t('Store latest random entry'),
@@ -49,7 +51,7 @@ function zg2_block_configure($delta) {
       ];
       break;
 
-    case G2::DELTATOP:
+    case G2::DELTA_TOP:
       $form[G2::VARTOPITEMCOUNT] = [
         '#type' => 'select',
         '#title' => t('Number of items'),
@@ -59,7 +61,7 @@ function zg2_block_configure($delta) {
       ];
       break;
 
-    case G2::DELTAWOTD:
+    case G2::DELTA_WOTD:
       // Convert nid to "title [<nid>]" even if missing.
       // @see autocomplete()
       $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
@@ -75,7 +77,7 @@ function zg2_block_configure($delta) {
         '#type' => 'textfield',
         '#title' => t('Entry for the day'),
         '#maxlength' => 60,
-        '#autocomplete_path' => G2::PATHAUTOCOMPLETE,
+        '#autocomplete_path' => G2::PATH_AUTOCOMPLETE,
         '#required' => TRUE,
         // !title: we don't filter since this is input, not output,
         // and can contain normally escaped characters, to accommodate
@@ -190,18 +192,18 @@ function zg2_block_configure($delta) {
  */
 function zg2_block_info() {
   $blocks = [];
-  $blocks[G2::DELTARANDOM]['info'] = variable_get('g2_random_info',
+  $blocks[G2::DELTA_RANDOM]['info'] = variable_get('g2_random_info',
     t('G2 Random'));
-  $blocks[G2::DELTATOP]['info'] = variable_get('g2_top_info', t('G2 Top'));
-  $blocks[G2::DELTAWOTD]['info'] = variable_get('g2_wotd_info',
+  $blocks[G2::DELTA_TOP]['info'] = variable_get('g2_top_info', t('G2 Top'));
+  $blocks[G2::DELTA_WOTD]['info'] = variable_get('g2_wotd_info',
     t('G2 Word of the day'));
 
   // Else it couldn't be random.
-  $blocks[G2::DELTARANDOM]['cache'] = DRUPAL_NO_CACHE;
+  $blocks[G2::DELTA_RANDOM]['cache'] = DRUPAL_NO_CACHE;
   // Can contain unpublished nodes.
-  $blocks[G2::DELTATOP]['cache'] = DRUPAL_CACHE_PER_ROLE;
+  $blocks[G2::DELTA_TOP]['cache'] = DRUPAL_CACHE_PER_ROLE;
   // Not all roles have g2 view permission.
-  $blocks[G2::DELTAWOTD]['cache'] = DRUPAL_CACHE_PER_ROLE;
+  $blocks[G2::DELTA_WOTD]['cache'] = DRUPAL_CACHE_PER_ROLE;
   return $blocks;
 }
 
@@ -210,16 +212,16 @@ function zg2_block_info() {
  */
 function zg2_block_save($delta, $edit) {
   switch ($delta) {
-    case G2::DELTARANDOM:
+    case G2::DELTA_RANDOM:
       variable_set(G2::VARRANDOMSTORE, $edit[G2::VARRANDOMSTORE]);
       variable_set(G2::VARRANDOMTERMS, $edit[G2::VARRANDOMTERMS]);
       break;
 
-    case G2::DELTATOP:
+    case G2::DELTA_TOP:
       variable_set(G2::VARTOPITEMCOUNT, $edit[G2::VARTOPITEMCOUNT]);
       break;
 
-    case G2::DELTAWOTD:
+    case G2::DELTA_WOTD:
       // Convert "some title [<nid>, sticky]" to nid.
       $entry = $edit[G2::VARWOTDENTRY];
       $matches = [];
@@ -248,12 +250,12 @@ function zg2_block_save($delta, $edit) {
  */
 function zg2_block_view($delta) {
   switch ($delta) {
-    case G2::DELTARANDOM:
+    case G2::DELTA_RANDOM:
       $block['subject'] = t('Random G2 glossary entry');
       $block['content'] = theme('g2_random', ['node' => G2::random()]);
       break;
 
-    case G2::DELTATOP:
+    case G2::DELTA_TOP:
       $max = variable_get(G2::VARTOPITEMCOUNT, G2::DEFTOPITEMCOUNT);
       $block['subject'] = t(
         '@count most popular G2 glossary entries',
@@ -263,7 +265,7 @@ function zg2_block_view($delta) {
         ['nodes' => G2::top($max, FALSE, TRUE)]);
       break;
 
-    case G2::DELTAWOTD:
+    case G2::DELTA_WOTD:
       $block['subject'] = variable_get(G2::VARWOTDTITLE,
         t('Word of the day in the G2 glossary'));
       $block['content'] = theme('g2_wotd', [
@@ -369,7 +371,7 @@ function zg2_field_extra_fields() {
     'weight' => 99,
   ];
 
-  $extra['node'][G2::NODETYPE] = [
+  $extra['node'][G2::NODE_TYPE] = [
     'form' => [
       'expansion' => $expansion,
       'period' => $period,
@@ -430,7 +432,7 @@ function zg2_form(&$node, $form_state) {
     $node->title = check_plain(
       drupal_substr(
         \Drupal::requestStack()->getCurrentRequest()->query->get('q'),
-        drupal_strlen(G2::PATHNODEADD) + 1
+        drupal_strlen(G2::PATH_NODE_ADD) + 1
       )
     );
   }
@@ -542,7 +544,7 @@ function zg2_load($nodes) {
 function zg2_menu() {
   $items = [];
 
-  $items[G2::PATHSETTINGS] = [
+  $items[G2::PATH_SETTINGS] = [
     'title' => 'G2 glossary',
     'description' => 'Define the various parameters used by the G2 module',
     'page callback' => 'drupal_get_form',
@@ -551,16 +553,16 @@ function zg2_menu() {
   ];
 
   // AJAX autocomplete callback, so no menu entry.
-  $items[G2::PATHAUTOCOMPLETE] = [
+  $items[G2::PATH_AUTOCOMPLETE] = [
     'page callback' => 'G2::autocomplete',
-    'access arguments' => [G2::PERMVIEW],
+    'access arguments' => [G2::PERM_VIEW],
     'type' => MENU_CALLBACK,
   ];
 
-  $items[G2::PATHWOTDFEED] = [
-    'title' => G2::TITLEWOTDFEED,
+  $items[G2::PATH_WOTD_FEED] = [
+    'title' => G2::TITLE_WOTD_FEED,
     'page callback' => 'G2::wotd_feed',
-    'access arguments' => [G2::PERMVIEW],
+    'access arguments' => [G2::PERM_VIEW],
     'type' => MENU_CALLBACK,
   ];
 
@@ -568,7 +570,7 @@ function zg2_menu() {
   $items['g2/wipe'] = [
     'page callback' => 'drupal_get_form',
     'page arguments' => ['G2::referer_wipe_confirm_form'],
-    'access arguments' => [G2::PERMADMIN],
+    'access arguments' => [G2::PERM_ADMIN],
     'type' => MENU_CALLBACK,
   ];
 
@@ -576,7 +578,7 @@ function zg2_menu() {
   $items['g2/wipe/%g2_nid'] = [
     'page callback' => 'drupal_get_form',
     'page arguments' => ['G2::referer_wipe_confirm_form', 2],
-    'access arguments' => [G2::PERMADMIN],
+    'access arguments' => [G2::PERM_ADMIN],
     'type' => MENU_CALLBACK,
   ];
 
@@ -584,7 +586,7 @@ function zg2_menu() {
     'title' => 'Referers',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['G2::referer_links', 1],
-    'access arguments' => [G2::PERMADMIN],
+    'access arguments' => [G2::PERM_ADMIN],
     'type' => MENU_LOCAL_TASK,
     'weight' => 2,
   ];
@@ -607,7 +609,7 @@ function zg2_nid_load($us_nid = 0) {
   $node = \Drupal::service('entity_type.manager')
     ->getStorage('node')
     ->load($us_nid);
-  if ($node->type != G2::NODETYPE) {
+  if ($node->type != G2::NODE_TYPE) {
     $node = NULL;
   }
   return $node;
@@ -621,11 +623,11 @@ function zg2_node_access($node, $op, $account) {
     case 'create':
     case 'delete':
     case 'update':
-      $ret = user_access(G2::PERMADMIN, $account);
+      $ret = user_access(G2::PERM_ADMIN, $account);
       break;
 
     case 'view':
-      $ret = user_access(G2::PERMVIEW, $account);
+      $ret = user_access(G2::PERM_VIEW, $account);
       break;
 
     default:
@@ -648,7 +650,7 @@ function zg2_node_access($node, $op, $account) {
  */
 function zg2_node_info() {
   $ret = [
-    G2::NODETYPE => [
+    G2::NODE_TYPE => [
       'name' => t('G2 entry'),
       'base' => 'g2',
       'description' => t(
@@ -676,7 +678,7 @@ function zg2_node_info() {
  */
 function zg2_node_view($node, $view_mode, $langcode) {
   $q = \Drupal::requestStack()->getCurrentRequest()->query->get('q');
-  if ($view_mode == 'rss' && $node->type == G2::NODETYPE && ($q == G2::PATHWOTDFEED)) {
+  if ($view_mode == 'rss' && $node->type == G2::NODE_TYPE && ($q == G2::PATH_WOTD_FEED)) {
     $node->created = variable_get(G2::VARWOTDDATE,
       \Drupal::time()->getRequestTime());
     $node->name = filter_xss_admin(
@@ -693,14 +695,14 @@ function zg2_node_view($node, $view_mode, $langcode) {
  */
 function zg2_permission() {
   $ret = [
-    G2::PERMADMIN => [
+    G2::PERM_ADMIN => [
       'title' => t('Administer G2 entries'),
       'description' => t(
         'Access administrative information on G2 entries. This permission does not grant access to the module settings, which are controlled by the "administer site configuration" permission.'
       ),
       'restrict access' => TRUE,
     ],
-    G2::PERMVIEW => [
+    G2::PERM_VIEW => [
       'title' => t('View G2 entries'),
       'description' => t('This permission allows viewing G2 entries, subject to additional node access control.'),
     ],
@@ -732,7 +734,7 @@ function zg2_update($node) {
 function zg2_user_load($users) {
   $q = \Drupal::database()->select('node', 'n');
   $result = $q->fields('n', ['nid', 'title', 'uid', 'type'])
-    ->condition('n.type', G2::NODETYPE)
+    ->condition('n.type', G2::NODE_TYPE)
     ->condition('n.status', 1)
     ->condition('n.uid', array_keys($users), 'IN')
     ->orderBy('n.changed', 'DESC')
@@ -774,7 +776,7 @@ function zg2_view($node, $view_mode) {
 
   if (node_is_page($node)) {
     $bc = drupal_get_breadcrumb();
-    $bc[] = l(G2::TITLEMAIN,
+    $bc[] = l(G2::TITLE_MAIN,
       $g2_home = variable_get(G2::VARPATHMAIN, G2::DEFPATHMAIN));
     $initial = drupal_substr($title, 0, 1);
     $bc[] = l($title[0], $g2_home . '/initial/' . $initial);
@@ -984,7 +986,7 @@ function ztheme_g2_wotd($variables) {
     $ret .= theme(
       'feed_icon',
       [
-        'url' => url(G2::PATHWOTDFEED, ['absolute' => TRUE]),
+        'url' => url(G2::PATH_WOTD_FEED, ['absolute' => TRUE]),
         // @todo Find a better title.
         'title' => t('Glossary feed'),
       ]

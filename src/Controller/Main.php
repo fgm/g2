@@ -9,6 +9,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\g2\Alphabar;
 use Drupal\g2\G2;
 
+use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -87,7 +88,7 @@ class Main implements ContainerInjectionInterface {
 
       if (!$node->body->isEmpty()) {
         // Simulate publishing.
-        $node->setPublished(NODE_PUBLISHED);
+        $node->setPublished(Node::PUBLISHED);
         // Remove the title : we used it for the page title.
         $node->setTitle(NULL);
         $builder = $this->etm->getViewBuilder($node->getEntityTypeId());
