@@ -165,7 +165,7 @@ class SettingsForm extends ConfigFormBase {
   public function buildBlockForm(array $form, array $config, array $schema) {
     $section = 'block';
     $form = $this->prepareTopLevelDetails($form, $schema, $section);
-    $service_config = $this->config(G2::CONFIG_NAME)->get('service');
+    $service_config = $this->config(G2::CONFIG_NAME)->get('services');
 
     $element = &$form[$section]['alphabar'];
     $element['row_length'] = [
@@ -447,7 +447,7 @@ class SettingsForm extends ConfigFormBase {
    *   The form array.
    */
   public function buildServiceForm(array $form, array $config, array $schema) {
-    $section = 'service';
+    $section = 'services';
     $form = $this->prepareTopLevelDetails($form, $schema, $section);
 
     $element = &$form[$section]['alphabar'];

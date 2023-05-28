@@ -67,7 +67,7 @@ function _g2_api() {
  */
 function _g2_latest($count = NULL) {
   $config = \Drupal::config('g2.settings');
-  $service_max = $config->get('service.latest.max_count');
+  $service_max = $config->get('services.latest.max_count');
   $api_throttle = $config->get('api.server.throttle');
   $actual_max = $api_throttle * $service_max;
 
@@ -106,7 +106,7 @@ function _g2_latest($count = NULL) {
  */
 function _g2_top($count = NULL, $daily_top = FALSE) {
   $config = \Drupal::config('g2.settings');
-  $service_max = $config->get('service.top.max_count');
+  $service_max = $config->get('services.top.max_count');
   $api_throttle = $config->get('api.server.throttle');
   $actual_max = $api_throttle * $service_max;
 

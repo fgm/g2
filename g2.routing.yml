@@ -107,7 +107,7 @@ g2.settings.services:
   defaults:
     _form: 'Drupal\g2\Form\SettingsForm'
     _title: "G2 services configuration"
-    section: "service"
+    section: "services"
   options:
     _admin_route: TRUE
   requirements:

@@ -95,7 +95,7 @@ class Top {
     $this->urlGenerator = $url_generator;
 
     $g2_config = $config->get('g2.settings');
-    $this->config = $g2_config->get('service.latest');
+    $this->config = $g2_config->get('services.latest');
 
   }
 
