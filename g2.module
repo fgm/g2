@@ -6,7 +6,7 @@
  *
  * @todo Test wipes, rss
  *
- * @copyright 2005-2015 Frédéric G. Marand, for Ouest Systemes Informatiques.
+ * @copyright 2005-2023 Frédéric G. Marand, for Ouest Systemes Informatiques.
  *
  * @todo For D8, in decreasing prioritys
  *  - implement SettingsForm::validateForm() using Requirements

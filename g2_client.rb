@@ -7,7 +7,7 @@
 # way to differentiate between old (<= 5.x) and 6.x servers, thanks to
 # the api() method.
 #
-# @copyright Copyright (C) 2005-2021 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet, OSI)
+# @copyright 2005-2021 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet, OSI)
 #
 # @license Licensed under the CeCILL, version 2 and General Public License version 2 or later
 #

@@ -4,9 +4,11 @@
  * @file
  * Administrative form for the G2 Glossary module.
  *
- * @copyright Copyright (C) 2005-2011 Frederic G. MARAND for Ouest Systèmes Informatiques (OSInet)
+ * @copyright 2005-2023 Frederic G. MARAND for Ouest Systèmes
+ *   Informatiques (OSInet)
  *
- * @license Licensed under the CeCILL, version 2 and General Public License version 2 and later
+ * @license Licensed under the CeCILL, version 2 and General Public License
+ *   version 2 and later
  *
  * License note: G2 is distributed by OSInet to its customers under the
  * CeCILL 2.0 license. OSInet support services only apply to the module
@@ -25,69 +27,69 @@
  */
 function g2_admin_settings() {
   $form['main'] = [
-    '#type'          => 'fieldset',
-    '#title'         => t('Main page'),
+    '#type' => 'fieldset',
+    '#title' => t('Main page'),
   ];
   $form['main'][G2::VARMAIN] = [
-    '#type'          => 'textfield',
-    '#title'         => t('Node or function used for the main page of G2 on this site'),
+    '#type' => 'textfield',
+    '#title' => t('Node or function used for the main page of G2 on this site'),
     '#default_value' => variable_get(G2::VARMAIN, 0),
-    '#description'   => t('<p>When themeing for G2 is supplied by a non-G2-aware theme, the <code>theme_g2_main</code> function will use content derived from this value as the main page for the G2 glossary, wrapped between alphabars. The value can be either a node nid (typically for an unpublished page or story node), or a function name (typically from a site-specific module). G2-aware themes can provide their own home page, using this page as a basis, or not.</p>'),
+    '#description' => t('<p>When themeing for G2 is supplied by a non-G2-aware theme, the <code>theme_g2_main</code> function will use content derived from this value as the main page for the G2 glossary, wrapped between alphabars. The value can be either a node nid (typically for an unpublished page or story node), or a function name (typically from a site-specific module). G2-aware themes can provide their own home page, using this page as a basis, or not.</p>'),
   ];
   $form['main'][G2::VARPATHMAIN] = [
-    '#type'          => 'textfield',
-    '#title'         => t('Path for the main page of G2 on this site'),
+    '#type' => 'textfield',
+    '#title' => t('Path for the main page of G2 on this site'),
     '#default_value' => variable_get(G2::VARPATHMAIN, G2::DEFPATHMAIN),
-    '#description'   => t('<p>This setting allows site admins to modify the URL at which the home page will be found.
+    '#description' => t('<p>This setting allows site admins to modify the URL at which the home page will be found.
          This will typically be done to replace the standard path ("g2") by a SEO-engineered path.</p>'),
   ];
   $form['main'][G2::VARPAGETITLE] = [
-    '#type'          => 'textfield',
-    '#title'         => t('Override for site title on G2 pages'),
+    '#type' => 'textfield',
+    '#title' => t('Override for site title on G2 pages'),
     '#default_value' => variable_get(G2::VARPAGETITLE, G2::DEFPAGETITLE),
-    '#description'   => t('<p>This setting allows site admins to modify the site title on G2 page, typically for SEO purposes. The title can include !token, which will be replaced by the standard Drupal site title. If set to empty, the default site name will not be overridden.</p>',
+    '#description' => t('<p>This setting allows site admins to modify the site title on G2 page, typically for SEO purposes. The title can include !token, which will be replaced by the standard Drupal site title. If set to empty, the default site name will not be overridden.</p>',
       ['!token' => '@title']),
   ];
   $form['main'][G2::VARTOOLTIPS] = [
-    '#type'          => 'checkbox',
-    '#title'         => t('Enable tooltips on definitions'),
+    '#type' => 'checkbox',
+    '#title' => t('Enable tooltips on definitions'),
     '#default_value' => variable_get(G2::VARTOOLTIPS, G2::DEFTOOLTIPS),
-    '#description'   => t('Set the title attribute on definition links to the teaser of the target definition, if only one exists, or to the number of definitions, if several exist. This mechanism is only enabled on non-remote glossaries, and cause one additional query per definition link on pages where containg them.'),
+    '#description' => t('Set the title attribute on definition links to the teaser of the target definition, if only one exists, or to the number of definitions, if several exist. This mechanism is only enabled on non-remote glossaries, and cause one additional query per definition link on pages where containg them.'),
   ];
 
   $form['automation'] = [
-    '#type'          => 'fieldset',
-    '#title'         => t('Site automation'),
+    '#type' => 'fieldset',
+    '#title' => t('Site automation'),
   ];
   $form['automation'][G2::VARHIDDENTITLE] = [
-    '#type'          => 'checkbox',
-    '#title'         => t('Embed a CSS-masked version of the definition titles in the node rendition'),
+    '#type' => 'checkbox',
+    '#title' => t('Embed a CSS-masked version of the definition titles in the node rendition'),
     '#default_value' => variable_get(G2::VARHIDDENTITLE, G2::DEFHIDDENTITLE),
-    '#description'   => t('This setting enables search to work better on definition titles, but can be frowned upon by search engines.'),
+    '#description' => t('This setting enables search to work better on definition titles, but can be frowned upon by search engines.'),
   ];
   $form['automation'][G2::VARNOFREETAGGING] = [
-    '#type'          => 'checkbox',
-    '#title'         => t('Hide terms in free-tagging vocabularies from users without G2 administrator permissions.'),
+    '#type' => 'checkbox',
+    '#title' => t('Hide terms in free-tagging vocabularies from users without G2 administrator permissions.'),
     '#default_value' => variable_get(G2::VARNOFREETAGGING, TRUE),
-    '#description'   => t('Terms bound to a G2 node belonging in a free tagging vocabulary are typically not meant for end-users.'),
+    '#description' => t('Terms bound to a G2 node belonging in a free tagging vocabulary are typically not meant for end-users.'),
   ];
   $form['remoting'] = [
-    '#type'          => 'fieldset',
-    '#title'         => t('Remoting'),
+    '#type' => 'fieldset',
+    '#title' => t('Remoting'),
   ];
   $def = variable_get(G2::VARREMOTEG2, G2::DEFREMOTEG2);
   if (empty($def)) {
     $def = G2::DEFREMOTEG2;
   }
   $form['remoting'][G2::VARREMOTEG2] = [
-    '#type'          => 'textfield',
-    '#title'         => t('Use the URL of this remote G2 glossary, or !local for a local glossary',
+    '#type' => 'textfield',
+    '#title' => t('Use the URL of this remote G2 glossary, or !local for a local glossary',
       [
         '!local' => '<code>' . check_plain(G2::DEFREMOTENO) . '</code>',
       ]
     ),
     '#default_value' => $def,
-    '#description'   => t('Using G2 remoting, you can supply automatic links from your site to a glossary on another site, without having to maintain anything locally. You will just need to enable the "G2 Glossary Filter" at !url for each format using it. Use !local to maintain a glossary on your site. Erase the field and save TWICE to restore the default value, the Riff dictionary of computing.',
+    '#description' => t('Using G2 remoting, you can supply automatic links from your site to a glossary on another site, without having to maintain anything locally. You will just need to enable the "G2 Glossary Filter" at !url for each format using it. Use !local to maintain a glossary on your site. Erase the field and save TWICE to restore the default value, the Riff dictionary of computing.',
       [
         '!url' => l(t('input formats'), 'admin/settings/filters'),
         '!local' => '<code>' . check_plain(G2::DEFREMOTENO) . '</code>',
@@ -95,36 +97,36 @@ function g2_admin_settings() {
     ),
   ];
   $form['homonyms'] = [
-    '#type'          => 'fieldset',
-    '#title'         => t('Homonyms processing'),
+    '#type' => 'fieldset',
+    '#title' => t('Homonyms processing'),
   ];
   $disambiguation_url = url('g2/entries', ['absolute' => TRUE]);
   $form['homonyms'][G2::VARHOMONYMS] = [
-    '#type'          => 'textfield',
-    '#title'         => t('Node used for the homonyms disambiguation page of G2 on this site'),
+    '#type' => 'textfield',
+    '#title' => t('Node used for the homonyms disambiguation page of G2 on this site'),
     '#default_value' => variable_get(G2::VARHOMONYMS, G2::DEFHOMONYMS),
-    '#description'   => t('If this node is non-zero, this is the page used to build the disambiguation
+    '#description' => t('If this node is non-zero, this is the page used to build the disambiguation
           page for G2 entries at <code>!link/&lt;some entry&gt;</code>.
           Otherwise, a default page is used.', ['!link' => $disambiguation_url]),
   ];
   $form['homonyms'][G2::VARGOTOSINGLE] = [
-    '#type'          => 'checkbox',
-    '#title'         => t('Enable auto-jump to single match on entry'),
+    '#type' => 'checkbox',
+    '#title' => t('Enable auto-jump to single match on entry'),
     '#default_value' => variable_get(G2::VARGOTOSINGLE, TRUE),
-    '#description'   => t('This setting enables automatic redirection from
+    '#description' => t('This setting enables automatic redirection from
       <code>!link/&lt;some entry&gt;</code> to the entry page if only one match exists for "some entry".
       This is especially useful for links generated from content nodes.',
       ['!link' => $disambiguation_url]),
   ];
   $form['homonyms'][G2::VARHOMONYMSREDIRECT] = [
-    '#type'          => 'select',
-    '#title'         => t('The type of HTTP redirection to be used if auto-jump is enabled'),
+    '#type' => 'select',
+    '#title' => t('The type of HTTP redirection to be used if auto-jump is enabled'),
     '#default_value' => variable_get(G2::VARHOMONYMSREDIRECT, G2::DEFHOMONYMSREDIRECT),
-    '#options'       => [
-      '301'                 => t('Permanent redirect (HTTP 301)'),
+    '#options' => [
+      '301' => t('Permanent redirect (HTTP 301)'),
       G2::DEFHOMONYMSREDIRECT => t('Temporary redirect (HTTP 302)'),
     ],
-    '#description'   => t('If the "auto-jump to single match on entry" feature is enabled,
+    '#description' => t('If the "auto-jump to single match on entry" feature is enabled,
       choose which type of redirection is generated. Technically, a temporary redirect (!see302)
       makes more sense, especially is the glossary is often updated, but if the glossary
       is stable, or if the site admin has reason to fear a 302 search engine blacklisting,
@@ -141,54 +143,54 @@ function g2_admin_settings() {
     $ar_voc[$voc->vid] = $voc->name;
   }
   $form['homonyms'][G2::VARHOMONYMSVID] = [
-    '#type'          => 'select',
-    '#title'         => t('Vocabulary to be used on the homonyms disambiguation page'),
+    '#type' => 'select',
+    '#title' => t('Vocabulary to be used on the homonyms disambiguation page'),
     '#default_value' => variable_get(G2::VARHOMONYMSVID, G2::DEFHOMONYMSVID),
-    '#description'   => t('If a vocabulary is chosen here, the terms bound to ambiguous entries (homonyms)
+    '#description' => t('If a vocabulary is chosen here, the terms bound to ambiguous entries (homonyms)
        will be displayed on the defaut disambiguation page.'),
-    '#options'       => $ar_voc,
+    '#options' => $ar_voc,
   ];
 
   $form['advanced'] = [
-    '#type'          => 'fieldset',
-    '#title'         => t('Advanced settings (for programmers only)'),
-    '#collapsible'   => TRUE,
-    '#collapsed'     => TRUE,
+    '#type' => 'fieldset',
+    '#title' => t('Advanced settings (for programmers only)'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   ];
   $form['advanced'][G2::VARXMLRPC] = [
-    '#type'          => 'checkbox',
-    '#title'         => t('Enable G2 remote API services'),
+    '#type' => 'checkbox',
+    '#title' => t('Enable G2 remote API services'),
     '#default_value' => variable_get(G2::VARXMLRPC, G2::DEFXMLRPC),
-    '#description'   => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC API.
+    '#description' => t('This setting enables remote anonymous use of the G2 glossary through its XML-RPC API.
        Enabling it without additional access control is typically not a good idea.
        Local XML-RPC API is not enabled by default.'),
   ];
 
   $form['advanced'][G2::VARRPCTHROTTLE] = [
-    '#type'          => 'textfield',
-    '#title'         => t('API throttle'),
+    '#type' => 'textfield',
+    '#title' => t('API throttle'),
     '#default_value' => variable_get(G2::VARRPCTHROTTLE, G2::DEFRPCTHROTTLE),
-    '#description'   => t('This setting is a coefficient applied to the Top and Latest block for their API services.
+    '#description' => t('This setting is a coefficient applied to the Top and Latest block for their API services.
         It defines the maximum number of entries an API client is allowed to return
         in just one call as the product of the block setting and this coefficient.'),
   ];
   $form['advanced'][G2::VERSION] = [
-    '#value'         => '<p>'
+    '#value' => '<p>'
     . t('This site is running G2 version %version. See the <a href="!page" title="G2 Glossary project page">G2 project page</a> on Drupal.org.',
       [
         '%version' => G2::VERSION,
-        '!page'    => 'http://drupal.org/project/g2',
+        '!page' => 'http://drupal.org/project/g2',
       ]
     )
     . '</p>',
   ];
 
   $form['wipe_submit'] = [
-    '#type'          => 'submit',
-    '#value'         => G2::TITLEREFERERWIPE,
-    '#weight'        => 2,
-    '#submit'        => ['g2_referer_wipe_button_submit'],
-    '#callback'      => '_g2_referer_wipe',
+    '#type' => 'submit',
+    '#value' => G2::TITLEREFERERWIPE,
+    '#weight' => 2,
+    '#submit' => ['g2_referer_wipe_button_submit'],
+    '#callback' => '_g2_referer_wipe',
   ];
 
   // Explicit handler needed: the explicit submit handler declaration in
@@ -229,20 +231,26 @@ function g2_admin_settings_submit(&$form, &$form_state) {
 function g2_admin_settings_validate($form, &$form_state) {
   $main = $form_state['values']['g2_main'];
   if (is_numeric($main)) {
-    if ($main != 0 && !is_object(\Drupal::service('entity_type.manager')->getStorage('node')->load($main))) {
-      form_set_error('g2_main', t('The node chosen for the main page must be a valid one, or 0: "@nid" is not a valid node id.',
-          ['@nid' => $main]));
-      }
+    if ($main != 0 && !is_object(\Drupal::service('entity_type.manager')
+      ->getStorage('node')
+      ->load($main))) {
+      form_set_error('g2_main', t('The node chosen for the main page must be a valid one, or 0: "@nid" is not a valid node id.', ['@nid' => $main])
+      );
     }
+  }
   elseif (!function_exists($main)) {
     form_set_error('g2_main', t('The function chosen for the main page must visible to G2: "@function" is not a valid function name.',
-      ['@function' => $main]));
+      ['@function' => $main])
+    );
   }
 
   $nid = $form_state['values']['g2_homonyms'];
-  if ($nid != 0 && !is_object(\Drupal::service('entity_type.manager')->getStorage('node')->load($nid))) {
-      form_set_error('g2_homonyms', t('The node chosen for the homonyms disambiguation page must be a valid one, or 0: "@nid" is not a valid node id.',
-      ['@nid' => $nid]));
+  if ($nid != 0 && !is_object(\Drupal::service('entity_type.manager')
+    ->getStorage('node')
+    ->load($nid))) {
+    form_set_error('g2_homonyms', t('The node chosen for the homonyms disambiguation page must be a valid one, or 0: "@nid" is not a valid node id.',
+      ['@nid' => $nid])
+    );
   }
 
   // Sanitize API throttle.

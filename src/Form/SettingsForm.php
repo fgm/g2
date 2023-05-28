@@ -4,7 +4,6 @@ namespace Drupal\g2\Form;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteBuilderInterface;
@@ -31,13 +30,6 @@ class SettingsForm extends ConfigFormBase {
   protected $configSchema;
 
   /**
-   * The query.factory service.
-   *
-   * @var \Drupal\Core\Entity\Query\QueryFactory
-   */
-  protected $entityQuery;
-
-  /**
    * The entity_type.manager service.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
@@ -54,26 +46,22 @@ class SettingsForm extends ConfigFormBase {
   /**
    * Constructs a \Drupal\system\ConfigFormBase object.
    *
-   * @param \Drupal\Core\Entity\Query\QueryFactory $entity_query
-   *   The entity.query service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
+   *   The entity_type.manager service.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The factory for configuration objects.
    * @param array $config_schema
    *   The schema array for the configuration data.
    * @param \Drupal\Core\Routing\RouteBuilderInterface $router_builder
    *   The router.builder service.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
-   *   The entity_type.manager service.
    */
   public function __construct(
-    QueryFactory $entity_query,
+    EntityTypeManagerInterface $etm,
     ConfigFactoryInterface $config_factory,
     array $config_schema,
     RouteBuilderInterface $router_builder,
-    EntityTypeManagerInterface $etm,
   ) {
     parent::__construct($config_factory);
-    $this->entityQuery = $entity_query;
     $this->etm = $etm;
     $this->configSchema = $config_schema;
     $this->routerBuilder = $router_builder;
@@ -83,8 +71,8 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /** @var \Drupal\Core\Entity\Query\QueryFactory $entity_query */
-    $entity_query = $container->get('entity.query');
+    /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
+    $etm = $container->get('entity_type.manager');
 
     /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
     $config_factory = $container->get('config.factory');
@@ -95,7 +83,7 @@ class SettingsForm extends ConfigFormBase {
     /** @var \Drupal\Core\Config\TypedConfigManagerInterface $typed_config */
     $typed_config = $container->get('config.typed');
 
-    return new static($entity_query, $config_factory, $typed_config->getDefinition(G2::CONFIG_NAME), $router_builder);
+    return new static($etm, $config_factory, $typed_config->getDefinition(G2::CONFIG_NAME), $router_builder);
   }
 
   /**
@@ -308,7 +296,9 @@ class SettingsForm extends ConfigFormBase {
       '#default_value' => $config['homonyms']['redirect_status'],
     ];
 
-    $view_ids = $this->entityQuery->get('view')
+    $view_ids = $this->etm
+      ->getStorage('view')
+      ->getQuery()
       ->condition('tag', 'G2')
       ->execute();
     $views = $this->etm->getStorage('view')->loadMultiple($view_ids);

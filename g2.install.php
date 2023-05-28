@@ -4,7 +4,7 @@
  * @file
  * Install file for G2 Glossary.
  *
- * @copyright 2005-2015 Frédéric G. Marand, for Ouest Systemes Informatiques.
+ * @copyright 2005-2023 Frédéric G. Marand, for Ouest Systemes Informatiques.
  */
 
 use Drupal\g2\G2;
