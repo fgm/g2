@@ -69,6 +69,22 @@ class G2 {
    */
   const ROUTE_FEED_WOTD = 'g2.feed.wotd';
 
+  /**
+   * Route: G2 main page.
+   */
+  const ROUTE_MAIN = 'g2.main';
+
+  /**
+   * Route: form offering to wipe all referrers.
+   */
+  const ROUTE_WIPE_ALL = 'g2.wipe.all';
+
+  /**
+   * Route: form offering to wipe referrers for a single G2 entry.
+   */
+  const ROUTE_WIPE_ONE = 'g2.wipe.one';
+
+
   // Constants in this group are only listed to remove WSODs, but they still
   // need the associated logic to be converted from variables to config.
   const VARNOFREETAGGING = 'g2-no-freetagging';

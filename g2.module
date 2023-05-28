@@ -1061,23 +1061,6 @@ function g2_load($node) {
  */
 function g2_menu() {
   $items = [];
-
-  // Offers to clear referers for all entries.
-  $items['g2/wipe'] = [
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['G2::referer_wipe_confirm_form'], // ['g2_referer_wipe_confirm_form'],
-    'access arguments' => [G2::PERM_ADMIN],
-    'type' => MENU_CALLBACK,
-  ];
-
-  // Offers to clear referers for a given entry.
-  $items['g2/wipe/%g2_nid'] = [ // aka %g2_node
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['G2::referer_wipe_confirm_form', 2], // ['g2_referer_wipe_confirm_form', 2],
-    'access arguments' => [G2::PERM_ADMIN],
-    'type' => MENU_CALLBACK,
-  ];
-
   $items['node/%g2_nid/referers'] = [ // aka %g2_node
     'title' => 'Referers',
     'page callback' => 'drupal_get_form',

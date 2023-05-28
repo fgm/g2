@@ -112,3 +112,25 @@ g2.settings.services:
     _admin_route: TRUE
   requirements:
     _permission: "administer site configuration"
+g2.wipe.all:
+  path: "g2/wipe"
+  defaults:
+    _form: 'Drupal\g2\Form\RefererWipe'
+    _title: "Wipe all referrers on G2 entries"
+    variant: all
+  options:
+    _admin_route: TRUE
+  requirements:
+    _permission: "administer site configuration"
+g2.wipe.one:
+  path: "g2/wipe/{node}"
+  defaults:
+    _form: 'Drupal\g2\Form\RefererWipe'
+    _title: "Wipe all referrers on a specific G2 entry"
+    variant: one
+  options:
+    _admin_route: TRUE
+  requirements:
+    _permission: "administer site configuration"
+    _entity_access: 'node.view'
+    node: \d+
