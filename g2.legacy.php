@@ -539,62 +539,6 @@ function zg2_load($nodes) {
 }
 
 /**
- * Implements hook_menu().
- */
-function zg2_menu() {
-  $items = [];
-
-  $items[G2::PATH_SETTINGS] = [
-    'title' => 'G2 glossary',
-    'description' => 'Define the various parameters used by the G2 module',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['G2::admin_settings'],
-    'access arguments' => ['administer site configuration'],
-  ];
-
-  // AJAX autocomplete callback, so no menu entry.
-  $items[G2::PATH_AUTOCOMPLETE] = [
-    'page callback' => 'G2::autocomplete',
-    'access arguments' => [G2::PERM_VIEW],
-    'type' => MENU_CALLBACK,
-  ];
-
-  $items[G2::PATH_WOTD_FEED] = [
-    'title' => G2::TITLE_WOTD_FEED,
-    'page callback' => 'G2::wotd_feed',
-    'access arguments' => [G2::PERM_VIEW],
-    'type' => MENU_CALLBACK,
-  ];
-
-  // Offers to clear referers for all entries.
-  $items['g2/wipe'] = [
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['G2::referer_wipe_confirm_form'],
-    'access arguments' => [G2::PERM_ADMIN],
-    'type' => MENU_CALLBACK,
-  ];
-
-  // Offers to clear referers for a given entry.
-  $items['g2/wipe/%g2_nid'] = [
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['G2::referer_wipe_confirm_form', 2],
-    'access arguments' => [G2::PERM_ADMIN],
-    'type' => MENU_CALLBACK,
-  ];
-
-  $items['node/%g2_nid/referers'] = [
-    'title' => 'Referers',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['G2::referer_links', 1],
-    'access arguments' => [G2::PERM_ADMIN],
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 2,
-  ];
-
-  return $items;
-}
-
-/**
  * Menu loader for g2_node.
  *
  * @param int $us_nid

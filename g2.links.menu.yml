@@ -1,29 +1,35 @@
-g2.settings.block:
-  description: "Configure the G2 Glossary"
-  route_name: "g2.settings.block"
-  title: "G2 Glossary"
+g2.settings:
+  description: "All the G2 Glossary settings"
   parent: "system.admin_config_content"
-
-g2.settings.controller:
-  description: "Configure the G2 controllers"
-  route_name: "g2.settings.controller"
-  title: "Controllers"
-  parent: "g2.settings.block"
-
-g2.settings.formatting:
-  description: "Configure the G2 formatting"
-  route_name: "g2.settings.formatting"
-  title: "Formatting"
-  parent: "g2.settings.block"
+  route_name: "g2.settings"
+  title: "G2 Glossary"
 
 g2.settings.api:
   description: "Configure the G2 API"
+  parent: "g2.settings"
   route_name: "g2.settings.api"
-  title: "API"
-  parent: "g2.settings.block"
+  title: API
 
-g2.settings.service:
+g2.settings.block:
+  description: "Configure the G2 blocks"
+  parent: "g2.settings"
+  route_name: "g2.settings.block"
+  title: "Blocks"
+
+g2.settings.controllers:
+  description: "Configure the G2 controllers"
+  parent: "g2.settings"
+  route_name: "g2.settings.controllers"
+  title: "Controllers"
+
+g2.settings.formatting:
+  description: "Configure the G2 formatting"
+  parent: "g2.settings"
+  route_name: "g2.settings.formatting"
+  title: "Formatting"
+
+g2.settings.services:
   description: "Configure the G2 Services"
-  route_name: "g2.settings.service"
+  parent: "g2.settings"
+  route_name: "g2.settings.services"
   title: "Services"
-  parent: "g2.settings.block"

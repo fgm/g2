@@ -3,28 +3,28 @@
 #  route_name: g2.settings.block
 #  title: 'G2 Configuration'
 
-g2.settings.block_tab:
-  base_route: g2.settings.block
-  route_name: g2.settings.block
-  title: 'Blocks'
-  weight: 0
-g2.settings.controller_tab:
-  base_route: g2.settings.block
-  route_name: g2.settings.controller
-  title: 'Controllers'
-  weight: 1
-g2.settings.formatting_tab:
-  base_route: g2.settings.block
-  route_name: g2.settings.formatting
-  title: 'Formatting'
-  weight: 2
 g2.settings.api_tab:
-  base_route: g2.settings.block
+  base_route: g2.settings.api
   route_name: g2.settings.api
   title: 'API'
+  weight: 0
+g2.settings.block_tab:
+  base_route: g2.settings.api
+  route_name: g2.settings.block
+  title: 'Blocks'
+  weight: 1
+g2.settings.controllers_tab:
+  base_route: g2.settings.api
+  route_name: g2.settings.controllers
+  title: 'Controllers'
+  weight: 2
+g2.settings.formatting_tab:
+  base_route: g2.settings.api
+  route_name: g2.settings.formatting
+  title: 'Formatting'
   weight: 3
-g2.settings.service_tab:
-  base_route: g2.settings.block
-  route_name: g2.settings.service
+g2.settings.services_tab:
+  base_route: g2.settings.api
+  route_name: g2.settings.services
   title: 'Services'
   weight: 4

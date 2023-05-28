@@ -225,6 +225,10 @@ class SettingsForm extends ConfigFormBase {
         '#default_value' => $value,
       ];
     }
+    $element['show_terms'] = [
+      '#type' => 'checkbox',
+      '#default_value' => $config['wotd']['show_terms'],
+    ] + $this->getInfoFromLabel($schema['wotd']['mapping']['show_terms']['label']);
 
     return $form;
   }

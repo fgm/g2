@@ -16,6 +16,13 @@ block:
       node: true
       terms: true
     show_terms: false
+service:
+  alphabar:
+    contents: 0123456789abcdefghijklmnopqrstuvwxyz
+  latest:
+    max_count: 100
+  top:
+    max_count: 100
 controller:
   main:
     nid: 0
@@ -36,23 +43,16 @@ controller:
     title: 'G2 word of the day RSS feed'
     description: 'One definition a day from the G2 Glossary on !site.'
     feed_author: false
-formatting:
-  hidden_extra_title: true
-  hide_free_tagging: true
-  tooltips_level: 0
-  title: 'G2 Glossary on @title'
 api:
   client:
     remote: 'https://riff.org/g2/entries'
   server:
     enabled: false
-    throttle: 1.0
+    throttle: !!float 1
   # TODO check whether this is not actually a constant.
   local: '<local>'
-service:
-  alphabar:
-    contents: 0123456789abcdefghijklmnopqrstuvwxyz
-  latest:
-    max_count: 100
-  top:
-    max_count: 100
+formatting:
+  hidden_extra_title: true
+  hide_free_tagging: true
+  tooltips_level: 0
+  title: 'G2 Glossary on @title'
