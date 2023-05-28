@@ -227,40 +227,6 @@ function g2_theme() {
 /* ==== Code below this line has not yet been converted to D8 =============== */
 
 /**
- * AJAX autocomplete for entry.
- *
- * @param null|string $us_string
- *   The beginning of the entry.
- *
- * @see g2_menu()
- * @see g2_block()
- */
-function _g2_autocomplete($us_string = NULL) {
-  $matches = [];
-  if (isset($us_string)) {
-    $us_string = drupal_strtolower($us_string);
-    $sq = <<<SQL
-SELECT n.nid, n.title, n.sticky
-FROM {node} n
-WHERE LOWER(n.title) LIKE '%s%%'
-  AND n.type = '%s'
-  AND (n.status = 1)
-ORDER BY n.sticky DESC, LOWER(n.title) ASC;
-SQL;
-    $sq = db_rewrite_sql($sq);
-    $q = db_query_range($sq, $us_string, G2::NODE_TYPE, 0, 10);
-    while (is_object($o = db_fetch_object($q))) {
-      $title = $o->sticky
-        ? t('@title [@nid, sticky]', ['@title' => $o->title, '@nid' => $o->nid])
-        : t('@title [@nid]', ['@title' => $o->title, '@nid' => $o->nid]);
-      $matches[$title] = $o->title;
-    }
-  }
-  drupal_json($matches);
-  exit();
-}
-
-/**
  * Remove tags from a taxonomy array for non-G2-admins.
  *
  * @param array $taxonomy
@@ -743,7 +709,7 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
           '#type' => 'textfield',
           '#title' => t('Entry for the day'),
           '#maxlength' => 60,
-          '#autocomplete_path' => G2::PATH_AUTOCOMPLETE,
+          '#autocomplete_route_name' => G2::ROUTE_AUTOCOMPLETE,
           '#required' => TRUE,
           // !title: we don't filter since this is input, not output,
           // and can contain normally escaped characters, to accommodate
@@ -1122,13 +1088,6 @@ function g2_load($node) {
  */
 function g2_menu() {
   $items = [];
-
-  // AJAX autocomplete callback, so no menu entry.
-  $items[G2::PATH_AUTOCOMPLETE] = [
-    'page callback' => 'G2::autocomplete', // '_g2_autocomplete',
-    'access arguments' => [G2::PERM_VIEW],
-    'type' => MENU_CALLBACK,
-  ];
 
   $items[G2::PATH_WOTD_FEED] = [
     'title' => G2::TITLE_WOTD_FEED,

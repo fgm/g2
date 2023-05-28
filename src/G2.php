@@ -59,6 +59,11 @@ class G2 {
    */
   const DELTA_WOTD = 'wotd';
 
+  /**
+   * Route: autocomplete by title
+   */
+  const ROUTE_AUTOCOMPLETE = 'g2.autocomplete';
+
   // Constants in this group are only listed to remove WSODs, but they still
   // need the associated logic to be converted from variables to config.
   const VARNOFREETAGGING = 'g2-no-freetagging';
@@ -107,7 +112,6 @@ class G2 {
 
   // Constants in this group are only listed to remove WSODs, but they still
   // need to be converting from hook_menu to Symfony routing.
-  const PATH_AUTOCOMPLETE = 'g2/autocomplete';
   const PATH_ENTRIES = 'g2/entries';
   const PATH_INITIAL = 'g2/initial';
   const PATH_NODE_ADD = 'node/add/g2';

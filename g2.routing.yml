@@ -1,3 +1,15 @@
+# G2 node reference.
+g2.autocomplete:
+  path: '/g2/autocomplete/{g2_match}'
+  defaults:
+    _controller: '\Drupal\g2\Controller\Autocomplete::indexAction'
+  requirements:
+    _permission: 'view g2 entries'
+  options:
+    parameters:
+      g2_match:
+        type: 'g2:node:title'
+
 # G2 default homonyms-matching page.
 g2.homonyms:
   path: '/g2/homonyms/{g2_match}'
@@ -94,10 +106,6 @@ g2.settings.services:
 
 
 # ==== The routes below this line are not yet complete =========================
-# G2 node reference.
-g2.autocomplete:
-  path: '/g2/autocomplete/{g2_match}'
-
 # G2 WOTD RSS feed.
 g2.feed.wotd:
   path: '/g2/wotd'

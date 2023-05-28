@@ -77,7 +77,7 @@ function zg2_block_configure($delta) {
         '#type' => 'textfield',
         '#title' => t('Entry for the day'),
         '#maxlength' => 60,
-        '#autocomplete_path' => G2::PATH_AUTOCOMPLETE,
+        '#autocomplete_route_name' => G2::ROUTE_AUTOCOMPLETE,
         '#required' => TRUE,
         // !title: we don't filter since this is input, not output,
         // and can contain normally escaped characters, to accommodate

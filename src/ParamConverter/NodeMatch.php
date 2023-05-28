@@ -59,19 +59,24 @@ class NodeMatch implements ParamConverterInterface {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function convert($value, $definition, $name, array $defaults) {
+  public function convert($value, $definition, $name, array $defaults): mixed {
     // XXX earlier versions used "administer nodes". Which one is better ?
-    $min_status = $this->currentUser->hasPermission(G2::PERM_ADMIN)
+    $hasAdmin = $this->currentUser->hasPermission(G2::PERM_ADMIN);
+    $min_status = $hasAdmin
       ? Node::NOT_PUBLISHED
       : Node::PUBLISHED;
 
+    // @TODO Match on LOWER(title), not title: MySQL does not need it, but other
+    // engines might.
     $query = $this->etm
       ->getStorage('node')
       ->getQuery()
-      ->addTag('node_access')
+      ->accessCheck(!$hasAdmin)
       ->condition('type', G2::NODE_TYPE)
       ->condition('status', $min_status, '>=')
-      ->condition('title', $value . '%', 'LIKE');
+      ->condition('title', $value . '%', 'LIKE')
+      ->sort('sticky', 'desc')
+      ->sort('title');
 
     $ids = $query->execute();
     $nodes = $this->etm->getStorage('node')->loadMultiple($ids);
