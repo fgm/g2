@@ -1,0 +1,28 @@
+{
+    "name": "drupal/g2",
+    "description": "Manage a node-based glossary",
+    "type": "drupal-module",
+    "homepage": "https://drupal.org/project/g2",
+    "support": {
+        "// mikey179/vfsstream": "The fixed version prevents a deprecation warning on org/bovigo/vfs/vfsStream on Drupal 9",
+        "issues": "https://drupal.org/project/issues/g2",
+        "source": "https://git.drupalcode.org/project/g2",
+        "docs": "https://wiki.audean.com/g2/start"
+    },
+    "license": "GPL-2.0-or-later",
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=8.1",
+        "laminas/laminas-feed": "^2.20"
+    },
+    "require-dev": {
+        "mikey179/vfsstream": "v1.6.11"
+    },
+    "extra": {
+        "drush": {
+            "services": {
+                "drush.services.yml": "^11"
+            }
+        }
+    }
+}

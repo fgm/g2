@@ -621,8 +621,9 @@ function zg2_node_info() {
  * - Do not apply to non-WOTD feeds.
  */
 function zg2_node_view($node, $view_mode, $langcode) {
-  $q = \Drupal::requestStack()->getCurrentRequest()->query->get('q');
-  if ($view_mode == 'rss' && $node->type == G2::NODE_TYPE && ($q == G2::PATH_WOTD_FEED)) {
+  $crn = \Drupal::routeMatch()->getRouteName();
+
+  if ($view_mode == 'rss' && $node->type == G2::NODE_TYPE && ($crn == G2::ROUTE_FEED_WOTD)) {
     $node->created = variable_get(G2::VARWOTDDATE,
       \Drupal::time()->getRequestTime());
     $node->name = filter_xss_admin(
@@ -930,7 +931,7 @@ function ztheme_g2_wotd($variables) {
     $ret .= theme(
       'feed_icon',
       [
-        'url' => url(G2::PATH_WOTD_FEED, ['absolute' => TRUE]),
+        'url' => url(G2::ROUTE_FEED_WOTD, ['absolute' => TRUE]),
         // @todo Find a better title.
         'title' => t('Glossary feed'),
       ]

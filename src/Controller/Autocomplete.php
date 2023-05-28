@@ -5,7 +5,6 @@ namespace Drupal\g2\Controller;
 use Drupal\Core\Cache\CacheableJsonResponse;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\g2\G2;
 use Symfony\Component\DependencyInjection\ContainerInterface;

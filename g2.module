@@ -606,33 +606,6 @@ function _g2_wotd($bodysize = 0) {
 }
 
 /**
- * Generate an RSS feed containing the latest WOTD.
- *
- * @return string
- *   XML in UTF-8 encoding
- */
-function _g2_wotd_feed() {
-  global $base_url;
-
-  $channelinfo = [
-    // Link element:  Drupal 4.7->6 defaults to $base url.
-    // Language: Drupal 6 defaults to to $language->language.
-    // Title: Drupal 6 defaults to site name.
-    'title' => variable_get(G2::VARWOTDFEEDTITLE,
-      variable_get(G2::VARWOTDTITLE, G2::DEFWOTDTITLE)),
-
-    // Description: Drupal defaults to $site_mission.
-    'description' => strtr(variable_get(G2::VARWOTDFEEDDESCR, G2::DEFWOTDFEEDDESCR),
-      ['!site' => $base_url]),
-    'managingEditor' => variable_get('site_mail', 'nobody@example.com'),
-  ];
-
-  $items = [variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY)];
-  $ret = node_feed($items, $channelinfo);
-  return $ret;
-}
-
-/**
  * Implements hook_access().
  */
 function g2_access($op /* , $node, $account */) {
@@ -1089,13 +1062,6 @@ function g2_load($node) {
 function g2_menu() {
   $items = [];
 
-  $items[G2::PATH_WOTD_FEED] = [
-    'title' => G2::TITLE_WOTD_FEED,
-    'page callback' => G2::wotd_feed, // '_g2_wotd_feed'
-    'access arguments' => [G2::PERM_VIEW],
-    'type' => MENU_CALLBACK,
-  ];
-
   // Offers to clear referers for all entries.
   $items['g2/wipe'] = [
     'page callback' => 'drupal_get_form',
@@ -1177,9 +1143,9 @@ function g2_node_load($us_nid = 0) {
  * This implementation does not use optional $teaser and $page params.
  */
 function g2_nodeapi(&$node, $op) {
-  $q = \Drupal::requestStack()->getCurrentRequest()->query->get('q');
+  $crn = \Drupal::routeMatch()->getRouteName();
   if (($op == 'rss item') && ($node->type == G2::NODE_TYPE)
-    && ($q == G2::PATH_WOTD_FEED)
+    && ($crn == G2::ROUTE_FEED_WOTD)
   ) {
     $node->created = variable_get(G2::VARWOTDDATE, time());
     $node->name = filter_xss_admin(
@@ -1623,7 +1589,7 @@ function theme_g2_wotd(Node $node = NULL) {
   if (variable_get(G2::VARWOTDFEEDLINK, G2::DEFWOTDFEEDLINK)) {
     $ret .= theme(
       'feed_icon',
-      url(G2::PATH_WOTD_FEED, ['absolute' => TRUE]),
+      url(G2::ROUTE_FEED_WOTD, ['absolute' => TRUE]),
       t('A word a day in your RSS reader')
     );
   }

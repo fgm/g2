@@ -65,7 +65,7 @@ g2.settings:
             show_terms:
               type: boolean
               label: 'Show terms on WOTD node'
-    service:
+    services:
       type: mapping
       label: 'Services'
       mapping:
@@ -90,6 +90,13 @@ g2.settings:
             max_count:
               type: integer
               label: 'Maximum number of entries in top(n) list.'
+        wotd:
+          type: mapping
+          label: 'Word of the day'
+          mapping:
+            entry:
+              type: integer
+              label: 'Node ID of the current WOTD'
 
     controller:
       type: mapping
@@ -151,7 +158,7 @@ g2.settings:
           mapping:
             title:
               type: string
-              label: 'The feed title.'
+              label: 'The feed title'
             description:
               type: string
               label: 'The feed description. The "!site" placeholder is a link to the G2 main page on the site.'

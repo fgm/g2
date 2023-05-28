@@ -213,6 +213,7 @@ class SettingsForm extends ConfigFormBase {
       '#title' => $schema['wotd']['mapping']['body_size']['label'],
       '#default_value' => $config['wotd']['body_size'],
     ];
+
     $element['links'] = [
       '#type' => 'details',
       '#open' => TRUE,
@@ -462,6 +463,13 @@ class SettingsForm extends ConfigFormBase {
         '#type' => 'number',
         '#title' => $schema[$service]['mapping']['max_count']['label'],
         '#default_value' => $config[$service]['max_count'],
+      ];
+
+      $element = &$form[$section]['wotd'];
+      $element['entry'] = [
+        '#type' => 'textfield',
+        '#title' => $schema['wotd']['mapping']['entry']['label'],
+        '#default_value' => $config['wotd']['entry'],
       ];
     }
     return $form;

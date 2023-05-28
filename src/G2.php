@@ -60,9 +60,14 @@ class G2 {
   const DELTA_WOTD = 'wotd';
 
   /**
-   * Route: autocomplete by title
+   * Route: autocomplete by title.
    */
   const ROUTE_AUTOCOMPLETE = 'g2.autocomplete';
+
+  /**
+   * Route: WOTD RSS feed.
+   */
+  const ROUTE_FEED_WOTD = 'g2.feed.wotd';
 
   // Constants in this group are only listed to remove WSODs, but they still
   // need the associated logic to be converted from variables to config.
@@ -85,8 +90,11 @@ class G2 {
   const DEFRANDOMTERMS = [];
   const VARWOTDTERMS = 'g2-wotd-terms';
   const DEFWOTDTERMS = FALSE;
+
   // Default is DEFWOTDTITLE.
+  // Use g2.settings.controller.wotd.title.
   const VARWOTDFEEDTITLE = 'g2-wotd-feed-title';
+
   const VARWOTDTITLE = 'g2-wotd-title';
   const DEFWOTDTITLE = '';
   const VARWOTDFEEDDESCR = 'g2-wotd-feed-description';
@@ -116,11 +124,8 @@ class G2 {
   const PATH_INITIAL = 'g2/initial';
   const PATH_NODE_ADD = 'node/add/g2';
   const PATH_SETTINGS = 'g2/admin/settings';
-  const PATH_WOTD_FEED = 'g2/wotd/feed';
-
 
   const TITLE_MAIN = 'Glossary';
-  const TITLE_WOTD_FEED = 'Word of the day';
 
   /**
    * Encodes terminal path portions for G2.
