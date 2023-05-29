@@ -6,17 +6,20 @@
  *
  * @todo Test wipes, rss
  *
- * @copyright 2005-2023 Frédéric G. Marand, for Ouest Systemes Informatiques.
- *
  * @todo For D8, in decreasing priorities
  *  - implement SettingsForm::validateForm() using Requirements
  *  - ensure theme is flushed whenever block.alphabar.row_length config is
  *    updated.
  *  - make g2_requirements() less verbose, at least on success.
  *  - find a way to add the title to the node.add route for ease of creation.
+ * @copyright 2005-2023 Frédéric G. Marand, for Ouest Systemes Informatiques.
+ *
  * @link http://wiki.audean.com/g2/choosing @endlink
  */
 
+use Drupal\Component\Utility\Html;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\GeneratedLink;
@@ -34,9 +37,9 @@ use Drupal\node\NodeInterface;
  */
 function _g2_alphabar() {
   /** @var \Drupal\g2\Alphabar $alphabar */
-  $alphabar = \Drupal::service('g2.alphabar');
+  $alphabar = Drupal::service('g2.alphabar');
   $ret = array_map(
-    function (GeneratedLink $link) {
+    function(GeneratedLink $link) {
       return "$link";
     },
     $alphabar->getLinks()
@@ -55,6 +58,54 @@ function _g2_api() {
 }
 
 /**
+ * Log a hit from a referrer.
+ *
+ * Note that this does not work on cached pages, and will log hits from all
+ * pages linking to a g2_entry, even if it is only from a block, not just from
+ * the main content.
+ *
+ * @param \Drupal\Core\Entity\EntityInterface $node
+ *   The node being viewed
+ */
+function _g2_insert_referrer(EntityInterface $node): void {
+  global $base_url;
+  $referer = $_SERVER['HTTP_REFERER'] ?? '';
+  if (empty($referer)) {
+    return;
+  }
+  // For now, we do not handle non-local referers, which are no longer emitted
+  // by modern (2025) browsers in most cases.
+  if (!str_starts_with($referer, $base_url . '/')) {
+    return;
+  }
+
+  // Extract local path, possibly aliased.
+  $referer = mb_substr($referer, mb_strlen($base_url) + 1);
+  // Unalias it.
+  $referer = Drupal::service('path_alias.manager')->getPathByAlias($referer);
+  // Sanitize it.
+  $referer = Html::escape($referer);
+
+  $sq = <<<SQL
+UPDATE {g2_referer}
+SET incoming = incoming + 1
+WHERE nid = :nid AND referer = :referer;
+SQL;
+  $args = ['nid' => $node->id(), 'referer' => $referer];
+  $stmt = Drupal::database()
+    ->prepareStatement($sq, [], TRUE);
+  $stmt->execute($args);
+  if (!$stmt->rowCount()) {
+    $sq = <<<SQL
+INSERT INTO {g2_referer}
+    (nid, referer, incoming)
+VALUES (:nid, :referer, 1);
+SQL;
+    Drupal::database()->query($sq, $args);
+  }
+}
+
+/**
  * XML-RPC callback : returns a list of the latest n nodes.
  *
  * "Latest" nodes are identified by time of latest update.
@@ -66,7 +117,7 @@ function _g2_api() {
  *   Note that the results are NOT filtered, and must be filtered when used.
  */
 function _g2_latest($count = NULL) {
-  $config = \Drupal::config('g2.settings');
+  $config = Drupal::config('g2.settings');
   $service_max = $config->get('services.latest.max_count');
   $api_throttle = $config->get('api.server.throttle');
   $actual_max = $api_throttle * $service_max;
@@ -77,7 +128,7 @@ function _g2_latest($count = NULL) {
   }
 
   /** @var \Drupal\g2\Latest $latest */
-  $latest = \Drupal::service('g2.latest');
+  $latest = Drupal::service('g2.latest');
   $links = $latest->getLinks($count);
   $result = [];
 
@@ -105,7 +156,7 @@ function _g2_latest($count = NULL) {
  *   Note that the title of the nodes is NOT filtered.
  */
 function _g2_top($count = NULL, $daily_top = FALSE) {
-  $config = \Drupal::config('g2.settings');
+  $config = Drupal::config('g2.settings');
   $service_max = $config->get('services.top.max_count');
   $api_throttle = $config->get('api.server.throttle');
   $actual_max = $api_throttle * $service_max;
@@ -116,7 +167,7 @@ function _g2_top($count = NULL, $daily_top = FALSE) {
   }
 
   /** @var \Drupal\g2\Top $top */
-  $top = \Drupal::service('g2.top');
+  $top = Drupal::service('g2.top');
   $statistic = $daily_top ? Top::STATISTICS_DAY : Top::STATISTICS_TOTAL;
   $links = $top->getLinks($count, $statistic);
   $result = [];
@@ -176,7 +227,7 @@ function g2_help($route_name, RouteMatchInterface $route_match) {
  * Implements hook_theme().
  */
 function g2_theme() {
-  $config = \Drupal::config('g2.settings');
+  $config = Drupal::config('g2.settings');
   $ret = [
     // Checked for D8.
     'g2_alphabar' => [
@@ -209,17 +260,6 @@ function g2_theme() {
     // --- Older versions ------------------------------------------------------
     'g2_random' => ['variables' => [G2::TYPE => NULL]],
     'g2_wotd' => ['variables' => [G2::TYPE => NULL]],
-
-    'g2_body' => ['variables' => ['title' => '', 'body' => '']],
-    'g2_period' => ['variables' => ['title' => '', 'period' => '']],
-    'g2_teaser' => ['variables' => ['title' => '', 'teaser' => '']],
-    'g2_field' => [
-      'variables' => [
-        'expansion' => '',
-        'name' => '',
-        'title' => '',
-      ],
-    ],
   ];
   return $ret;
 }
@@ -404,7 +444,7 @@ WHERE n.type = '%s' AND (n.status = 1)
   AND NOT (n.title = '%s' OR n.nid = %d);
 SQL;
   $sq = db_rewrite_sql($sq);
-  $q = \Drupal::database()->query($sq, G2::BUNDLE, $random, $wotd_nid);
+  $q = Drupal::database()->query($sq, G2::BUNDLE, $random, $wotd_nid);
   $n = db_result($q);
 
   // No need to mt_srand() since PHP 4.2.
@@ -422,7 +462,7 @@ SQL;
   $sq = db_rewrite_sql($sq);
   $q = db_query_range($sq, G2::BUNDLE, $random, $wotd_nid, $rand, 1);
   $nid = db_result($q);
-  $node = \Drupal::service('entity_type.manager')
+  $node = Drupal::service('entity_type.manager')
     ->getStorage(G2::TYPE)
     ->load($nid);
   $node->taxonomy = variable_get(G2::VARRANDOMTERMS, G2::DEFRANDOMTERMS)
@@ -467,12 +507,12 @@ function _g2_referer_links_submit(&$form, &$form_state) {
 function _g2_referer_wipe($nid = NULL) {
   if (isset($nid)) {
     $sq = 'DELETE from {g2_referer} WHERE nid = %d';
-    \Drupal::database()->query($sq, $nid);
+    Drupal::database()->query($sq, $nid);
     drupal_goto('node/' . $nid);
   }
   else {
     $sq = 'DELETE from {g2_referer}';
-    \Drupal::database()->query($sq);
+    Drupal::database()->query($sq);
   }
 }
 
@@ -489,7 +529,7 @@ function _g2_referer_wipe($nid = NULL) {
 function _g2_wotd($bodysize = 0) {
   // No need for a static: this function is normally never called twice.
   $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
-  $node = \Drupal::service('entity_type.manager')
+  $node = Drupal::service('entity_type.manager')
     ->getStorage(G2::TYPE)
     ->load($nid);
   if (empty($node)) {
@@ -581,7 +621,7 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
         // Convert nid to "title [<nid>]" even if missing.
         // @see _g2_autocomplete()
         $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
-        $node = \Drupal::service('entity_type.manager')
+        $node = Drupal::service('entity_type.manager')
           ->getStorage(G2::TYPE)
           ->load($nid);
         if (empty($node)) {
@@ -779,12 +819,12 @@ function g2_cron() {
  * Implements hook_delete().
  */
 function g2_delete(&$node) {
-  \Drupal::database()
+  Drupal::database()
     ->query('DELETE FROM {g2_node} WHERE nid = %d', $node->nid);
 }
 
 /**
- * Menu loader for %g2_entry.
+ * Loader for G2_entries.
  *
  * Only returns unpublished nodes to users with "administer nodes".
  *
@@ -793,6 +833,8 @@ function g2_delete(&$node) {
  *
  * @return array
  *   Nodes matching the title.
+ *
+ * @see _g2_filter_process
  */
 function g2_entry_load($title) {
   $sq = <<<SQL
@@ -805,10 +847,10 @@ SQL;
   $min_status = user_access('administer nodes')
     ? Node::NOT_PUBLISHED
     : Node::PUBLISHED;
-  $q = \Drupal::database()->query($sq, G2::BUNDLE, $min_status, $title);
+  $q = Drupal::database()->query($sq, G2::BUNDLE, $min_status, $title);
   $nodes = [];
   while (is_object($node = db_fetch_object($q))) {
-    $nodes[$node->nid] = \Drupal::service('entity_type.manager')
+    $nodes[$node->nid] = Drupal::service('entity_type.manager')
       ->getStorage(G2::TYPE)
       ->load($node->nid);
   }
@@ -855,117 +897,6 @@ function g2_filter_tips($delta, $format, $long = FALSE) {
 }
 
 /**
- * Implements hook_form().
- */
-function g2_form(&$node, $form_state) {
-  if (!isset($node->title)) {
-    $q = \Drupal::requestStack()->getCurrentRequest()->query->get('q');
-    $node->title = check_plain(
-      drupal_substr(
-        $q,
-        drupal_strlen(G2::PATH_NODE_ADD) + 1
-      )
-    );
-  }
-
-  $type = node_get_types('type', G2::BUNDLE);
-  $form = [];
-  $form['content'] = [
-    '#type' => 'fieldset',
-    '#title' => t('Contents'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-    '#weight' => -10,
-  ];
-  $form['content']['title'] = [
-    '#type' => 'textfield',
-    '#title' => filter_xss_admin($type->title_label),
-    '#required' => TRUE,
-    '#default_value' => $node->title,
-  ];
-  $form['content']['teaser'] = [
-    '#type' => 'textfield',
-    '#title' => t('Entry expansion (for acronyms) or translation'),
-    '#required' => FALSE,
-    '#default_value' => $node->teaser ?? NULL,
-  ];
-  $form['content']['body'] = [
-    '#type' => 'textarea',
-    '#title' => filter_xss_admin($type->body_label),
-    '#rows' => 10,
-    '#required' => TRUE,
-    '#default_value' => $node->body ?? NULL,
-  ];
-  $form['content']['format'] = filter_form($node->format);
-  $form['content']['period'] = [
-    '#type' => 'textfield',
-    '#title' => t('Life period of this entry'),
-    '#required' => FALSE,
-    '#description' => t(
-      'This is the period of time during which the entity described by the term was actually alive, not the lifetime of the term itself, since any term is immortal to some extent.'
-    ),
-    '#default_value' => $node->period ?? NULL,
-  ];
-  $form['publishing'] = [
-    '#type' => 'fieldset',
-    '#title' => t('Editor-only information'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-    '#description' => t('Information in this box is not published in view mode, only during node edition.'),
-    '#weight' => -5,
-  ];
-  $form['publishing']['complement'] = [
-    '#type' => 'textarea',
-    '#title' => t('Complement'),
-    '#rows' => 10,
-    '#required' => FALSE,
-    '#description' => t('Information not pertaining to origin of document: comments, notes...'),
-    '#default_value' => $node->complement ?? NULL,
-  ];
-  $form['publishing']['origin'] = [
-    '#type' => 'textarea',
-    '#title' => t('Origin/I.P.'),
-    '#rows' => 10,
-    '#required' => FALSE,
-    '#description' => t('Informations about the origin/IP licensing of the definition'),
-    '#default_value' => $node->origin ?? NULL,
-  ];
-
-  return $form;
-}
-
-/**
- * Implements hook_init().
- *
- * - place paths starting by the current G2 main path in G2 context.
- */
-function g2_init() {
-  if (arg(0) == variable_get(G2::VARPATHMAIN, G2::DEFPATHMAIN)) {
-    $GLOBALS['g2-context'] = TRUE;
-  }
-}
-
-/**
- * Implements hook_insert().
- *
- * @XXX New feature to add: make extra node info revision-aware
- */
-function g2_insert($node) {
-  drupal_write_record('g2_node', $node);
-}
-
-/**
- * Implements hook_load().
- *
- * @XXX New feature to add: make extra node info revision-aware
- */
-function g2_load($node) {
-  $ret = $ret = db_fetch_object(\Drupal::database()
-    ->query('SELECT * FROM {g2_node} WHERE nid = %s', $node->nid));
-  return $ret;
-}
-
-/**
  * Menu loader for g2_node.
  *
  * @param int $us_nid
@@ -977,7 +908,7 @@ function g2_load($node) {
 function g2_node_load($us_nid = 0) {
   // Safety with regard to $us_nid is checked within node_load()
   if (is_numeric($us_nid)) {
-    $node = \Drupal::entityTypeManager()
+    $node = Drupal::entityTypeManager()
       ->getStorage(G2::TYPE)
       ->load($us_nid);
   }
@@ -989,33 +920,6 @@ function g2_node_load($us_nid = 0) {
   }
 
   return $node;
-}
-
-/**
- * Implements hook_nodeapi().
- *
- * Change the publication date only for the WOTD feed so that even old
- * terms, when chosen for publication, reflect the publication date,
- * instead of the node creation date as is the default.
- *
- * - Do not apply to non-G2 nodes.
- * - Do not apply to non-WOTD feeds.
- *
- * This implementation does not use optional $teaser and $page params.
- */
-function g2_nodeapi(&$node, $op) {
-  $crn = \Drupal::routeMatch()->getRouteName();
-  if (($op == 'rss item') && ($node->type == G2::BUNDLE)
-    && ($crn == G2::ROUTE_FEED_WOTD)
-  ) {
-    $node->created = variable_get(G2::VARWOTDDATE, time());
-    $node->name = filter_xss_admin(
-      strtr(
-        variable_get(G2::VARWOTDFEEDAUTHOR, '@author'),
-        ['@author' => check_plain($node->name)]
-      )
-    );
-  }
 }
 
 /**
@@ -1040,23 +944,6 @@ function g2_perm() {
   );
 
   return $ret;
-}
-
-/**
- * Implements hook_preprocess_page().
- *
- * - introduce G2 page template suggestion when page is in a G2 context.
- */
-function g2_preprocess_page(&$vars) {
-  if (!empty($GLOBALS['g2-context'])) {
-    $vars['template_files'][] = 'page-g2';
-    if (!empty($vars['body_classes'])) {
-      $vars['body_classes'] .= ' context-g2';
-    }
-    else {
-      $vars['body_classes'] = 'context-g2';
-    }
-  }
 }
 
 /**
@@ -1128,16 +1015,9 @@ function g2_referer_wipe_confirm_form(
  */
 function g2_referer_wipe_confirm_form_submit($form, &$form_state) {
   _g2_referer_wipe();
-  \Drupal::messenger()
+  Drupal::messenger()
     ->addStatus(t('Referer information has been erased on all G2 entries'));
   $form_state['redirect'] = G2::PATH_SETTINGS;
-}
-
-/**
- * Implements hook_update().
- */
-function g2_update($node) {
-  drupal_write_record('g2_node', $node, 'nid');
 }
 
 /**
@@ -1186,99 +1066,22 @@ SQL;
 }
 
 /**
- * Implements hook_view().
+ * Implements hook_ENTITY_TYPE_view().
  */
-function g2_view(&$node, $teaser = FALSE, $page = FALSE) {
-  if ($page) {
-    $GLOBALS['g2-context'] = TRUE;
+function g2_node_view(array &$build, EntityInterface $node, EntityViewDisplayInterface $display, $view_mode) {
+  if ($node->bundle() != G2::BUNDLE) {
+    return;
+  }
+  $config = Drupal::config(G2::CONFIG_NAME);
+
+  // On the WOTD feed, force the node date to the WOTD date or current time.
+  if ($view_mode === 'rss' && Drupal::routeMatch()
+      ->getRouteName() === G2::ROUTE_FEED_WOTD) {
+    $node->created = (Drupal::state()->get(G2::VARWOTDDATE) ?: time());
   }
 
-  $title = check_plain($node->title);
-
-  if ($page) {
-    $bc = drupal_get_breadcrumb();
-    $bc[] = l(G2::TITLE_MAIN,
-      $g2_home = variable_get(G2::VARPATHMAIN, G2::DEFPATHMAIN));
-    $initial = drupal_substr($title, 0, 1);
-    $bc[] = l($title[0], G2::PATH_INITIAL . '/' . $initial);
-    unset($initial);
-    drupal_set_breadcrumb($bc);
-    _g2_override_site_name();
-  }
-
-  // Build more link, apply input format, including sanitizing.
-  $node = node_prepare($node, $teaser);
-
-  $node->content['body'] = [
-    '#value' => theme('g2_body', t('Definition'), $node->body),
-    '#weight' => 1,
-  ];
-
-  if (!empty($node->teaser)) {
-    $node->content['teaser'] = [
-      '#value' => theme('g2_teaser', t('In other words'), $node->teaser),
-      '#weight' => 0,
-    ];
-  }
-
-  if (!empty($node->period)) {
-    $node->content['period'] = [
-      '#value' => theme('g2_period', t('Term time period'),
-        check_plain($node->period)),
-      '#weight' => 2,
-    ];
-  }
-
-  // The following line adds invisible text that will be prepended to
-  // the node in case some search routine favors the beginning of the
-  // body. It can be turned off in case search engines frown upon this.
-  if (variable_get(G2::VARHIDDENTITLE, G2::DEFHIDDENTITLE)) {
-    $node->content['extra_title'] = [
-      '#prefix' => '<div style="display: none">',
-      '#value' => check_plain($node->title),
-      '#suffix' => '</div>',
-      '#weight' => -1,
-    ];
-  }
-
-  // Modify displayed taxonomy according to our settings.
-  $taxonomy = taxonomy_node_get_terms($node);
-  $node->taxonomy = _g2_comb_taxonomy($taxonomy);
-
-  global $base_url;
-  $referer = referer_uri();
-
-  // Is referer local ? MUST use ===, otherwise FALSE would match too.
-  if (!empty($referer) && strpos($referer, $base_url . '/') === 0) {
-    // Extract local path, possibly aliased.
-    $referer = drupal_substr($referer, drupal_strlen($base_url) + 1);
-
-    // Unalias it.
-    $referer = drupal_get_normal_path($referer);
-
-    // Sanitize it.
-    $referer = check_plain($referer);
-
-    // Drupal_write_record() is too costly to be used on frequent and
-    // non-alterable operations like logging a node view.
-    $sq = <<<SQL
-UPDATE {g2_referer}
-SET incoming = incoming + 1
-WHERE nid = %d AND referer = '%s';
-SQL;
-    \Drupal::database()->query($sq, $node->nid, $referer);
-    if (!db_affected_rows()) {
-      $sq = <<<SQL
-INSERT INTO {g2_referer}
-    (nid, referer, incoming)
-VALUES (%d, '%s', 1);
-SQL;
-      \Drupal::database()->query($sq, $node->nid, $referer);
-    }
-  }
-  else {
-    // Referer is non-local.
-    // Maybe we'll do something some day, but not right now.
+  if ($config->get('controller.main.log_referrers')) {
+    _g2_insert_referrer($node);
   }
 
   return $node;
@@ -1290,7 +1093,7 @@ SQL;
 function g2_views_api() {
   return [
     'api' => '2.0',
-    'path' =>  ExtensionPathResolver::getPath('module', 'g2') . '/views',
+    'path' => ExtensionPathResolver::getPath('module', 'g2') . '/views',
   ];
 }
 
@@ -1312,48 +1115,12 @@ function g2_xmlrpc() {
     'g2.wotd' => '_g2_wotd',
   ];
 
-  $enabled = \Drupal::config('g2.settings')->get('api.server.enabled');
+  $enabled = Drupal::config('g2.settings')->get('api.server.enabled');
   if (!$enabled) {
     $mapping = [];
   }
 
   return $mapping;
-}
-
-/**
- * Return a themed g2 node body.
- *
- * Title and body are filtered prior to invoking this theme function
- * within g2_view(), so it performs no filtering on its own.
- *
- * @param title $title
- *   The title for the body container. A g2_view() constant string.
- * @param body $body
- *   The body itself, filtered by node_prepare().
- *
- * @return string
- *   HTML
- */
-function theme_g2_body($title, $body) {
-  return theme('box', $title, $body);
-}
-
-/**
- * Return a themed g2 node time period.
- *
- * Title and period are filtered prior to invoking this theme function
- * within g2_view(), so it performs no filtering on its own.
- *
- * @param string $title
- *   The title for the period container.
- * @param string $period
- *   The period itself. filtered by check_plain().
- *
- * @return string
- *   HTML
- */
-function theme_g2_period($title, $period) {
-  return theme('box', $title, "<p>$period</p>");
 }
 
 /**
@@ -1366,7 +1133,7 @@ function theme_g2_period($title, $period) {
  *   A node to display.
  *
  * @return string
- *   HTML
+ *   HTML: the themed entry.
  */
 function theme_g2_random($node = NULL) {
   $ret = l($node->title, 'node/' . $node->nid);
@@ -1379,27 +1146,6 @@ function theme_g2_random($node = NULL) {
   $ret .= _g2_entry_terms($node);
   $ret .= theme('more_link', url('node/' . $node->nid), t('&nbsp;(+)'));
   return $ret;
-}
-
-/**
- * Return a themed g2 node teaser.
- *
- * Teasers normally contain expansions for acronyms/initialisms,
- * or translations for foreign terms.
- *
- * Title and teaser are filtered prior to invoking this theme function
- * within g2_view(), so it performs no filtering on its own.
- *
- * @param string $title
- *   The title for the teaser container. A g2_view() constant string.
- * @param string $teaser
- *   The teaser itself, filtered by node_prepare().
- *
- * @return string
- *   HTML
- */
-function theme_g2_teaser($title, $teaser) {
-  return theme('box', $title, "<p>$teaser</p>");
 }
 
 /**
@@ -1454,5 +1200,6 @@ function theme_g2_wotd(Node $node = NULL) {
       t('A word a day in your RSS reader')
     );
   }
+
   return $ret;
 }

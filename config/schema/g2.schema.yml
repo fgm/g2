@@ -112,6 +112,9 @@ g2.settings:
             route:
               type: string
               label: 'The route to use for the G2 main page. Allows replacement by a custom route, defaulting to g2.main. If both route and nid are non-empty, the route takes precedence over the nid.'
+            log_referrers:
+              type: boolean
+              label: 'Log referrers on g2_entry views. Be aware that this is not triggered by anonymous views, and that a referrer can carry content anywhere in the page, not just in the main content. In particular, any page carrying a G2 block will automatically create such references.'
         entries:
           type: mapping
           label: 'Entries-by-name page'
@@ -196,9 +199,6 @@ g2.settings:
       type: mapping
       label: 'Content formatting'
       mapping:
-        hidden_extra_title:
-          type: boolean
-          label: 'Add a "hidden extra title" on G2 entry node views.'
         hide_free_tagging:
           type: boolean
           label: 'Hide information from tag vocabularies to non-G2 admins.'

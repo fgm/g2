@@ -1,9 +1,9 @@
-uuid: cf8ca554-60b5-40c1-8e57-4d6817fda175
 langcode: en
 status: true
 dependencies:
   config:
     - field.field.node.g2_entry.body
+    - field.field.node.g2_entry.g2_period
     - field.field.node.g2_entry.g2_complement
     - field.field.node.g2_entry.g2_context
     - field.field.node.g2_entry.g2_expansion
@@ -19,7 +19,7 @@ mode: default
 content:
   body:
     type: text_textarea_with_summary
-    weight: 3
+    weight: 4
     region: content
     settings:
       rows: 9
@@ -29,13 +29,21 @@ content:
     third_party_settings: {  }
   created:
     type: datetime_timestamp
-    weight: 7
+    weight: 8
     region: content
     settings: {  }
     third_party_settings: {  }
+  g2_period:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: 'A time period during which the entity of concept described by the term was in use. '
+    third_party_settings: {  }
   g2_complement:
     type: text_textarea
-    weight: 4
+    weight: 5
     region: content
     settings:
       rows: 5
@@ -61,7 +69,7 @@ content:
     third_party_settings: {  }
   g2_origin:
     type: text_textarea
-    weight: 5
+    weight: 6
     region: content
     settings:
       rows: 3
@@ -69,27 +77,27 @@ content:
     third_party_settings: {  }
   path:
     type: path
-    weight: 10
+    weight: 11
     region: content
     settings: {  }
     third_party_settings: {  }
   promote:
     type: boolean_checkbox
-    weight: 8
+    weight: 9
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
   status:
     type: boolean_checkbox
-    weight: 11
+    weight: 12
     region: content
     settings:
       display_label: true
     third_party_settings: {  }
   sticky:
     type: boolean_checkbox
-    weight: 9
+    weight: 10
     region: content
     settings:
       display_label: true
@@ -104,7 +112,7 @@ content:
     third_party_settings: {  }
   uid:
     type: entity_reference_autocomplete
-    weight: 6
+    weight: 7
     region: content
     settings:
       match_operator: CONTAINS

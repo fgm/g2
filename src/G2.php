@@ -139,8 +139,6 @@ class G2 {
   const VARWOTDDATE = 'g2-wotd-date';
   const VARPATHMAIN = 'g2-path-main';
   const DEFPATHMAIN = 'g2.main';
-  const VARHIDDENTITLE = 'g2-hidden-title';
-  const DEFHIDDENTITLE = FALSE;
   const VARLOGREFERRERS = 'g2-log-referrers';
   const DEFLOGREFERRERS = TRUE;
   const VARTOPITEMCOUNT = 'g2-top-item-count';

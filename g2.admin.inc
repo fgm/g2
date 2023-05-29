@@ -63,12 +63,6 @@ function g2_admin_settings() {
     '#type' => 'fieldset',
     '#title' => t('Site automation'),
   ];
-  $form['automation'][G2::VARHIDDENTITLE] = [
-    '#type' => 'checkbox',
-    '#title' => t('Embed a CSS-masked version of the definition titles in the node rendition'),
-    '#default_value' => variable_get(G2::VARHIDDENTITLE, G2::DEFHIDDENTITLE),
-    '#description' => t('This setting enables search to work better on definition titles, but can be frowned upon by search engines.'),
-  ];
   $form['automation'][G2::VARNOFREETAGGING] = [
     '#type' => 'checkbox',
     '#title' => t('Hide terms in free-tagging vocabularies from users without G2 administrator permissions.'),

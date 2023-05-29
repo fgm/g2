@@ -322,34 +322,6 @@ function zg2_cron() {
 }
 
 /**
- * Implements hook_ctools_plugin_api().
- */
-function zg2_ctools_plugin_api($module, $api) {
-  if ($module == 'context' && $api == 'context') {
-    $ret = [
-      'version' => 3,
-      'path' => ExtensionPathResolver::getPath('module', 'g2') . '/context',
-      // Not until http://drupal.org/node/1242632 is fixed
-      // 'file' => 'g2.context_defaults.inc'.
-    ];
-  }
-  else {
-    $ret = NULL;
-  }
-
-  return $ret;
-}
-
-/**
- * Implements hook_delete().
- */
-function zg2_delete($node) {
-  \Drupal::database()->delete('g2_node')
-    ->condition('nid', $node->nid)
-    ->execute();
-}
-
-/**
  * Implements hook_field_extra_fields().
  */
 function zg2_field_extra_fields() {
@@ -510,35 +482,6 @@ function zg2_form(&$node, $form_state) {
 }
 
 /**
- * Implements hook_insert().
- *
- * XXX New feature to add: make extra node info revision-aware.
- */
-function zg2_insert($node) {
-  drupal_write_record('g2_node', $node);
-}
-
-/**
- * Implements hook_load().
- *
- * Access control was performed earlier by core: no need to do it again here.
- *
- * XXX New feature to add: make extra node info revision-aware.
- */
-function zg2_load($nodes) {
-  $q = $q = \Drupal::database()->select('g2_node', 'gn');
-  $result = $q->fields('gn')
-    ->condition('gn.nid', array_keys($nodes), 'IN')
-    ->execute();
-
-  foreach ($result as $row) {
-    foreach ($row as $property => $col) {
-      $nodes[$row->nid]->$property = $col;
-    }
-  }
-}
-
-/**
  * Menu loader for g2_node.
  *
  * @param int $us_nid
@@ -590,52 +533,6 @@ function zg2_node_access($node, $op, $account) {
 }
 
 /**
- * Implements hook_node_info().
- */
-function zg2_node_info() {
-  $ret = [
-    G2::BUNDLE => [
-      'name' => t('G2 entry'),
-      'base' => 'g2',
-      'description' => t(
-        'A G2 entry is a term (usual sense, not drupal sense) for which a definition and various additional information is provided, notably at the editorial level'
-      ),
-      'help' => t(
-        'The title should be either a acronym/initialism or a normal word. If it is an acronym/initialism, use the expansion field to decode it, not the definition field.'
-      ),
-      'has_title' => TRUE,
-      'title_label' => t('Term to define'),
-    ],
-  ];
-  return $ret;
-}
-
-/**
- * Implements hook_node_view().
- *
- * Change the publication date only for the WOTD feed so that even old
- * terms, when chosen for publication, reflect the publication date,
- * instead of the node creation date as is the default.
- *
- * - Do not apply to non-G2 nodes.
- * - Do not apply to non-WOTD feeds.
- */
-function zg2_node_view($node, $view_mode, $langcode) {
-  $crn = \Drupal::routeMatch()->getRouteName();
-
-  if ($view_mode == 'rss' && $node->type == G2::BUNDLE && ($crn == G2::ROUTE_FEED_WOTD)) {
-    $node->created = variable_get(G2::VARWOTDDATE,
-      \Drupal::time()->getRequestTime());
-    $node->name = filter_xss_admin(
-      strtr(
-        variable_get(G2::VARWOTDFEEDAUTHOR, '@author'),
-        ['@author' => check_plain($node->name)]
-      )
-    );
-  }
-}
-
-/**
  * Implements hook_permission().
  */
 function zg2_permission() {
@@ -653,24 +550,6 @@ function zg2_permission() {
     ],
   ];
   return $ret;
-}
-
-/**
- * Implements hook_preprocess_page().
- *
- * - Introduce G2 page template suggestion when page is in a G2 context.
- */
-function zg2_preprocess_page(&$vars) {
-  if ($plugin = context_get_plugin('reaction', 'g2_template')) {
-    $plugin->execute($vars);
-  }
-}
-
-/**
- * Implements hook_update().
- */
-function zg2_update($node) {
-  drupal_write_record('g2_node', $node, 'nid');
 }
 
 /**
@@ -714,80 +593,6 @@ function zg2_user_view($account, $view_mode, $langcode) {
 }
 
 /**
- * Implements hook_view().
- */
-function zg2_view($node, $view_mode) {
-  $title = check_plain($node->title);
-
-  if (node_is_page($node)) {
-    $bc = drupal_get_breadcrumb();
-    $bc[] = l(G2::TITLE_MAIN,
-      $g2_home = variable_get(G2::VARPATHMAIN, G2::DEFPATHMAIN));
-    $initial = drupal_substr($title, 0, 1);
-    $bc[] = l($title[0], $g2_home . '/initial/' . $initial);
-    unset($initial);
-    drupal_set_breadcrumb($bc);
-    G2::override_site_name();
-
-    // Only log referrers on full page views.
-    if (variable_get(G2::VARLOGREFERRERS, G2::DEFLOGREFERRERS)) {
-      G2::log_referrers($node);
-    }
-
-    // Activate context.
-    if ($plugin = context_get_plugin('condition', 'g2')) {
-      $plugin->execute('g2_node');
-    }
-  }
-
-  /*
-  // Build more link, apply input format, including sanitizing.
-  $node = node_prepare($node, $teaser);
-   */
-
-  if (!empty($node->expansion)) {
-    $node->content['g2_expansion'] = [
-      '#markup' => theme(
-        'g2_field',
-        [
-          'name' => 'expansion',
-          'title' => t('In other words'),
-          'data' => $node->expansion,
-        ]
-      ),
-    ];
-  }
-
-  if (!empty($node->period)) {
-    $node->content['g2_period'] = [
-      '#markup' => theme(
-        'g2_field',
-        [
-          'name' => 'period',
-          'title' => t('Term time period'),
-          'data' => $node->period,
-        ]
-      ),
-      '#weight' => 2,
-    ];
-  }
-
-  // The following line adds invisible text that will be prepended to
-  // the node in case some search routine favors the beginning of the
-  // body. It can be turned off in case search engines frown upon this.
-  if (variable_get(G2::VARHIDDENTITLE, G2::DEFHIDDENTITLE)) {
-    $node->content['g2_extra_title'] = [
-      '#markup' => '<div class="g2-extra-title">'
-      . check_plain($node->title)
-      . '</div>',
-      '#weight' => -1,
-    ];
-  }
-
-  return $node;
-}
-
-/**
  * Implements hook_view_api().
  */
 function zg2_views_api() {
@@ -795,41 +600,6 @@ function zg2_views_api() {
     'api' => '3.0',
     'path' => ExtensionPathResolver::getPath('module', 'g2') . '/views',
   ];
-}
-
-/**
- * Return a themed g2 node pseudo-field, like expansion or period.
- *
- * These are not filtered prior to invoking this theme function
- * within g2_view() (unlike D4.x->D6), so function performs filter_xss'ing.
- *
- * @param array $variables
- *   - Key g2-name: the name of the pseudo-field.
- *   - Key g2-title: the title for the pseudo-field.
- *   - Key g2-data: the contents of the pseudo-field.
- *
- * @return string
- *   HTML: the themed pseudo-field.
- */
-function ztheme_g2_field($variables) {
-  // Set in code, not by user, so assumed safe.
-  $title = $variables['title'];
-
-  $name = 'g2-' . $variables['name'];
-
-  // Set by user, so unsafe.
-  $data = filter_xss($variables['data']);
-
-  $ret = <<<EOT
-<div class="field field-name-body field-type-text-with-summary field-label-above $name">
-<div class="field-label">$title:</div>
-<div class="field-item even">
-<p>$data</p>
-</div><!-- field-item -->
-</div><!-- field ... -->
-EOT;
-
-  return $ret;
 }
 
 /**
@@ -848,8 +618,8 @@ function ztheme_g2_random($variables) {
   $uri = entity_uri(G2::TYPE, $node);
   $ret = l($node->title, $uri['path'], $uri['options']);
   if (!empty($node->expansion)) {
-    // Why t() ? Because varying languages have varying takes on spaces before /
-    // after semicolons.
+    // Why t() ? Because varying languages have varying takes on spaces
+    // before/after semicolons.
     $ret .= t(': @expansion', ['@expansion' => $node->expansion]);
   }
   // No longer hard coded: use a view_mode instead.
@@ -874,8 +644,8 @@ function ztheme_g2_random($variables) {
  *   The node for the word of the day. teaser and body are already filtered and
  *   truncated if needed.
  *
- * @return null|string
- *   title / nid / teaser / [body]
+ * @return string
+ *   Title / nid / teaser / [body].
  *
  * @todo 20110122: replace with just a node rendered with a specific view_mode
  */

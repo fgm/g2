@@ -4,6 +4,7 @@ dependencies:
   config:
     - core.entity_view_mode.node.rss
     - field.field.node.g2_entry.body
+    - field.field.node.g2_entry.g2_period
     - field.field.node.g2_entry.g2_complement
     - field.field.node.g2_entry.g2_context
     - field.field.node.g2_entry.g2_expansion
@@ -48,5 +49,6 @@ content:
     weight: 3
     region: content
 hidden:
+  g2_period: true
   g2_complement: true
   g2_origin: true

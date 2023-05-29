@@ -54,7 +54,6 @@ api:
   # TODO check whether this is not actually a constant.
   local: '<local>'
 formatting:
-  hidden_extra_title: true
   hide_free_tagging: true
   tooltips_level: 0
   title: 'G2 Glossary on @title'

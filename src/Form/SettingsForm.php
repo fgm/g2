@@ -268,6 +268,12 @@ class SettingsForm extends ConfigFormBase {
       ] + $this->getInfoFromLabel($schema[$top]['mapping']['route']['label']);
     }
 
+    $element = &$form['controller']['main'];
+    $element['log_referrers'] = [
+      '#type' => 'checkbox',
+      '#default_value' => $config['main']['log_referrers'],
+    ] + $this->getInfoFromLabel($schema['main']['mapping']['log_referrers']['label']);
+
     $element = &$form['controller']['homonyms'];
     $element['redirect_on_single_match'] = [
       '#type' => 'checkbox',

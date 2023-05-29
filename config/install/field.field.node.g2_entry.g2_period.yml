@@ -1,0 +1,18 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.g2_period
+    - node.type.g2_entry
+id: node.g2_entry.g2_period
+field_name: g2_period
+entity_type: node
+bundle: g2_entry
+label: 'G2 Period'
+description: 'This is the period of time during which the entity described by the term was actually alive, not the lifetime of the term itself, since any term is immortal to some extent.'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string
