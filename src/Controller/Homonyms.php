@@ -87,10 +87,12 @@ class Homonyms implements ContainerInjectionInterface {
   protected function indexNoMatch($raw_match) {
     $message = $this->t('There are currently no entries for %entry.', ['%entry' => $raw_match]);
 
-    $may_create = $this->etm->getAccessControlHandler('node')->createAccess(G2::NODE_TYPE);
+    $may_create = $this->etm
+      ->getAccessControlHandler(G2::TYPE)
+      ->createAccess(G2::BUNDLE);
     if ($may_create) {
       $arguments = [
-        'node_type' => G2::NODE_TYPE,
+        'node_type' => G2::BUNDLE,
       ];
       $options = [
         'query' => ['title' => urlencode($raw_match)],
@@ -172,7 +174,9 @@ class Homonyms implements ContainerInjectionInterface {
    */
   protected function indexUsingNode($nid) {
     /** @var \Drupal\node\NodeInterface $node */
-    $node = $this->etm->getStorage('node')->load($nid);
+    $node = $this->etm
+      ->getStorage(G2::TYPE)
+      ->load($nid);
     $result = node_view($node, 'g2_homonyms_page');
     return $result;
   }

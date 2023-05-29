@@ -66,7 +66,7 @@ function zg2_block_configure($delta) {
       // @see autocomplete()
       $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
       $node = \Drupal::service('entity_type.manager')
-        ->getStorage('node')
+        ->getStorage(G2::TYPE)
         ->load($nid);
       if (empty($node)) {
         $node = new stdClass();
@@ -252,7 +252,7 @@ function zg2_block_view($delta) {
   switch ($delta) {
     case G2::DELTA_RANDOM:
       $block['subject'] = t('Random G2 glossary entry');
-      $block['content'] = theme('g2_random', ['node' => G2::random()]);
+      $block['content'] = theme('g2_random', [G2::TYPE => G2::random()]);
       break;
 
     case G2::DELTA_TOP:
@@ -269,7 +269,7 @@ function zg2_block_view($delta) {
       $block['subject'] = variable_get(G2::VARWOTDTITLE,
         t('Word of the day in the G2 glossary'));
       $block['content'] = theme('g2_wotd', [
-        'node' => G2::wotd(variable_get(G2::VARWOTDBODYSIZE,
+        G2::TYPE => G2::wotd(variable_get(G2::VARWOTDBODYSIZE,
           G2::DEFWOTDBODYSIZE)),
       ]);
       break;
@@ -371,7 +371,7 @@ function zg2_field_extra_fields() {
     'weight' => 99,
   ];
 
-  $extra['node'][G2::NODE_TYPE] = [
+  $extra[G2::TYPE][G2::BUNDLE] = [
     'form' => [
       'expansion' => $expansion,
       'period' => $period,
@@ -551,9 +551,9 @@ function zg2_load($nodes) {
  */
 function zg2_nid_load($us_nid = 0) {
   $node = \Drupal::service('entity_type.manager')
-    ->getStorage('node')
+    ->getStorage(G2::TYPE)
     ->load($us_nid);
-  if ($node->type != G2::NODE_TYPE) {
+  if ($node->type != G2::BUNDLE) {
     $node = NULL;
   }
   return $node;
@@ -575,7 +575,7 @@ function zg2_node_access($node, $op, $account) {
       break;
 
     default:
-      $uri = entity_uri('node', $node);
+      $uri = entity_uri(G2::TYPE, $node);
       watchdog(
         'g2',
         'Node access for invalid op %op',
@@ -594,7 +594,7 @@ function zg2_node_access($node, $op, $account) {
  */
 function zg2_node_info() {
   $ret = [
-    G2::NODE_TYPE => [
+    G2::BUNDLE => [
       'name' => t('G2 entry'),
       'base' => 'g2',
       'description' => t(
@@ -623,7 +623,7 @@ function zg2_node_info() {
 function zg2_node_view($node, $view_mode, $langcode) {
   $crn = \Drupal::routeMatch()->getRouteName();
 
-  if ($view_mode == 'rss' && $node->type == G2::NODE_TYPE && ($crn == G2::ROUTE_FEED_WOTD)) {
+  if ($view_mode == 'rss' && $node->type == G2::BUNDLE && ($crn == G2::ROUTE_FEED_WOTD)) {
     $node->created = variable_get(G2::VARWOTDDATE,
       \Drupal::time()->getRequestTime());
     $node->name = filter_xss_admin(
@@ -677,9 +677,9 @@ function zg2_update($node) {
  * Implements hook_user_load().
  */
 function zg2_user_load($users) {
-  $q = \Drupal::database()->select('node', 'n');
+  $q = \Drupal::database()->select(G2::TYPE, 'n');
   $result = $q->fields('n', ['nid', 'title', 'uid', 'type'])
-    ->condition('n.type', G2::NODE_TYPE)
+    ->condition('n.type', G2::BUNDLE)
     ->condition('n.status', 1)
     ->condition('n.uid', array_keys($users), 'IN')
     ->orderBy('n.changed', 'DESC')
@@ -688,7 +688,7 @@ function zg2_user_load($users) {
     ->range(0, 10)
     ->execute();
   foreach ($result as $row) {
-    $uri = entity_uri('node', $row);
+    $uri = entity_uri(G2::TYPE, $row);
     $uri['options']['absolute'] = TRUE;
     $users[$row->uid]->nodes[] = [
       'value' => l($row->title, $uri['path'], $uri['options']),
@@ -844,8 +844,8 @@ EOT;
  * @todo 20110122: replace with just a node rendered with a specific view_mode
  */
 function ztheme_g2_random($variables) {
-  $node = $variables['node'];
-  $uri = entity_uri('node', $node);
+  $node = $variables[G2::TYPE];
+  $uri = entity_uri(G2::TYPE, $node);
   $ret = l($node->title, $uri['path'], $uri['options']);
   if (!empty($node->expansion)) {
     // Why t() ? Because varying languages have varying takes on spaces before /
@@ -880,11 +880,11 @@ function ztheme_g2_random($variables) {
  * @todo 20110122: replace with just a node rendered with a specific view_mode
  */
 function ztheme_g2_wotd($variables) {
-  $node = $variables['node'];
+  $node = $variables[G2::TYPE];
   if (empty($node)) {
     return NULL;
   }
-  $uri = entity_uri('node', $node);
+  $uri = entity_uri(G2::TYPE, $node);
 
   $link = l($node->title, $uri['path'], $uri['options']);
   if (isset($node->expansion) and !empty($node->expansion)) {

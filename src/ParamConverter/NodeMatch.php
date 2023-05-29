@@ -69,17 +69,19 @@ class NodeMatch implements ParamConverterInterface {
     // @todo Match on LOWER(title), not title: MySQL does not need it, but other
     // engines might.
     $query = $this->etm
-      ->getStorage('node')
+      ->getStorage(G2::TYPE)
       ->getQuery()
       ->accessCheck(!$hasAdmin)
-      ->condition('type', G2::NODE_TYPE)
+      ->condition('type', G2::BUNDLE)
       ->condition('status', $min_status, '>=')
       ->condition('title', $value . '%', 'LIKE')
       ->sort('sticky', 'desc')
       ->sort('title');
 
     $ids = $query->execute();
-    $nodes = $this->etm->getStorage('node')->loadMultiple($ids);
+    $nodes = $this->etm
+      ->getStorage(G2::TYPE)
+      ->loadMultiple($ids);
 
     return $nodes;
   }

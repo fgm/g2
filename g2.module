@@ -207,8 +207,8 @@ function g2_theme() {
     ],
 
     // --- Older versions ------------------------------------------------------
-    'g2_random' => ['variables' => ['node' => NULL]],
-    'g2_wotd' => ['variables' => ['node' => NULL]],
+    'g2_random' => ['variables' => [G2::TYPE => NULL]],
+    'g2_wotd' => ['variables' => [G2::TYPE => NULL]],
 
     'g2_body' => ['variables' => ['title' => '', 'body' => '']],
     'g2_period' => ['variables' => ['title' => '', 'period' => '']],
@@ -404,7 +404,7 @@ WHERE n.type = '%s' AND (n.status = 1)
   AND NOT (n.title = '%s' OR n.nid = %d);
 SQL;
   $sq = db_rewrite_sql($sq);
-  $q = \Drupal::database()->query($sq, G2::NODE_TYPE, $random, $wotd_nid);
+  $q = \Drupal::database()->query($sq, G2::BUNDLE, $random, $wotd_nid);
   $n = db_result($q);
 
   // No need to mt_srand() since PHP 4.2.
@@ -420,10 +420,10 @@ WHERE n.type = '%s' AND (n.status = 1)
   AND NOT (n.title = '%s' OR n.nid = %d);
 SQL;
   $sq = db_rewrite_sql($sq);
-  $q = db_query_range($sq, G2::NODE_TYPE, $random, $wotd_nid, $rand, 1);
+  $q = db_query_range($sq, G2::BUNDLE, $random, $wotd_nid, $rand, 1);
   $nid = db_result($q);
   $node = \Drupal::service('entity_type.manager')
-    ->getStorage('node')
+    ->getStorage(G2::TYPE)
     ->load($nid);
   $node->taxonomy = variable_get(G2::VARRANDOMTERMS, G2::DEFRANDOMTERMS)
     ? _g2_comb_taxonomy($node->taxonomy)
@@ -435,95 +435,6 @@ SQL;
   }
 
   return $node;
-}
-
-/**
- * Counts the number of G2 referer entries.
- *
- * @param object $node
- *   The node to examine.
- *
- * @return string
- *   HTML
- *
- * @todo check referer wipe: it may have been damaged in the D6 port
- */
-function _g2_referer_links($form_state, $node) {
-  // Build list of referers.
-  $nid = $node->nid;
-
-  $header = [
-    ['data' => t('Clicks'), 'field' => 'incoming', 'sort' => 'desc'],
-    ['data' => t('Referer'), 'field' => 'referer'],
-    ['data' => t('Related node')],
-  ];
-
-  // Can be generated for unpublished nodes by author or admin, so don't
-  // filter on node.status = 1
-  // The join is needed to avoid showing info about forbidden nodes, and
-  // to allow some modules to interfere without breaking because they
-  // assume "nid" only exists in {node}.
-  $sq = <<<SQL
-SELECT gr.referer, gr.incoming
-FROM {g2_referer} gr
-  INNER JOIN {node} n ON gr.nid = n.nid
-WHERE gr.nid = %d
-SQL
-    . tablesort_sql($header);
-  $q = \Drupal::database()->query($sq, $nid);
-  $rows = [];
-  while (is_object($o = db_fetch_object($q))) {
-    $sts = preg_match('/node\/(\d+)/', $o->referer, $matches);
-    if ($sts) {
-      $node = \Drupal::service('entity_type.manager')
-        ->getStorage('node')
-        ->load($matches[1]);
-      $title = l($node->title, 'node/' . $node->nid);
-    }
-    else {
-      $title = NULL;
-    }
-    $rows[] = empty($o->referer)
-      // Should never happen.
-      ? [$o->incoming, t('<empty>'), $title]
-      : [
-        $o->incoming,
-        l($o->referer, $o->referer, ['absolute' => TRUE]),
-        $title,
-      ];
-  }
-  if (empty($rows)) {
-    $message = t('No referer found. Maybe you just cleaned the list ?');
-  }
-  else {
-    $message = theme('table', $header, $rows);
-  }
-
-  // Build form from results.
-  $form = [];
-  $form['links'] = [
-    '#type' => 'markup',
-    '#prefix' => t('<h3>Local referers for this node</h3>'),
-    '#value' => $message,
-  ];
-
-  if (!empty($rows)) {
-    $form['links']['#suffix'] = t(
-      "<p>WARNING: just because a click came from a node doesn't mean the node has a link.
-    The click may have come from a block on the page. These stats are just a hint for editors.</p>"
-    );
-
-    $form['wipe_target'] = [
-      '#type' => 'value',
-      '#value' => $nid,
-    ];
-    $form['submit'] = [
-      '#type' => 'submit',
-      '#value' => t('Wipe referer info for this entry'),
-    ];
-  }
-
-  return $form;
 }
 
 /**
@@ -579,7 +490,7 @@ function _g2_wotd($bodysize = 0) {
   // No need for a static: this function is normally never called twice.
   $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
   $node = \Drupal::service('entity_type.manager')
-    ->getStorage('node')
+    ->getStorage(G2::TYPE)
     ->load($nid);
   if (empty($node)) {
     return NULL;
@@ -671,7 +582,7 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
         // @see _g2_autocomplete()
         $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
         $node = \Drupal::service('entity_type.manager')
-          ->getStorage('node')
+          ->getStorage(G2::TYPE)
           ->load($nid);
         if (empty($node)) {
           $node = new stdClass();
@@ -894,11 +805,11 @@ SQL;
   $min_status = user_access('administer nodes')
     ? Node::NOT_PUBLISHED
     : Node::PUBLISHED;
-  $q = \Drupal::database()->query($sq, G2::NODE_TYPE, $min_status, $title);
+  $q = \Drupal::database()->query($sq, G2::BUNDLE, $min_status, $title);
   $nodes = [];
   while (is_object($node = db_fetch_object($q))) {
     $nodes[$node->nid] = \Drupal::service('entity_type.manager')
-      ->getStorage('node')
+      ->getStorage(G2::TYPE)
       ->load($node->nid);
   }
   return $nodes;
@@ -957,7 +868,7 @@ function g2_form(&$node, $form_state) {
     );
   }
 
-  $type = node_get_types('type', G2::NODE_TYPE);
+  $type = node_get_types('type', G2::BUNDLE);
   $form = [];
   $form['content'] = [
     '#type' => 'fieldset',
@@ -1055,30 +966,11 @@ function g2_load($node) {
 }
 
 /**
- * Implements hook_menu().
- *
- * Note: restructured in Drupal 6
- */
-function g2_menu() {
-  $items = [];
-  $items['node/%g2_nid/referers'] = [ // aka %g2_node
-    'title' => 'Referers',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['G2::referer_links', 1], // ['_g2_referer_links', 1],
-    'access arguments' => [G2::PERM_ADMIN],
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 2,
-  ];
-
-  return $items;
-}
-
-/**
  * Implements hook_node_info().
  */
 function g2_node_info() {
   $ret = [
-    G2::NODE_TYPE => [
+    G2::BUNDLE => [
       'name' => t('G2 entry'),
       'module' => 'g2',
       'description' => t(
@@ -1101,12 +993,14 @@ function g2_node_info() {
 function g2_node_load($us_nid = 0) {
   // Safety with regard to $us_nid is checked within node_load()
   if (is_numeric($us_nid)) {
-    $node = \Drupal::entityTypeManager()->getStorage('node')->load($us_nid);
+    $node = \Drupal::entityTypeManager()
+      ->getStorage(G2::TYPE)
+      ->load($us_nid);
   }
   else {
     $node = reset($us_nid);
   }
-  if ($node->getEntityTypeId() != G2::NODE_TYPE) {
+  if ($node->getEntityTypeId() != G2::BUNDLE) {
     $node = NULL;
   }
 
@@ -1127,7 +1021,7 @@ function g2_node_load($us_nid = 0) {
  */
 function g2_nodeapi(&$node, $op) {
   $crn = \Drupal::routeMatch()->getRouteName();
-  if (($op == 'rss item') && ($node->type == G2::NODE_TYPE)
+  if (($op == 'rss item') && ($node->type == G2::BUNDLE)
     && ($crn == G2::ROUTE_FEED_WOTD)
   ) {
     $node->created = variable_get(G2::VARWOTDDATE, time());
@@ -1218,7 +1112,7 @@ function g2_referer_wipe_confirm_form(
   if (is_object($node) && isset($node->nid)) {
     $question = t('Are you sure to want to erase the referer information on this G2 entry ?');
     $cancel = 'node/' . $node->nid . '/referers';
-    $form['node'] = [
+    $form[G2::TYPE] = [
       '#prefix' => '<p><em>',
       '#value' => check_plain($node->title),
       '#suffix' => '</em></p>',
@@ -1278,7 +1172,7 @@ WHERE n.type = '%s' AND n.status  = 1 AND n.uid = %d
 ORDER BY n.changed DESC, n.created DESC;
 SQL;
       $sq = db_rewrite_sql($sq);
-      $q = db_query_range($sq, G2::NODE_TYPE, $account->uid, 0, 10);
+      $q = db_query_range($sq, G2::BUNDLE, $account->uid, 0, 10);
       $account->nodes = [];
       while (is_object($o = db_fetch_object($q))) {
         $account->nodes[] = [

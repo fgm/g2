@@ -135,7 +135,9 @@ class Requirements implements ContainerInjectionInterface {
 
     assert('is_numeric($main)');
     if ($main) {
-      $node = $this->etm->getStorage('node')->load($main);
+      $node = $this->etm
+        ->getStorage(G2::TYPE)
+        ->load($main);
       if (!($node instanceof NodeInterface)) {
         $result += [
           'value' => $this->t('The chosen node must be a valid one, or 0: "@nid" is not a valid node id.',
@@ -144,7 +146,7 @@ class Requirements implements ContainerInjectionInterface {
         ];
       }
       else {
-        $url = Url::fromRoute('entity.node.canonical', ['node' => $main])
+        $url = Url::fromRoute('entity.node.canonical', [G2::TYPE => $main])
           ->toString();
         $result += [
           'value' => $this->t('Valid node: <a href=":url">:url</a>',

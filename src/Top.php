@@ -167,7 +167,7 @@ class Top {
       ->fields('u', ['uid', 'name'])
       ->condition($column, 0, '<>')
       ->condition('n.status', 1)
-      ->condition('n.type', G2::NODE_TYPE)
+      ->condition('n.type', G2::BUNDLE)
       // @todo This should be actually filtering on the desired node status
       //   field language and just fall back to the default language.
       ->condition('n.default_langcode', 1)
@@ -213,7 +213,7 @@ class Top {
     $route_name = 'entity.node.canonical';
     /** @var \Drupal\g2\TopRecord $record */
     foreach ($this->getEntries($count, $statistic) as $record) {
-      $parameters = ['node' => $record->nid];
+      $parameters = [G2::TYPE => $record->nid];
       $url = Url::fromRoute($route_name, $parameters, $options);
       $result[] = $this->linkGenerator->generate($record->title, $url);
     }

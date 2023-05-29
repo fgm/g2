@@ -8,12 +8,14 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\g2\G2;
+use Drupal\node\Entity\Node;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class Initial contains the controller for the items-by-initial page.
  */
 class Initial implements ContainerInjectionInterface {
+
   use StringTranslationTrait;
 
   /**
@@ -88,23 +90,23 @@ class Initial implements ContainerInjectionInterface {
    *   A render array.
    */
   protected function getByInitial($initial) {
-    $ar_total   = $this->getStats();
+    $ar_total = $this->getStats();
     $ar_initial = $this->getStats(0, $initial);
 
     $stats_basic = $this->t("<p>Displaying @count entries starting with '%initial' from a total number of @total entries.</p>",
       [
         // _g2_stats() does not return empty arrays, so no need to check values.
-        '@count' => $ar_initial[NODE_PUBLISHED],
+        '@count' => $ar_initial[Node::PUBLISHED],
         '%initial' => $initial,
-        '@total' => $ar_total[NODE_PUBLISHED],
+        '@total' => $ar_total[Node::PUBLISHED],
       ]
     );
 
     if ($this->currentUser->hasPermission(G2::PERM_ADMIN)) {
       $stats_admin = $this->t('<p>Admin info: there are also @count unpublished matching entries from a total number of @total unpublished entries.</p>',
         [
-          '@count' => $ar_initial[NODE_NOT_PUBLISHED],
-          '@total' => $ar_total[NODE_NOT_PUBLISHED],
+          '@count' => $ar_initial[Node::NOT_PUBLISHED],
+          '@total' => $ar_total[Node::NOT_PUBLISHED],
         ]
       );
     }
@@ -115,14 +117,14 @@ class Initial implements ContainerInjectionInterface {
     unset($ar_initial);
     unset($ar_total);
 
-    $query = $this->database->select('node', 'n');
+    $query = $this->database->select(G2::TYPE, 'n');
     $query->innerJoin('node_field_revision', 'nfv', 'n.vid = nfv.vid');
     /** @var \Drupal\Core\Database\Query\SelectInterface $query */
     $query = $query->fields('n', ['nid'])
       ->orderBy('nfv.title')
       ->addTag('node_access');
     $query
-      ->condition('n.type', G2::NODE_TYPE)
+      ->condition('n.type', G2::BUNDLE)
       ->condition('nfv.status', 1)
       ->condition('nfv.title', $initial . '%', 'LIKE');
 
@@ -132,7 +134,9 @@ class Initial implements ContainerInjectionInterface {
       $node_ids[] = $row->nid;
     }
 
-    $nodes = $this->etm->getStorage('node')->loadMultiple($node_ids);
+    $nodes = $this->etm
+      ->getStorage(G2::TYPE)
+      ->loadMultiple($node_ids);
     if (empty($nodes)) {
       $result = [
         'entries' => ['#markup' => $this->t('No entry found for %initial.', ['%initial' => $initial])],
@@ -211,7 +215,7 @@ SQL;
     $sq_params = [];
     $sq_test = "WHERE n.type = :node_type \n";
 
-    $sq_params[':node_type'] = G2::NODE_TYPE;
+    $sq_params[':node_type'] = G2::BUNDLE;
 
     if (isset($tid) && is_int($tid) && $tid > 0) {
       $sql .= "  INNER JOIN {taxonomy_index} tn ON n.nid = tn.nid \n";
@@ -229,8 +233,8 @@ SQL;
 
     // Avoid empty returns.
     $result = [
-      NODE_NOT_PUBLISHED => 0,
-      NODE_PUBLISHED     => 0,
+      Node::NOT_PUBLISHED => 0,
+      Node::PUBLISHED => 0,
     ];
 
     foreach ($counts as $row) {

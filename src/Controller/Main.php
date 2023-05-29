@@ -79,7 +79,9 @@ class Main implements ContainerInjectionInterface {
     ];
 
     $generator = $this->config->get('controller.main.nid');
-    $node = $this->etm->getStorage('node')->load($generator);
+    $node = $this->etm
+      ->getStorage(G2::TYPE)
+      ->load($generator);
     if ($node instanceof NodeInterface) {
       $title = $node->label();
 

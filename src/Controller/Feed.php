@@ -113,7 +113,9 @@ class Feed implements ContainerInjectionInterface {
 
     $nid = $this->g2Config->get('services.wotd.entry');
     /** @var \Drupal\node\Entity\Node $node */
-    $node = $this->etm->getStorage('node')->load($nid);
+    $node = $this->etm
+      ->getStorage(G2::TYPE)
+      ->load($nid);
     $entry = $feed->createEntry();
     $entry->setTitle($node->label());
     $entry->setLink($node->toUrl()->toString());

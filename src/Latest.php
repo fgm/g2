@@ -87,13 +87,15 @@ class Latest {
     $count = min($count, $count_limit);
 
     $query = $this->etm
-      ->getStorage('node')
+      ->getStorage(G2::TYPE)
       ->getQuery()
-      ->condition('type', G2::NODE_TYPE)
+      ->condition('type', G2::BUNDLE)
       ->sort('changed', 'DESC')
       ->range(0, $count);
     $ids = $query->execute();
-    $result = $this->etm->getStorage('node')->loadMultiple($ids);
+    $result = $this->etm
+      ->getStorage(G2::TYPE)
+      ->loadMultiple($ids);
     return $result;
   }
 
@@ -119,7 +121,7 @@ class Latest {
 
     /** @var \Drupal\node\NodeInterface $node */
     foreach ($this->getEntries($count) as $node) {
-      $parameters = ['node' => $node->id()];
+      $parameters = [G2::TYPE => $node->id()];
       $url = Url::fromRoute($route_name, $parameters, $options);
       $result[] = $this->linkGenerator->generate($node->label(), $url);
     }

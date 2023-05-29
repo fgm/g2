@@ -6,13 +6,13 @@ namespace Drupal\g2;
  * Class G2 is the container for general-use G2 data.
  */
 class G2 {
+  // The name of the node.type.g2_entry config entity.
+  const BUNDLE = 'g2_entry';
+
   /**
    * The key for the module configuration.
    */
   const CONFIG_NAME = 'g2.settings';
-
-  // The name of the node.type.g2_entry config entity.
-  const NODE_TYPE = 'g2_entry';
 
   /**
    * The G2 permission for normal users.
@@ -60,6 +60,13 @@ class G2 {
   const DELTA_WOTD = 'wotd';
 
   /**
+   * In this version, G2 entries are a node bundle (content type).
+   *
+   * This is likely to change as some point in the future.
+   */
+  const TYPE = 'node';
+
+  /**
    * Route: autocomplete by title.
    */
   const ROUTE_AUTOCOMPLETE = 'g2.autocomplete';
@@ -73,6 +80,11 @@ class G2 {
    * Route: G2 main page.
    */
   const ROUTE_MAIN = 'g2.main';
+
+  /**
+   * Route: show referrers to a g2_entry.
+   */
+  const ROUTE_REFERRERS = 'g2.node_referrers';
 
   /**
    * Route: form offering to wipe all referrers.

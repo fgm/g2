@@ -22,6 +22,8 @@
  * drupal.org organization or the downstream distributor, not OSInet.
  */
 
+use Drupal\g2\G2;
+
 /**
  * Implements the former hook_settings().
  */
@@ -232,7 +234,7 @@ function g2_admin_settings_validate($form, &$form_state) {
   $main = $form_state['values']['g2_main'];
   if (is_numeric($main)) {
     if ($main != 0 && !is_object(\Drupal::service('entity_type.manager')
-      ->getStorage('node')
+      ->getStorage(G2::TYPE)
       ->load($main))) {
       form_set_error('g2_main', t('The node chosen for the main page must be a valid one, or 0: "@nid" is not a valid node id.', ['@nid' => $main])
       );
@@ -246,7 +248,7 @@ function g2_admin_settings_validate($form, &$form_state) {
 
   $nid = $form_state['values']['g2_homonyms'];
   if ($nid != 0 && !is_object(\Drupal::service('entity_type.manager')
-    ->getStorage('node')
+    ->getStorage(G2::TYPE)
     ->load($nid))) {
     form_set_error('g2_homonyms', t('The node chosen for the homonyms disambiguation page must be a valid one, or 0: "@nid" is not a valid node id.',
       ['@nid' => $nid])

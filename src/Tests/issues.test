@@ -102,7 +102,7 @@ class G2IssuesTest extends DrupalWebTestCase {
     $fid = $this->createG2Format($format_name, $filter_name);
 
     $settings = [
-      'type' => G2::NODE_TYPE,
+      'type' => G2::BUNDLE,
       'title' => 'CSS',
       'body' => 'A style language for <dfn>HTML</dfn>',
       'format' => $fid,
