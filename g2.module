@@ -966,22 +966,6 @@ function g2_load($node) {
 }
 
 /**
- * Implements hook_node_info().
- */
-function g2_node_info() {
-  $ret = [
-    G2::BUNDLE => [
-      'name' => t('G2 entry'),
-      'module' => 'g2',
-      'description' => t(
-        'A G2 entry is a term (usual sense, not drupal sense) for which a definition and various additional information is provided, notably at the editorial level'
-      ),
-    ],
-  ];
-  return $ret;
-}
-
-/**
  * Menu loader for g2_node.
  *
  * @param int $us_nid
