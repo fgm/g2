@@ -4,17 +4,17 @@ dependencies:
   config:
     - field.storage.node.g2_origin
     - node.type.g2_entry
+  module:
+    - text
   enforced:
     module:
       - g2
-  module:
-    - text
 id: node.g2_entry.g2_origin
 field_name: g2_origin
 entity_type: node
 bundle: g2_entry
 label: 'G2 Origin'
-description: 'Additional editor-only Intellectual Property/Origin information about the definition'
+description: 'Additional editor-only Intellectual Property/Origin information about the definition.'
 required: false
 translatable: true
 default_value: {  }

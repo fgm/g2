@@ -4,13 +4,13 @@ dependencies:
   config:
     - field.storage.node.g2_context
     - field.storage.node.g2_expansion
-  enforced:
-    module:
-      - g2
   module:
     - node
     - text
     - user
+  enforced:
+    module:
+      - g2
 id: g2_homonyms
 label: 'G2 Homonyms'
 module: views

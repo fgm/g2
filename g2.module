@@ -8,7 +8,7 @@
  *
  * @copyright 2005-2023 Frédéric G. Marand, for Ouest Systemes Informatiques.
  *
- * @todo For D8, in decreasing prioritys
+ * @todo For D8, in decreasing priorities
  *  - implement SettingsForm::validateForm() using Requirements
  *  - ensure theme is flushed whenever block.alphabar.row_length config is
  *    updated.

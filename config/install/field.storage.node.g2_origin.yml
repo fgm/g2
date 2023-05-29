@@ -1,12 +1,12 @@
 langcode: en
 status: true
 dependencies:
-  enforced:
-    module:
-      - g2
   module:
     - node
     - text
+  enforced:
+    module:
+      - g2
 id: node.g2_origin
 field_name: g2_origin
 entity_type: node
