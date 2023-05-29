@@ -2,6 +2,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - core.entity_view_mode.node.rss
     - field.field.node.g2_entry.body
     - field.field.node.g2_entry.g2_complement
     - field.field.node.g2_entry.g2_context
@@ -14,10 +15,10 @@ dependencies:
   enforced:
     module:
       - g2
-id: node.g2_entry.default
+id: node.g2_entry.rss
 targetEntityType: node
 bundle: g2_entry
-mode: default
+mode: rss
 content:
   body:
     type: text_default

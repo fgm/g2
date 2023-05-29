@@ -2,6 +2,7 @@ langcode: en
 status: true
 dependencies:
   config:
+    - core.entity_view_mode.node.teaser
     - field.field.node.g2_entry.body
     - field.field.node.g2_entry.g2_complement
     - field.field.node.g2_entry.g2_context
@@ -14,15 +15,16 @@ dependencies:
   enforced:
     module:
       - g2
-id: node.g2_entry.default
+id: node.g2_entry.teaser
 targetEntityType: node
 bundle: g2_entry
-mode: default
+mode: teaser
 content:
   body:
-    type: text_default
+    type: text_summary_or_trimmed
     label: above
-    settings: {  }
+    settings:
+      trim_length: 600
     third_party_settings: {  }
     weight: 1
     region: content
@@ -44,7 +46,7 @@ content:
   links:
     settings: {  }
     third_party_settings: {  }
-    weight: 3
+    weight: 5
     region: content
 hidden:
   g2_complement: true

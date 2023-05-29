@@ -9,12 +9,12 @@ dependencies:
     - field.field.node.g2_entry.g2_expansion
     - field.field.node.g2_entry.g2_origin
     - node.type.g2_entry
-  enforced:
-    module:
-      - g2
   module:
     - text
     - user
+  enforced:
+    module:
+      - g2
 id: node.g2_entry.g2_entry_list
 targetEntityType: node
 bundle: g2_entry
