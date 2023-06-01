@@ -62,7 +62,7 @@ class RefererWipe extends ConfirmFormBase {
    */
   public static function create(ContainerInterface $container) {
     $db = $container->get('database');
-    $etm = $container->get('entity_type.manager');
+    $etm = $container->get(G2::SVC_ETM);
     return new static($db, $etm);
   }
 

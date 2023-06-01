@@ -72,10 +72,10 @@ class SettingsForm extends ConfigFormBase {
    */
   public static function create(ContainerInterface $container) {
     /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
-    $etm = $container->get('entity_type.manager');
+    $etm = $container->get(G2::SVC_ETM);
 
     /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
-    $config_factory = $container->get('config.factory');
+    $config_factory = $container->get(G2::SVC_CONF);
 
     /** @var \Drupal\Core\Routing\RouteBuilderInterface $router_builder */
     $router_builder = $container->get('router.builder');
@@ -184,14 +184,11 @@ class SettingsForm extends ConfigFormBase {
     ];
 
     $element = &$form[$section]['random'];
-    $element['show_terms'] = [
-      '#type' => 'checkbox',
-      '#default_value' => $config['random']['show_terms'],
-    ] + $this->getInfoFromLabel($schema['random']['mapping']['show_terms']['label']);
-    $element['store'] = [
-      '#type' => 'checkbox',
-      '#default_value' => $config['random']['store'],
-    ] + $this->getInfoFromLabel($schema['random']['mapping']['store']['label']);
+    $element['max_age'] = [
+      '#type' => 'number',
+      '#min' => 1,
+      '#default_value' => $config['random']['max_age'],
+    ] + $this->getInfoFromLabel($schema['random']['mapping']['max_age']['label']);
 
     $element = &$form[$section]['top'];
     $element['count'] = [
@@ -404,6 +401,14 @@ class SettingsForm extends ConfigFormBase {
    *   The form array.
    */
   public function buildApiForm(array $form, array $config, array $schema) {
+    $form['api']['help'] = [
+      '#markup' => '<p>'
+      . $this->t('Configure the G2 API client and server if needed.
+The client enables your site to provide links using a remote G2 instance on
+another site, while the server allows your site to provide entries to such
+  client sites.')
+      . '</p>',
+    ];
     $form['api']['client'] = [
       '#type' => 'details',
       '#title' => $schema['client']['label'],
@@ -462,6 +467,12 @@ class SettingsForm extends ConfigFormBase {
       '#title' => $schema['alphabar']['mapping']['contents']['label'],
       '#default_value' => $config['alphabar']['contents'],
     ];
+
+    $element = &$form[$section]['random'];
+    $element['store'] = [
+      '#type' => 'checkbox',
+      '#default_value' => $config['random']['store'],
+    ] + $this->getInfoFromLabel($schema['random']['mapping']['store']['label']);
 
     foreach (['latest', 'top'] as $service) {
       $element = &$form[$section][$service];

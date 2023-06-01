@@ -1,0 +1,13 @@
+uuid: 41ec185e-58cb-41ca-b702-eddb433540a4
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+  enforced:
+    module:
+      - g2
+id: node.g2_block
+label: 'G2 Block'
+targetEntityType: node
+cache: true

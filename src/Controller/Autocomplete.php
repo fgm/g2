@@ -41,12 +41,12 @@ class Autocomplete implements ContainerInjectionInterface {
    */
   public static function create(ContainerInterface $container) {
     /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
-    $config_factory = $container->get('config.factory');
+    $config_factory = $container->get(G2::SVC_CONF);
 
     $config = $config_factory->get(G2::CONFIG_NAME)->get('controller.homonyms');
 
     /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager */
-    $entity_manager = $container->get('entity_type.manager');
+    $entity_manager = $container->get(G2::SVC_ETM);
     return new static($entity_manager, $config);
   }
 

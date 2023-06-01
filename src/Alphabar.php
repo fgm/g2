@@ -45,7 +45,7 @@ class Alphabar {
   public function __construct(ConfigFactoryInterface $config, LinkGenerator $link_generator) {
     $this->linkGenerator = $link_generator;
 
-    $g2_config = $config->get('g2.settings');
+    $g2_config = $config->get(G2::CONFIG_NAME);
     $this->config = $g2_config->get('services.alphabar');
     $this->routeName = $g2_config->get('controller.initial.route');
   }

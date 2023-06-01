@@ -49,9 +49,9 @@ class Feed implements ContainerInjectionInterface {
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
    *   The entity.manager service.
-   * @param array $g2Config
+   * @param \Drupal\Core\Config\ImmutableConfig $g2Config
    *   The g2.settings/controller.wotd configuration.
-   * @param string $systemConfig
+   * @param \Drupal\Core\Config\ImmutableConfig $systemConfig
    *   The system email.
    */
   public function __construct(
@@ -69,13 +69,13 @@ class Feed implements ContainerInjectionInterface {
    */
   public static function create(ContainerInterface $container) {
     /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
-    $config_factory = $container->get('config.factory');
+    $config_factory = $container->get(G2::SVC_CONF);
 
     $g2Config = $config_factory->get(G2::CONFIG_NAME);
     $systemConfig = $config_factory->get('system.site');
 
     /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager */
-    $entity_manager = $container->get('entity_type.manager');
+    $entity_manager = $container->get(G2::SVC_ETM);
     return new static($entity_manager, $g2Config, $systemConfig);
   }
 

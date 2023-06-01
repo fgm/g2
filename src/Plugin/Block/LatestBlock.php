@@ -4,6 +4,7 @@ namespace Drupal\g2\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\g2\G2;
 use Drupal\g2\Latest;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -13,7 +14,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @Block(
  *   id = "g2_latest",
  *   admin_label = @Translation("G2 Latest(n)"),
- *   category = @Translation("G2")
+ *   category = @Translation("G2"),
+ *   help = @Translation("This block displays a list of the most recently updated entries in the G2 glossary."),
  * )
  */
 class LatestBlock extends BlockBase implements ContainerFactoryPluginInterface {
@@ -97,10 +99,10 @@ class LatestBlock extends BlockBase implements ContainerFactoryPluginInterface {
     $latest = $container->get('g2.latest');
 
     /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
-    $config_factory = $container->get('config.factory');
+    $config_factory = $container->get(G2::SVC_CONF);
 
     /** @var \Drupal\Core\Config\ImmutableConfig $config */
-    $config = $config_factory->get('g2.settings');
+    $config = $config_factory->get(G2::CONFIG_NAME);
 
     $block_config = $config->get('block.latest');
 

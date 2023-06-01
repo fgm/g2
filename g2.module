@@ -25,6 +25,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\GeneratedLink;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\g2\G2;
+use Drupal\g2\Random;
 use Drupal\g2\Top;
 use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
@@ -39,7 +40,7 @@ function _g2_alphabar() {
   /** @var \Drupal\g2\Alphabar $alphabar */
   $alphabar = Drupal::service('g2.alphabar');
   $ret = array_map(
-    function(GeneratedLink $link) {
+    function (GeneratedLink $link) {
       return "$link";
     },
     $alphabar->getLinks()
@@ -65,7 +66,7 @@ function _g2_api() {
  * the main content.
  *
  * @param \Drupal\Core\Entity\EntityInterface $node
- *   The node being viewed
+ *   The node being viewed.
  */
 function _g2_insert_referrer(EntityInterface $node): void {
   global $base_url;
@@ -190,7 +191,7 @@ function g2_help($route_name, RouteMatchInterface $route_match) {
         '<p>G2 defines a glossary service for Drupal sites.
        To compare it with the Glossary and Lexicon modules:</p>
        <ul>
-         <li>G2 content is node-based, not term-based, provide node access control</li>
+         <li>G2 content is node-based, not term-based, allowing node access control</li>
          <li>G2 leverages existing code from glossary for input filtering and node marking</li>
          <li>G2 RAM use does not significantly increase with larger entry counts, which makes is more suitable for larger glossaries</li>
          <li>G2 requests much less from the database than the default glossary</li>
@@ -203,21 +204,15 @@ function g2_help($route_name, RouteMatchInterface $route_match) {
       break;
 
     case 'entity.block.edit_form':
-      /** @var \Drupal\block\Entity\Block $block */
-      $block = $route_match->getParameter('block');
-      $definition = $block->getPlugin()->getPluginDefinition();
-      if ($definition['provider'] === 'g2') {
-        $id = $block->getPluginId();
-        $delta = mb_substr($id, 3);
-        $helps = [
-          G2::DELTA_ALPHABAR => t('This block displays a clickable list of initials from the G2 glossary.'),
-          G2::DELTA_RANDOM => t('This block displays a pseudo-random entry from the G2 glossary.'),
-          G2::DELTA_TOP => t('This block displays a list of the most viewed entries in the G2 glossary.'),
-          G2::DELTA_LATEST => t('This block displays a list of the most recently updated entries in the G2 glossary.'),
-          G2::DELTA_WOTD => t('This block displays a once-a-day entry from the G2 glossary.'),
-        ];
-        $result = $helps[$delta] ?? NULL;
+      // G2 block plugins contain a "help" annotation.
+      $definition = $route_match
+        ->getParameter('block')
+        ->getPlugin()
+        ->getPluginDefinition();
+      if ($definition['provider'] !== 'g2') {
+        return NULL;
       }
+      $result = $definition['help'] ?? '';
       break;
   }
   return $result;
@@ -275,7 +270,7 @@ function g2_theme() {
  * @return array
  *   The taxonomy terms, with tags removed if applicable.
  */
-function _g2_comb_taxonomy($taxonomy = []) {
+function _g2_comb_taxonomy(array $taxonomy = []) {
   // Filter tag vocabularies for non-G2 admins if this is requested.
   if (variable_get(G2::VARNOFREETAGGING,
       G2::DEFNOFREETAGGING) && !user_access(G2::PERM_ADMIN)) {
@@ -418,66 +413,6 @@ function _g2_override_site_name() {
 }
 
 /**
- * Ancillary function for g2_block to return a pseudo-random entry.
- *
- * Entry is selected to be different from the current WOTD and, in the default
- * setting, from the latest pseudo-random result returned.
- *
- * Only works for glossaries with 3 entries or more.
- *
- * @return object
- *   Title / nid / teaser. Unfiltered contents.
- */
-function _g2_random() {
-  $wotd_nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
-
-  // Do we have a stored previous random to exclude ?
-  $random = variable_get(G2::VARRANDOMSTORE, G2::DEFRANDOMSTORE)
-    ? variable_get(G2::VARRANDOMENTRY, G2::DEFRANDOMENTRY)
-    // We don't, so just avoid untitled nodes, which should not exist anyway.
-    : '';
-
-  $sq = <<<SQL
-SELECT COUNT(*) cnt
-FROM {node} n
-WHERE n.type = '%s' AND (n.status = 1)
-  AND NOT (n.title = '%s' OR n.nid = %d);
-SQL;
-  $sq = db_rewrite_sql($sq);
-  $q = Drupal::database()->query($sq, G2::BUNDLE, $random, $wotd_nid);
-  $n = db_result($q);
-
-  // No need to mt_srand() since PHP 4.2.
-  $rand = mt_rand(0, $n - 1);
-
-  // Select from the exact same list of nodes, assuming none was
-  // inserted/deleted in the meantime.
-  $sq = <<<SQL
-SELECT n.nid '
-FROM {node} n
-  INNER JOIN {node_revisions} v ON n.vid = v.vid
-WHERE n.type = '%s' AND (n.status = 1)
-  AND NOT (n.title = '%s' OR n.nid = %d);
-SQL;
-  $sq = db_rewrite_sql($sq);
-  $q = db_query_range($sq, G2::BUNDLE, $random, $wotd_nid, $rand, 1);
-  $nid = db_result($q);
-  $node = Drupal::service('entity_type.manager')
-    ->getStorage(G2::TYPE)
-    ->load($nid);
-  $node->taxonomy = variable_get(G2::VARRANDOMTERMS, G2::DEFRANDOMTERMS)
-    ? _g2_comb_taxonomy($node->taxonomy)
-    : [];
-
-  if (variable_get(G2::VARRANDOMSTORE, G2::DEFRANDOMSTORE)) {
-    // Unfiltered.
-    variable_set(G2::VARRANDOMENTRY, $node->title);
-  }
-
-  return $node;
-}
-
-/**
  * Submit handler for _g2_referer_links().
  *
  * Use the wipe target to redirect to the wipe confirmation form. If we
@@ -489,7 +424,7 @@ SQL;
  * @param \Drupal\Core\Form\FormStateInterface $form_state
  *   The form state.
  */
-function _g2_referer_links_submit(&$form, &$form_state) {
+function _g2_referer_links_submit(array &$form, FormStateInterface $form_state) {
   $form_state['redirect'] = 'g2/wipe/' . $form_state['values']['wipe_target'];
 }
 
@@ -581,42 +516,15 @@ function g2_access($op /* , $node, $account */) {
 function g2_block($op = 'list', $delta = 0, $edit = []) {
   if ($op == 'list') {
     $blocks = [];
-    $blocks[G2::DELTA_RANDOM]['info'] = variable_get('g2_random_info',
-      t('G2 Random'));
     $blocks[G2::DELTA_WOTD]['info'] = variable_get('g2_wotd_info',
       t('G2 Word of the day'));
 
     // Else it couldn't be random.
-    $blocks[G2::DELTA_RANDOM]['cache'] = BLOCK_NO_CACHE;
     $blocks[G2::DELTA_WOTD]['cache'] = BLOCK_CACHE_GLOBAL;
     $ret = $blocks;
   }
   elseif ($op == 'configure') {
     switch ($delta) {
-      case G2::DELTA_RANDOM:
-        $form[G2::VARRANDOMSTORE] = [
-          '#type' => 'checkbox',
-          '#title' => t('Store latest random entry'),
-          '#default_value' => variable_get(G2::VARRANDOMSTORE, G2::DEFRANDOMSTORE),
-          '#description' => t(
-            'When this setting is TRUE (default value),
-           the latest random value is kept in the DB to avoid showing the same pseudo-random
-           value on consecutive page displays.
-           For small sites, it is usually best to keep it saved.
-           For larger sites, unchecking this setting will remove one database write with locking.'
-          ),
-        ];
-        $form[G2::VARRANDOMTERMS] = [
-          '#type' => 'checkbox',
-          '#title' => t('Return taxonomy terms for the current entry'),
-          '#default_value' => variable_get(G2::VARRANDOMTERMS, G2::DEFRANDOMTERMS),
-          '#description' => t(
-            'The taxonomy terms will be returned by the API and made available to the theme.
-           Default G2 themeing will display them.'
-          ),
-        ];
-        break;
-
       case G2::DELTA_WOTD:
         // Convert nid to "title [<nid>]" even if missing.
         // @see _g2_autocomplete()
@@ -744,11 +652,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
   elseif ($op == 'save') {
     $ret = NULL;
     switch ($delta) {
-      case G2::DELTA_RANDOM:
-        variable_set(G2::VARRANDOMSTORE, $edit[G2::VARRANDOMSTORE]);
-        variable_set(G2::VARRANDOMTERMS, $edit[G2::VARRANDOMTERMS]);
-        break;
-
       case G2::DELTA_WOTD:
         // Convert "some title [<nid>, sticky]" to nid.
         $entry = $edit[G2::VARWOTDENTRY];
@@ -774,11 +677,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
   }
   elseif ($op == 'view') {
     switch ($delta) {
-      case G2::DELTA_RANDOM:
-        $block['subject'] = t('Random G2 glossary entry');
-        $block['content'] = theme('g2_random', _g2_random());
-        break;
-
       case G2::DELTA_WOTD:
         $block['subject'] = variable_get(G2::VARWOTDTITLE, G2::DEFWOTDTITLE);
         $block['content'] = theme('g2_wotd',
@@ -808,7 +706,9 @@ function g2_cron() {
     $date0 = date('z', variable_get(G2::VARWOTDDATE, mktime()));
     $date1 = date('z');
     if ($date1 <> $date0) {
-      $random = _g2_random();
+      /** @var \Drupal\g2\Random $svcRandom */
+      $svcRandom = \Drupal::service(G2::SVC_RANDOM);
+      $random = $svcRandom->get();
       variable_set(G2::VARWOTDENTRY, $random->nid);
       variable_set(G2::VARWOTDDATE, mktime());
     }
@@ -1013,7 +913,7 @@ function g2_referer_wipe_confirm_form(
  * @param \Drupal\Core\Form\FormStateInterface $form_state
  *   The form state.
  */
-function g2_referer_wipe_confirm_form_submit($form, &$form_state) {
+function g2_referer_wipe_confirm_form_submit(array $form, &$form_state) {
   _g2_referer_wipe();
   Drupal::messenger()
     ->addStatus(t('Referer information has been erased on all G2 entries'));
@@ -1076,7 +976,7 @@ function g2_node_view(array &$build, EntityInterface $node, EntityViewDisplayInt
 
   // On the WOTD feed, force the node date to the WOTD date or current time.
   if ($view_mode === 'rss' && Drupal::routeMatch()
-      ->getRouteName() === G2::ROUTE_FEED_WOTD) {
+    ->getRouteName() === G2::ROUTE_FEED_WOTD) {
     $node->created = (Drupal::state()->get(G2::VARWOTDDATE) ?: time());
   }
 
@@ -1105,17 +1005,18 @@ function g2_views_api() {
  * its actual use of the data.
  */
 function g2_xmlrpc() {
+  /** @var \Drupal\g2\Random svcRandom */
   $mapping = [
     'g2.alphabar' => '_g2_alphabar',
     'g2.api' => '_g2_api',
     'g2.latest' => '_g2_latest',
-    'g2.random' => '_g2_random',
+    'g2.random' => [\Drupal::service(G2::SVC_RANDOM), 'get'],
     'g2.stats' => '_g2_stats',
     'g2.top' => '_g2_top',
     'g2.wotd' => '_g2_wotd',
   ];
 
-  $enabled = Drupal::config('g2.settings')->get('api.server.enabled');
+  $enabled = Drupal::config(G2::CONFIG_NAME)->get('api.server.enabled');
   if (!$enabled) {
     $mapping = [];
   }

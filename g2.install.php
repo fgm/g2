@@ -153,7 +153,6 @@ SQL;
    */
   $delta_changes = [
     0 => G2::DELTA_ALPHABAR,
-    1 => G2::DELTA_RANDOM,
     2 => G2::DELTA_TOP,
     3 => G2::DELTA_WOTD,
     4 => G2::DELTA_LATEST,

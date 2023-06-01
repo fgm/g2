@@ -10,7 +10,7 @@ class G2 {
   const BUNDLE = 'g2_entry';
 
   /**
-   * The key for the module configuration.
+   * The config key for the module configuration.
    */
   const CONFIG_NAME = 'g2.settings';
 
@@ -23,6 +23,26 @@ class G2 {
    * The G2 permission for administrators.
    */
   const PERM_ADMIN = 'administer g2 entries';
+
+  /**
+   * The key for the module state.
+   */
+  const STATE_NAME = 'g2.state.random_entry';
+
+  /**
+   * The name of the core config.factory service.
+   */
+  const SVC_CONF = 'config.factory';
+
+  /**
+   * The name of the core entity_type.manager service.
+   */
+  const SVC_ETM = 'entity_type.manager';
+
+  /**
+   * The name of the g2.random service.
+   */
+  const SVC_RANDOM = 'g2.random';
 
   /**
    * The public-facing version: two first levels for semantic versioning.
@@ -43,11 +63,6 @@ class G2 {
    * Block: n most recent.
    */
   const DELTA_LATEST = 'latest';
-
-  /**
-   * Block: random.
-   */
-  const DELTA_RANDOM = 'random';
 
   /**
    * Block: n most viewed.
@@ -108,14 +123,32 @@ class G2 {
   const DEFTOOLTIPS = FALSE;
   const VARPAGETITLE = 'g2-page-title';
   const DEFPAGETITLE = TRUE;
-  const VARWOTDENTRY = 'g2-wotd-entry';
+
+  /**
+   * The config path for the WOTD entry.
+   */
+  const VARWOTDENTRY = 'services.wotd.entry';
+
+  /**
+   * The config default for the WOTD entry.
+   */
   const DEFWOTDENTRY = '';
-  const VARRANDOMSTORE = 'g2-random-store';
-  const DEFRANDOMSTORE = TRUE;
-  const VARRANDOMENTRY = 'g2-random-entry';
+
+  /**
+   * Teh config path for the random entry storage choice.
+   */
+  const VARRANDOMSTORE = 'services.random.store';
+
+  /**
+   * The State key for the current stored random entry.
+   */
+  const VARRANDOMENTRY = 'g2.random-entry';
+
+  /**
+   * The State default for the current stored random entry.
+   */
   const DEFRANDOMENTRY = '';
-  const VARRANDOMTERMS = 'g2-random-terms';
-  const DEFRANDOMTERMS = [];
+
   const VARWOTDTERMS = 'g2-wotd-terms';
   const DEFWOTDTERMS = FALSE;
 
@@ -144,6 +177,9 @@ class G2 {
   const VARTOPITEMCOUNT = 'g2-top-item-count';
   const DEFTOPITEMCOUNT = 5;
 
+  // View modes.
+  const VM_G2_BLOCK = 'g2_block';
+
   // Constants in this group are only listed to remove WSODs, but they still
   // need to be converting from hook_menu to Symfony routing.
   const PATH_ENTRIES = 'g2/entries';
@@ -168,7 +204,7 @@ class G2 {
    * @return string
    *   The encoded terminal.
    */
-  public static function encodeTerminal($terminal) {
+  public static function encodeTerminal($terminal): string {
     $terminal = strtr($terminal, [
       '.' => '%2E',
       '/' => '%2F',

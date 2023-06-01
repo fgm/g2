@@ -5,6 +5,7 @@ namespace Drupal\g2\Plugin\Block;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\g2\Alphabar;
+use Drupal\g2\G2;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -13,7 +14,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @Block(
  *   id = "g2_alphabar",
  *   admin_label = @Translation("G2 Alphabar"),
- *   category = @Translation("G2")
+ *   category = @Translation("G2"),
+ *   help = @Translation("This block displays a clickable list of initials from the G2 glossary."),
  * )
  */
 class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface {
@@ -109,10 +111,10 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
     $alphabar = $container->get('g2.alphabar');
 
     /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
-    $config_factory = $container->get('config.factory');
+    $config_factory = $container->get(G2::SVC_CONF);
 
     /** @var \Drupal\Core\Config\ImmutableConfig $config */
-    $config = $config_factory->get('g2.settings');
+    $config = $config_factory->get(G2::CONFIG_NAME);
 
     $block_config = $config->get('block.alphabar');
 

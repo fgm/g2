@@ -26,12 +26,14 @@ g2.settings:
           label: 'Random entry'
           type: mapping
           mapping:
-            show_terms:
-              type: boolean
-              label: 'Show terms on random node'
-            store:
-              type: boolean
-              label: 'Store the last random value. True is better for smaller sites, false is better for larger sites.'
+            max_age:
+              type: integer
+              label: |
+                The cache duration of the random entry in seconds, strictly positive.
+                <p>Caching limits the load on your site by not generating a new
+                  entry on every page hit.
+                  The higher you set it, the less load that block causes on your
+                  site.</p>
         top:
           label: 'Most viewed entries'
           type: mapping
@@ -83,6 +85,28 @@ g2.settings:
             max_count:
               type: integer
               label: 'Maximum number of entries in latest(n) list.'
+        random:
+            type: mapping
+            label: 'Random word'
+            mapping:
+              store:
+                type: boolean
+                label: |
+                  Store the last random value.
+                  <p>When this setting is true, the latest random value is kept
+                    in the database.</p>
+                  <ul>
+                    <li>For small glossaries, it is usually best to keep it
+                      saved, to avoid showing the same pseudo-random value on
+                      consecutive random entry generations.</li>
+                    <li>For larger ones, randomness will be sufficient,
+                      and unchecking this setting will remove one database write
+                      with locking.</li>
+                    </ul>
+                  <p>Note that this applies to random generation, but the random
+                    block may use caching to avoid calling random generation on
+                    every page. Configure it at
+                    <a href="./block">admin/config/content/g2/block</a>.</p>
         top:
           type: mapping
           label: 'Most viewed entries'
@@ -179,14 +203,14 @@ g2.settings:
           mapping:
             remote:
               type: string
-              label: 'The URL of the remote reference glossary.'
+              label: 'The URL of the remote glossary server'
         server:
           type: mapping
           label: 'API Server'
           mapping:
             enabled:
               type: boolean
-              label: 'Is the XML-RPC API enabled ?'
+              label: 'Enable the XML-RPC API'
             throttle:
               type: float
               label: 'Coefficient limit for API operations over block settings. Between 0.0 and 1.0.'

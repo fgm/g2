@@ -106,12 +106,12 @@ class Requirements implements ContainerInjectionInterface {
     $route_provider = $container->get('router.route_provider');
 
     /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
-    $etm = $container->get('entity_type.manager');
+    $etm = $container->get(G2::SVC_ETM);
 
     /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
-    $config_factory = $container->get('config.factory');
+    $config_factory = $container->get(G2::SVC_CONF);
 
-    $g2_config = $config_factory->get('g2.settings');
+    $g2_config = $config_factory->get(G2::CONFIG_NAME);
     $statistics_settings = $config_factory->get('statistics.settings');
 
     return new static($g2_config, $route_provider, $statistics_settings,

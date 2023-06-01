@@ -12,13 +12,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @Block(
  *   id = "g2_wotd",
  *   admin_label = @Translation("G2 Word of the day"),
- *   category = @Translation("G2")
+ *   category = @Translation("G2"),
+ *   help = @Translation("This block displays a once-a-day entry from the G2 glossary."),
  * )
  *
  * @state g2.wotd.date
  * @state g2.wotd.entry
  */
-class Wotd extends BlockBase implements ContainerFactoryPluginInterface {
+class WotdBlock extends BlockBase implements ContainerFactoryPluginInterface {
   /**
    * Default for the current WOTD state entry: none.
    */

@@ -1,0 +1,52 @@
+uuid: 40c65ae7-2e81-4c99-9243-db89dd3325ce
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.node.g2_block
+    - field.field.node.g2_entry.body
+    - field.field.node.g2_entry.g2_complement
+    - field.field.node.g2_entry.g2_context
+    - field.field.node.g2_entry.g2_expansion
+    - field.field.node.g2_entry.g2_origin
+    - field.field.node.g2_entry.g2_period
+    - node.type.g2_entry
+  module:
+    - text
+    - user
+  enforced:
+    module:
+      - g2
+id: node.g2_entry.g2_block
+targetEntityType: node
+bundle: g2_entry
+mode: g2_block
+content:
+  body:
+    type: text_summary_or_trimmed
+    label: above
+    settings:
+      trim_length: 600
+    third_party_settings: {  }
+    weight: 1
+    region: content
+  g2_context:
+    type: entity_reference_label
+    label: above
+    settings:
+      link: true
+    third_party_settings: {  }
+    weight: 2
+    region: content
+  g2_expansion:
+    type: text_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 0
+    region: content
+hidden:
+  g2_complement: true
+  g2_origin: true
+  g2_period: true
+  links: true

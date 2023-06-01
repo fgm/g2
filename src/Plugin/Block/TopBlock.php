@@ -4,6 +4,7 @@ namespace Drupal\g2\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\g2\G2;
 use Drupal\g2\Top;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -13,7 +14,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @Block(
  *   id = "g2_top",
  *   admin_label = @Translation("G2 Top(n)"),
- *   category = @Translation("G2")
+ *   category = @Translation("G2"),
+ *   help = @Translation("This block displays a list of the most viewed entries in the G2 glossary."),
  * )
  */
 class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
@@ -63,7 +65,7 @@ class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
    * {@inheritdoc}
    */
   public function build() {
-    if (!$this->configuration['available']) {
+    if (!($this->configuration['available'] ?? '')) {
       return [];
     }
 
@@ -102,10 +104,10 @@ class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
     $top = $container->get('g2.top');
 
     /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
-    $config_factory = $container->get('config.factory');
+    $config_factory = $container->get(G2::SVC_CONF);
 
     /** @var \Drupal\Core\Config\ImmutableConfig $config */
-    $config = $config_factory->get('g2.settings');
+    $config = $config_factory->get(G2::CONFIG_NAME);
 
     $block_config = $config->get('block.top');
 

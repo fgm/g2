@@ -6,6 +6,34 @@ services:
       - '@config.factory'
       - '@link_generator'
 
+  # Provides a list of the latest updated G2 entries
+  g2.latest:
+    class: '\Drupal\g2\Latest'
+    arguments:
+      - '@config.factory'
+      - '@link_generator'
+      - '@url_generator'
+      - '@entity_type.manager'
+
+  g2.random:
+    class: '\Drupal\g2\Random'
+    arguments:
+      - '@config.factory'
+      - '@database'
+      - '@entity_type.manager'
+      - '@state'
+
+  # Provides a list of the most visited G2 entries
+  g2.top:
+    class: '\Drupal\g2\Top'
+    arguments:
+      - '@config.factory'
+      - '@link_generator'
+      - '@url_generator'
+      - '@module_handler'
+      - '@database'
+      - '@logger.channel.g2'
+
   logger.channel.g2:
     parent: logger.channel_base
     arguments: ['g2']
@@ -18,22 +46,3 @@ services:
       - '@entity_type.manager'
       - '@current_user'
 
-  # Provides a list of the latest updated G2 entries
-  g2.latest:
-    class: '\Drupal\g2\Latest'
-    arguments:
-      - '@config.factory'
-      - '@link_generator'
-      - '@url_generator'
-      - '@entity_type.manager'
-
-  # Provides a list of the most visited G2 entries
-  g2.top:
-    class: '\Drupal\g2\Top'
-    arguments:
-      - '@config.factory'
-      - '@link_generator'
-      - '@url_generator'
-      - '@module_handler'
-      - '@database'
-      - '@logger.channel.g2'

@@ -127,10 +127,10 @@ class Main implements ContainerInjectionInterface {
     $alphabar = $container->get('g2.alphabar');
 
     /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
-    $config_factory = $container->get('config.factory');
+    $config_factory = $container->get(G2::SVC_CONF);
 
     /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
-    $etm = $container->get('entity_type.manager');
+    $etm = $container->get(G2::SVC_ETM);
 
     /** @var \Drupal\Core\Config\ImmutableConfig $config */
     $config = $config_factory->get(G2::CONFIG_NAME);

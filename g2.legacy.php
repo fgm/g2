@@ -25,32 +25,6 @@ function zg2_block_configure($delta) {
   ];
 
   switch ($delta) {
-    case G2::DELTA_RANDOM:
-      $form[G2::VARRANDOMSTORE] = [
-        '#type' => 'checkbox',
-        '#title' => t('Store latest random entry'),
-        '#default_value' => variable_get(G2::VARRANDOMSTORE,
-          G2::DEFRANDOMSTORE),
-        '#description' => t(
-          'When this setting is TRUE (default value),
-      the latest random value is kept in the DB to avoid showing the same pseudo-random
-      value on consecutive page displays.
-      For small sites, it is usually best to keep it saved.
-      For larger sites, unchecking this setting will remove one database write with locking.'
-        ),
-      ];
-      $form[G2::VARRANDOMTERMS] = [
-        '#type' => 'checkbox',
-        '#title' => t('Return taxonomy terms for the current entry'),
-        '#default_value' => variable_get(G2::VARRANDOMTERMS,
-          G2::DEFRANDOMTERMS),
-        '#description' => t(
-          'The taxonomy terms will be returned by the API and made available to the theme.
-         Default G2 themeing will display them.'
-        ),
-      ];
-      break;
-
     case G2::DELTA_TOP:
       $form[G2::VARTOPITEMCOUNT] = [
         '#type' => 'select',
@@ -65,7 +39,7 @@ function zg2_block_configure($delta) {
       // Convert nid to "title [<nid>]" even if missing.
       // @see autocomplete()
       $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
-      $node = \Drupal::service('entity_type.manager')
+      $node = \Drupal::service(G2::SVC_ETM)
         ->getStorage(G2::TYPE)
         ->load($nid);
       if (empty($node)) {
@@ -192,14 +166,10 @@ function zg2_block_configure($delta) {
  */
 function zg2_block_info() {
   $blocks = [];
-  $blocks[G2::DELTA_RANDOM]['info'] = variable_get('g2_random_info',
-    t('G2 Random'));
   $blocks[G2::DELTA_TOP]['info'] = variable_get('g2_top_info', t('G2 Top'));
   $blocks[G2::DELTA_WOTD]['info'] = variable_get('g2_wotd_info',
     t('G2 Word of the day'));
 
-  // Else it couldn't be random.
-  $blocks[G2::DELTA_RANDOM]['cache'] = DRUPAL_NO_CACHE;
   // Can contain unpublished nodes.
   $blocks[G2::DELTA_TOP]['cache'] = DRUPAL_CACHE_PER_ROLE;
   // Not all roles have g2 view permission.
@@ -212,11 +182,6 @@ function zg2_block_info() {
  */
 function zg2_block_save($delta, $edit) {
   switch ($delta) {
-    case G2::DELTA_RANDOM:
-      variable_set(G2::VARRANDOMSTORE, $edit[G2::VARRANDOMSTORE]);
-      variable_set(G2::VARRANDOMTERMS, $edit[G2::VARRANDOMTERMS]);
-      break;
-
     case G2::DELTA_TOP:
       variable_set(G2::VARTOPITEMCOUNT, $edit[G2::VARTOPITEMCOUNT]);
       break;
@@ -250,11 +215,6 @@ function zg2_block_save($delta, $edit) {
  */
 function zg2_block_view($delta) {
   switch ($delta) {
-    case G2::DELTA_RANDOM:
-      $block['subject'] = t('Random G2 glossary entry');
-      $block['content'] = theme('g2_random', [G2::TYPE => G2::random()]);
-      break;
-
     case G2::DELTA_TOP:
       $max = variable_get(G2::VARTOPITEMCOUNT, G2::DEFTOPITEMCOUNT);
       $block['subject'] = t(
@@ -493,7 +453,7 @@ function zg2_form(&$node, $form_state) {
  *   - FALSE otherwise
  */
 function zg2_nid_load($us_nid = 0) {
-  $node = \Drupal::service('entity_type.manager')
+  $node = \Drupal::service(G2::SVC_ETM)
     ->getStorage(G2::TYPE)
     ->load($us_nid);
   if ($node->type != G2::BUNDLE) {

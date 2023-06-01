@@ -68,7 +68,7 @@ class Initial implements ContainerInjectionInterface {
     /** @var \Drupal\Core\Database\Connection $database */
     $database = $container->get('database');
     /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
-    $etm = $container->get('entity_type.manager');
+    $etm = $container->get(G2::SVC_ETM);
     return new static($database, $current_user, $etm);
   }
 
@@ -86,7 +86,7 @@ class Initial implements ContainerInjectionInterface {
    *   Usually a single letter. Assumed to be safe, so do not call this method
    *   on raw user input.
    *
-   * @return array<stringarray>
+   * @return arraystringarray
    *   A render array.
    */
   protected function getByInitial($initial) {
@@ -161,7 +161,7 @@ class Initial implements ContainerInjectionInterface {
    * @param string $g2_initial
    *   The raw initial matching the route regexp.
    *
-   * @return array<stringstring|array<stringarray>>
+   * @return arraystringstring|arraystringarray
    *   The render array.
    */
   public function indexAction($g2_initial) {
@@ -199,7 +199,7 @@ class Initial implements ContainerInjectionInterface {
    * @param null|string $initial
    *   Initial segment.
    *
-   * @return array<integerinteger>
+   * @return arrayintegerinteger
    *   - 0: g2 entries having chosen taxonomy term
    *   - 1: g2 entries starting with chosen initial segment
    */

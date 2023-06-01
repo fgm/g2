@@ -64,7 +64,7 @@ class Homonyms implements ContainerInjectionInterface {
    */
   public static function create(ContainerInterface $container) {
     /** @var \Drupal\Core\Config\ConfigFactoryInterface  $config_factory */
-    $config_factory = $container->get('config.factory');
+    $config_factory = $container->get(G2::SVC_CONF);
 
     $config = $config_factory->get(G2::CONFIG_NAME)->get('controller.homonyms');
 
@@ -79,7 +79,7 @@ class Homonyms implements ContainerInjectionInterface {
    * @param string $raw_match
    *   The raw, unsafe string requested.
    *
-   * @return array<stringarray|string>
+   * @return arraystringarray|string
    *   A render array.
    *
    * @FIXME passing "+" (unquoted) causes notice in getAliasByPath().
@@ -143,7 +143,7 @@ class Homonyms implements ContainerInjectionInterface {
    * @param \Drupal\node\NodeInterface[] $g2_match
    *   The match array, containing node entities indexed by nid.
    *
-   * @return array<stringarray|string>
+   * @return arraystringarray|string
    *   A render array.
    */
   protected function indexMatches($raw_match, array $g2_match) {
@@ -166,7 +166,7 @@ class Homonyms implements ContainerInjectionInterface {
    * @param int $nid
    *   The node to use to build the page.
    *
-   * @return array<stringarray|string>
+   * @return arraystringarray|string
    *   A render array.
    *
    * @deprecated in drupal:8.1.0 and is removed from drupal:11.0.0. Use a view instead.
@@ -191,7 +191,7 @@ class Homonyms implements ContainerInjectionInterface {
    * @param int $view_id
    *   The id of the view to use.
    *
-   * @return array<stringarray|string>
+   * @return arraystringarray|string
    *   A render array.
    */
   protected function indexUsingView($raw_match, $view_id) {
@@ -218,7 +218,7 @@ class Homonyms implements ContainerInjectionInterface {
    * @param \Drupal\node\NodeInterface[] $g2_match
    *   Unsafe. The entry for which to find matching G2 entries.
    *
-   * @return array<stringarray|string>|\Symfony\Component\HttpFoundation\RedirectResponse
+   * @return arraystringarray|string|\Symfony\Component\HttpFoundation\RedirectResponse
    *   Render array or redirect response.
    */
   public function indexAction(RouteMatchInterface $route, array $g2_match) {
