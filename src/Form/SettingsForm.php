@@ -9,7 +9,9 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Routing\RouteBuilderInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\Url;
 use Drupal\g2\G2;
+use Drupal\g2\WOTD;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -17,9 +19,11 @@ use Symfony\Component\HttpFoundation\Response;
  * Class SettingsForm contains the G2 configuration form.
  *
  * @todo Refactor like \Drupal\config_inspector\Form\ConfigInspectorItemForm.
- * @todo Relate service.alphabar.contents configuration with routes like g2.initial.
+ * @todo Relate service.alphabar.contents configuration with routes like
+ *   g2.initial.
  */
 class SettingsForm extends ConfigFormBase {
+
   use StringTranslationTrait;
 
   /**
@@ -44,6 +48,13 @@ class SettingsForm extends ConfigFormBase {
   protected $routerBuilder;
 
   /**
+   * The g2.wotd service.
+   *
+   * @var \Drupal\g2\WOTD
+   */
+  protected $wotd;
+
+  /**
    * Constructs a \Drupal\system\ConfigFormBase object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
@@ -54,17 +65,35 @@ class SettingsForm extends ConfigFormBase {
    *   The schema array for the configuration data.
    * @param \Drupal\Core\Routing\RouteBuilderInterface $router_builder
    *   The router.builder service.
+   * @param \Drupal\g2\WOTD $wotd
+   *   The g2.wotd service.
    */
   public function __construct(
     EntityTypeManagerInterface $etm,
     ConfigFactoryInterface $config_factory,
     array $config_schema,
     RouteBuilderInterface $router_builder,
+    WOTD $wotd,
   ) {
     parent::__construct($config_factory);
     $this->etm = $etm;
     $this->configSchema = $config_schema;
     $this->routerBuilder = $router_builder;
+    $this->wotd = $wotd;
+  }
+
+  /**
+   * Extract the last part of a dotted path as used in config and state.
+   *
+   * @param string $name
+   *   The path to extract from.
+   *
+   * @return string
+   *   The last component.
+   */
+  protected function component(string $name): string {
+    $ar = explode('.', $name);
+    return end($ar);
   }
 
   /**
@@ -83,7 +112,10 @@ class SettingsForm extends ConfigFormBase {
     /** @var \Drupal\Core\Config\TypedConfigManagerInterface $typed_config */
     $typed_config = $container->get('config.typed');
 
-    return new static($etm, $config_factory, $typed_config->getDefinition(G2::CONFIG_NAME), $router_builder);
+    /** @var \Drupal\g2\WOTD $wotd */
+    $wotd = $container->get(G2::SVC_WOTD);
+
+    return new static($etm, $config_factory, $typed_config->getDefinition(G2::CONFIG_NAME), $router_builder, $wotd);
   }
 
   /**
@@ -111,6 +143,8 @@ class SettingsForm extends ConfigFormBase {
 
   /**
    * Split a config label in two parts: title and description, if available.
+   *
+   * The split happens at the first "." or "?", if any.
    *
    * @param string $label
    *   The combined title and description, to be split.
@@ -200,33 +234,24 @@ class SettingsForm extends ConfigFormBase {
     ];
 
     $element = &$form[$section]['wotd'];
-    $element['auto_change'] = [
-      '#type' => 'checkbox',
-      '#title' => $schema['wotd']['mapping']['auto_change']['label'],
-      '#default_value' => $config['wotd']['auto_change'],
+    $element['wotd'] = [
+      '#markup' => $this->t('<ul>
+  <li>Place a G2 WOTD block in a region using the <a href=":block">block configuration page</a>,
+    and configure its title and display conditions there.</li>
+  <li>Use the <a href=":vm">G2 Block view display</a> on the %bundle to adjust the WOTD rendering.</li>
+  <li>Configure the WOTD value and rotation on the <a href=":services">WOTD service configuration</a>.</li>
+  </ul>',
+        [
+          ':block' => Url::fromRoute(G2::ROUTE_BLOCKS)->toString(),
+          ':vm' => Url::fromRoute(G2::ROUTE_VM, [
+            'node_type' => G2::BUNDLE,
+            'view_mode_name' => G2::VM_BLOCK,
+          ])->toString(),
+          '%bundle' => G2::BUNDLE,
+          ':services' => Url::fromRoute(G2::ROUTE_CONFIG_SERVICES)->toString(),
+        ])
+      . '</p>',
     ];
-    $element['body_size'] = [
-      '#type' => 'number',
-      '#title' => $schema['wotd']['mapping']['body_size']['label'],
-      '#default_value' => $config['wotd']['body_size'],
-    ];
-
-    $element['links'] = [
-      '#type' => 'details',
-      '#open' => TRUE,
-      '#title' => $schema['wotd']['mapping']['links']['label'],
-    ];
-    foreach ($config['wotd']['links'] as $name => $value) {
-      $element['links'][$name] = [
-        '#type' => 'checkbox',
-        '#title' => $schema['wotd']['mapping']['links']['mapping'][$name]['label'],
-        '#default_value' => $value,
-      ];
-    }
-    $element['show_terms'] = [
-      '#type' => 'checkbox',
-      '#default_value' => $config['wotd']['show_terms'],
-    ] + $this->getInfoFromLabel($schema['wotd']['mapping']['show_terms']['label']);
 
     return $form;
   }
@@ -245,12 +270,14 @@ class SettingsForm extends ConfigFormBase {
    *   The form array.
    *
    * @todo provide an auto-complete for routes instead of using a plain string.
-   * @todo provide an auto-complete for node ids instead of using a plain number.
+   * @todo provide an auto-complete for node ids instead of using a plain
+   *   number.
    */
   public function buildControllerForm(array $form, array $config, array $schema) {
     $section = 'controller';
     $form = $this->prepareTopLevelDetails($form, $schema, $section);
-    $this->messenger()->addStatus($this->t('Be aware that saving this configuration will rebuild the router.'));
+    $this->messenger()
+      ->addStatus($this->t('Be aware that saving this configuration will rebuild the router.'));
     $element = &$form['controller']['main'];
     $element['nid'] = [
       '#type' => 'number',
@@ -353,13 +380,6 @@ class SettingsForm extends ConfigFormBase {
    *   The form array.
    */
   public function buildFormattingForm(array $form, array $config, array $schema) {
-    $element = 'hidden_extra_title';
-    $form['formatting'][$element] = [
-      '#type' => 'checkbox',
-      '#title' => $schema[$element]['label'],
-      '#default_value' => $config[$element],
-    ];
-
     $element = 'hide_free_tagging';
     $form['formatting'][$element] = [
       '#type' => 'checkbox',
@@ -469,10 +489,11 @@ another site, while the server allows your site to provide entries to such
     ];
 
     $element = &$form[$section]['random'];
-    $element['store'] = [
+    $key = $this->component(G2::VARRANDOMSTORE);
+    $element[$key] = [
       '#type' => 'checkbox',
-      '#default_value' => $config['random']['store'],
-    ] + $this->getInfoFromLabel($schema['random']['mapping']['store']['label']);
+      '#default_value' => $config['random'][$key],
+    ] + $this->getInfoFromLabel($schema['random']['mapping'][$key]['label']);
 
     foreach (['latest', 'top'] as $service) {
       $element = &$form[$section][$service];
@@ -483,11 +504,23 @@ another site, while the server allows your site to provide entries to such
       ];
 
       $element = &$form[$section]['wotd'];
-      $element['entry'] = [
+      $wotd = $this->wotd->get();
+      $key = $this->component(G2::VARWOTDENTRY);
+      $element[$key] = [
         '#type' => 'textfield',
-        '#title' => $schema['wotd']['mapping']['entry']['label'],
-        '#default_value' => $config['wotd']['entry'],
+        '#title' => $schema['wotd']['mapping'][$key]['label'],
+        '#autocomplete_route_name' => G2::ROUTE_AUTOCOMPLETE,
+        '#maxlength' => 60,
+        '#required' => TRUE,
+        '#default_value' => $this->wotd->numberedTitleInput($wotd),
+        '#element_validate' => [[$this, 'validateWordOfTheDay']],
       ];
+
+      $key = $this->component(G2::VARWOTDAUTOCHANGE);
+      $element[$key] = [
+        '#type' => 'checkbox',
+        '#default_value' => $config['wotd'][$key],
+      ] + $this->getInfoFromLabel($schema['wotd']['mapping'][$key]['label']);
     }
     return $form;
   }
@@ -538,15 +571,52 @@ another site, while the server allows your site to provide entries to such
     $values = $form_state->getValues();
     $section = $values['section'];
     $values = $values[$section];
-    $config = $this->config(G2::CONFIG_NAME);
-    $config->set($section, $values)->save();
+    $config = $this->configFactory()
+      ->getEditable(G2::CONFIG_NAME);
+    $config->set($section, $values)
+      ->save();
 
     $handler = 'submit' . ucfirst($section) . 'Form';
     if (method_exists($this, $handler)) {
       $this->{$handler}();
     }
 
-    $this->messenger()->addStatus($this->t('The configuration options have been saved.'));
+    $this->messenger()
+      ->addStatus($this->t('The configuration options have been saved.'));
+  }
+
+  /**
+   * Callback for #elementValidate on WOTD entry.
+   *
+   * @param array $element
+   *   The element.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
+   * @param array $form
+   *   The complete form.
+   *
+   * @return array
+   *   The modified element.
+   */
+  public function validateWordOfTheDay(
+    array &$element,
+    FormStateInterface $formState,
+    array $form,
+  ): array {
+    $wotdPath = explode('.', G2::VARWOTDENTRY);
+    $value = $formState->getValue($wotdPath);
+    if (empty($value)) {
+      $element['#value'] = '';
+      return $element;
+    }
+    $nodes = $this->wotd->matchesFromTitle($value);
+    if (empty($nodes)) {
+      return $element;
+    }
+    $node = current($nodes);
+    $nid = (int) $node->id();
+    $formState->setValueForElement($element, $nid);
+    return $element;
   }
 
 }

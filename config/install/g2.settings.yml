@@ -7,14 +7,6 @@ block:
     max_age: 5
   top:
     count: 10
-  wotd:
-    auto_change: true
-    body_size: 40
-    links:
-      feed: true
-      node: true
-      terms: true
-    show_terms: false
 services:
   alphabar:
     contents: 0123456789abcdefghijklmnopqrstuvwxyz
@@ -25,11 +17,13 @@ services:
   top:
     max_count: 100
   wotd:
+    auto_change: true
     entry: 0
 controller:
   main:
     nid: 0
     route: g2.main
+    log_referrers: true
   entries:
     route: g2.entries
   initial:

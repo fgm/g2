@@ -1,6 +1,13 @@
 @CHARSET "UTF-8";
 
 /**
+ * @file
+ * Alphabar-specific stylesheet for G2 Glossary module.
+ *
+ * @copyright 2005-2023 Frédéric G. Marand, for Ouest Systemes Informatiques.
+ */
+
+/**
  * Use a fixed width to layout the alphabar as a character grid
  */
 .g2-alphabar a {
@@ -16,5 +23,5 @@
 .g2-alphabar a:hover {
   -webkit-appearance: button;
   -moz-appearance: button;
-  appearance: button;
+  appearance: auto;
 }

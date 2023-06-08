@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\g2\Tests;
+namespace Drupal\g2\Tests\Kernel;
 
 use Drupal\g2\Alphabar;
 use Drupal\KernelTests\KernelTestBase;

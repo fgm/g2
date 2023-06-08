@@ -36,71 +36,6 @@ function zg2_block_configure($delta) {
       break;
 
     case G2::DELTA_WOTD:
-      // Convert nid to "title [<nid>]" even if missing.
-      // @see autocomplete()
-      $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
-      $node = \Drupal::service(G2::SVC_ETM)
-        ->getStorage(G2::TYPE)
-        ->load($nid);
-      if (empty($node)) {
-        $node = new stdClass();
-        $node->nid = 0;
-        $node->title = NULL;
-      }
-      $form[G2::VARWOTDENTRY] = [
-        '#type' => 'textfield',
-        '#title' => t('Entry for the day'),
-        '#maxlength' => 60,
-        '#autocomplete_route_name' => G2::ROUTE_AUTOCOMPLETE,
-        '#required' => TRUE,
-        // !title: we don't filter since this is input, not output,
-        // and can contain normally escaped characters, to accommodate
-        // entries like "<", "C#" or "AT&T"
-        '#default_value' => t(
-          '!title [@nid]',
-          [
-            '!title' => $node->title,
-            '@nid' => $nid,
-          ]
-        ),
-      ];
-      $form[G2::VARWOTDBODYSIZE] = [
-        '#type' => 'textfield',
-        '#title' => t('Number of text characters to be displayed from entry definition body, if one exists'),
-        '#size' => 4,
-        '#maxlength' => 4,
-        '#required' => TRUE,
-        '#default_value' => variable_get(G2::VARWOTDBODYSIZE,
-          G2::DEFWOTDBODYSIZE),
-      ];
-      $form[G2::VARWOTDAUTOCHANGE] = [
-        '#type' => 'checkbox',
-        '#title' => t('Auto-change daily'),
-        '#required' => TRUE,
-        '#default_value' => variable_get(G2::VARWOTDAUTOCHANGE,
-          G2::DEFWOTDAUTOCHANGE),
-        '#description' => t('This setting will only work if cron or poormanscron is used.'),
-      ];
-      $form[G2::VARWOTDTERMS] = [
-        '#type' => 'checkbox',
-        '#title' => t('Return taxonomy terms for the current entry'),
-        '#default_value' => variable_get(G2::VARWOTDTERMS, G2::DEFWOTDTERMS),
-        '#description' => t(
-          'The taxonomy terms will be returned by the API and made available to the theme.
-         Default G2 themeing will display them.'
-        ),
-      ];
-      $default_wotd_title = t('Word of the day in the G2 glossary');
-      $form[G2::VARWOTDTITLE] = [
-        '#type' => 'textfield',
-        '#title' => t('Title for the WOTD block'),
-        '#description' => t(
-          'This title is also the default title for the WOTD feed, if none is defined. It is overridden by the default Drupal block title, if the latter is not empty.'
-        ),
-        '#required' => TRUE,
-        '#default_value' => variable_get(G2::VARWOTDTITLE, $default_wotd_title),
-      ];
-
       $form['wotd_feed'] = [
         '#type' => 'fieldset',
         '#title' => t('RSS Feed'),
@@ -167,13 +102,9 @@ function zg2_block_configure($delta) {
 function zg2_block_info() {
   $blocks = [];
   $blocks[G2::DELTA_TOP]['info'] = variable_get('g2_top_info', t('G2 Top'));
-  $blocks[G2::DELTA_WOTD]['info'] = variable_get('g2_wotd_info',
-    t('G2 Word of the day'));
 
   // Can contain unpublished nodes.
   $blocks[G2::DELTA_TOP]['cache'] = DRUPAL_CACHE_PER_ROLE;
-  // Not all roles have g2 view permission.
-  $blocks[G2::DELTA_WOTD]['cache'] = DRUPAL_CACHE_PER_ROLE;
   return $blocks;
 }
 
@@ -187,22 +118,11 @@ function zg2_block_save($delta, $edit) {
       break;
 
     case G2::DELTA_WOTD:
-      // Convert "some title [<nid>, sticky]" to nid.
-      $entry = $edit[G2::VARWOTDENTRY];
-      $matches = [];
-      $count = preg_match('/.*\[(\d*).*\]$/', $entry, $matches);
-      $nid = $count ? $matches[1] : 0;
 
-      variable_set(G2::VARWOTDENTRY, $nid);
-      variable_set(G2::VARWOTDBODYSIZE, $edit[G2::VARWOTDBODYSIZE]);
-      variable_set(G2::VARWOTDAUTOCHANGE, $edit[G2::VARWOTDAUTOCHANGE]);
-      variable_set(G2::VARWOTDDATE, \Drupal::time()->getRequestTime());
-      variable_set(G2::VARWOTDTERMS, $edit[G2::VARWOTDTERMS]);
       variable_set(G2::VARWOTDFEEDLINK, $edit[G2::VARWOTDFEEDLINK]);
       variable_set(G2::VARWOTDFEEDTITLE, $edit[G2::VARWOTDFEEDTITLE]);
       variable_set(G2::VARWOTDFEEDDESCR, $edit[G2::VARWOTDFEEDDESCR]);
       variable_set(G2::VARWOTDFEEDAUTHOR, $edit[G2::VARWOTDFEEDAUTHOR]);
-      variable_set(G2::VARWOTDTITLE, $edit[G2::VARWOTDTITLE]);
       break;
 
     default:
@@ -223,15 +143,6 @@ function zg2_block_view($delta) {
       );
       $block['content'] = theme('g2_node_list',
         ['nodes' => G2::top($max, FALSE, TRUE)]);
-      break;
-
-    case G2::DELTA_WOTD:
-      $block['subject'] = variable_get(G2::VARWOTDTITLE,
-        t('Word of the day in the G2 glossary'));
-      $block['content'] = theme('g2_wotd', [
-        G2::TYPE => G2::wotd(variable_get(G2::VARWOTDBODYSIZE,
-          G2::DEFWOTDBODYSIZE)),
-      ]);
       break;
 
     // Should happen only when using a new code version on an older schema
@@ -260,25 +171,6 @@ function zg2_context_plugins() {
 function zg2_context_registry() {
   Drupal::moduleHandler()->loadInclude('g2', 'inc', 'context/g2.plugins');
   return _g2_context_registry();
-}
-
-/**
- * Implements hook_cron().
- *
- * In G2's case, change the WOTD once a day if this feature is enabled,
- * which is the default case.
- */
-function zg2_cron() {
-  if (variable_get(G2::VARWOTDAUTOCHANGE, G2::DEFWOTDAUTOCHANGE)) {
-    $date0 = date('z',
-      variable_get(G2::VARWOTDDATE, \Drupal::time()->getRequestTime()));
-    $date1 = date('z');
-    if ($date1 <> $date0) {
-      $random = G2::random();
-      variable_set(G2::VARWOTDENTRY, $random->nid);
-      variable_set(G2::VARWOTDDATE, mktime());
-    }
-  }
 }
 
 /**
@@ -474,7 +366,7 @@ function zg2_node_access($node, $op, $account) {
       break;
 
     case 'view':
-      $ret = user_access(G2::PERM_VIEW, $account);
+      $ret = user_access('access content', $account);
       break;
 
     default:
@@ -503,10 +395,6 @@ function zg2_permission() {
         'Access administrative information on G2 entries. This permission does not grant access to the module settings, which are controlled by the "administer site configuration" permission.'
       ),
       'restrict access' => TRUE,
-    ],
-    G2::PERM_VIEW => [
-      'title' => t('View G2 entries'),
-      'description' => t('This permission allows viewing G2 entries, subject to additional node access control.'),
     ],
   ];
   return $ret;
@@ -582,9 +470,6 @@ function ztheme_g2_random($variables) {
     // before/after semicolons.
     $ret .= t(': @expansion', ['@expansion' => $node->expansion]);
   }
-  // No longer hard coded: use a view_mode instead.
-  // No need to test: also works on missing taxonomy
-  // $ret .= G2::entry_terms($node);
   $ret .= theme(
     'more_link',
     [
@@ -646,8 +531,7 @@ function ztheme_g2_wotd($variables) {
   }
    */
 
-  // No need to test: it won't change anything unless taxonomy has been returned
-  // $ret .= G2::entry_terms($node);
+  // No need to test: won't change anything unless taxonomy has been returned.
   $ret .= theme(
     'more_link',
     [

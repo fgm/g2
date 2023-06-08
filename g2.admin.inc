@@ -22,6 +22,7 @@
  * drupal.org organization or the downstream distributor, not OSInet.
  */
 
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\g2\G2;
 
 /**
@@ -206,10 +207,10 @@ function g2_admin_settings() {
  *
  * @param array $form
  *   The form array.
- * @param \Drupal\Core\File\FileSystemInterface $form_state
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
  *   The form state.
  */
-function g2_admin_settings_submit(&$form, &$form_state) {
+function g2_admin_settings_submit(array &$form, FormStateInterface $form_state) {
   if ($form_state['values'][G2::VARPATHMAIN] != variable_get(G2::VARPATHMAIN, G2::DEFPATHMAIN)) {
     cache_clear_all('variables', 'cache');
     variable_set('menu_rebuild_needed', TRUE);
@@ -221,13 +222,13 @@ function g2_admin_settings_submit(&$form, &$form_state) {
  *
  * @param array $form
  *   The form array.
- * @param \Drupal\Core\File\FileSystemInterface $form_state
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
  *   The form state.
  */
-function g2_admin_settings_validate($form, &$form_state) {
+function g2_admin_settings_validate(array $form, FormStateInterface $form_state) {
   $main = $form_state['values']['g2_main'];
   if (is_numeric($main)) {
-    if ($main != 0 && !is_object(\Drupal::service('entity_type.manager')
+    if ($main != 0 && !is_object(Drupal::service('entity_type.manager')
       ->getStorage(G2::TYPE)
       ->load($main))) {
       form_set_error('g2_main', t('The node chosen for the main page must be a valid one, or 0: "@nid" is not a valid node id.', ['@nid' => $main])
@@ -241,7 +242,7 @@ function g2_admin_settings_validate($form, &$form_state) {
   }
 
   $nid = $form_state['values']['g2_homonyms'];
-  if ($nid != 0 && !is_object(\Drupal::service('entity_type.manager')
+  if ($nid != 0 && !is_object(Drupal::service('entity_type.manager')
     ->getStorage(G2::TYPE)
     ->load($nid))) {
     form_set_error('g2_homonyms', t('The node chosen for the homonyms disambiguation page must be a valid one, or 0: "@nid" is not a valid node id.',

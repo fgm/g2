@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\g2\Tests;
+namespace Drupal\g2\Tests\Unit;
 
 use Drupal\g2\G2;
 use Drupal\Tests\UnitTestCase;

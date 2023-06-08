@@ -41,7 +41,7 @@ class LatestBlock extends BlockBase implements ContainerFactoryPluginInterface {
    *   The block configuration.
    * @param string $plugin_id
    *   The block ID.
-   * @param mixed $plugin_definition
+   * @param array $plugin_definition
    *   The block definition.
    * @param \Drupal\g2\Latest $latest
    *   The g2.latest service.

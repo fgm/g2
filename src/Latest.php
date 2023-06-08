@@ -106,8 +106,8 @@ class Latest {
    *   The maximum number of entries to return. Limited both by the configured
    *   maximum number of entries and the actual number of entries available.
    *
-   * @return array<string\Drupal\Core\GeneratedLink>
-   *   A hash of nid to to entry links.
+   * @return arraystring\Drupal\Core\GeneratedLink
+   *   A hash of nid to entry links.
    */
   public function getLinks($count) {
     $result = [];

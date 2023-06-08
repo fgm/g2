@@ -6,6 +6,12 @@ namespace Drupal\g2;
  * Class G2 is the container for general-use G2 data.
  */
 class G2 {
+
+  /**
+   * The API format.
+   */
+  const API_VERSION = 8;
+
   // The name of the node.type.g2_entry config entity.
   const BUNDLE = 'g2_entry';
 
@@ -14,45 +20,33 @@ class G2 {
    */
   const CONFIG_NAME = 'g2.settings';
 
-  /**
-   * The G2 permission for normal users.
-   */
-  const PERM_VIEW = 'view g2 entries';
+  const DEFLOGREFERRERS = TRUE;
+  const DEFNOFREETAGGING = FALSE;
+  const DEFPAGETITLE = TRUE;
+
+  const DEFPATHMAIN = 'g2.main';
 
   /**
-   * The G2 permission for administrators.
+   * The State default for the current stored random entry.
    */
-  const PERM_ADMIN = 'administer g2 entries';
-
+  const DEFRANDOMENTRY = '';
+  const DEFREMOTEG2 = FALSE;
+  const DEFREMOTENO = '';
+  const DEFTOOLTIPS = FALSE;
+  const DEFTOPITEMCOUNT = 5;
+  const DEFWOTDAUTOCHANGE = TRUE;
   /**
-   * The key for the module state.
+   * The config default for the WOTD entry.
    */
-  const STATE_NAME = 'g2.state.random_entry';
+  const DEFWOTDENTRY = '';
 
-  /**
-   * The name of the core config.factory service.
-   */
-  const SVC_CONF = 'config.factory';
+  const DEFWOTDFEEDAUTHOR = '';
 
-  /**
-   * The name of the core entity_type.manager service.
-   */
-  const SVC_ETM = 'entity_type.manager';
+  const DEFWOTDFEEDDESCR = '';
 
-  /**
-   * The name of the g2.random service.
-   */
-  const SVC_RANDOM = 'g2.random';
+  const DEFWOTDFEEDLINK = TRUE;
 
-  /**
-   * The public-facing version: two first levels for semantic versioning.
-   */
-  const VERSION = '8.1';
-
-  /**
-   * The API format.
-   */
-  const API_VERSION = 8;
+  const DEFWOTDTITLE = '';
 
   /**
    * Block: alphabar.
@@ -75,16 +69,47 @@ class G2 {
   const DELTA_WOTD = 'wotd';
 
   /**
-   * In this version, G2 entries are a node bundle (content type).
+   * The module name.
    *
-   * This is likely to change as some point in the future.
+   * Meant to be used to identify the origin of stored data emanating from this
+   * module in another subsystem, e.g. logs, as happens with logger.channel.g2.
    */
-  const TYPE = 'node';
+  const NAME = 'g2';
+
+  // Constants in this group are only listed to remove WSODs, but they still
+  // need to be converting from hook_menu to Symfony routing.
+  const PATH_ENTRIES = 'g2/entries';
+
+  const PATH_INITIAL = 'g2/initial';
+
+  const PATH_NODE_ADD = 'node/add/g2';
+
+  const PATH_SETTINGS = 'g2/admin/settings';
+
+  /**
+   * The G2 permission for administrators.
+   */
+  const PERM_ADMIN = 'administer g2 entries';
+
+  /**
+   * Route: the core content administration route.
+   */
+  const ROUTE_ADMIN_CONTENT = 'system.admin_content';
+
+  /**
+   * Route: the G2 services configuration form.
+   */
+  const ROUTE_CONFIG_SERVICES = 'g2.settings.services';
 
   /**
    * Route: autocomplete by title.
    */
   const ROUTE_AUTOCOMPLETE = 'g2.autocomplete';
+
+  /**
+   * Route: The core block administration page.
+   */
+  const ROUTE_BLOCKS = 'block.admin_display';
 
   /**
    * Route: WOTD RSS feed.
@@ -102,6 +127,11 @@ class G2 {
   const ROUTE_REFERRERS = 'g2.node_referrers';
 
   /**
+   * Route: Field UI node display modes.
+   */
+  const ROUTE_VM = 'entity.entity_view_display.node.view_mode';
+
+  /**
    * Route: form offering to wipe all referrers.
    */
   const ROUTE_WIPE_ALL = 'g2.wipe.all';
@@ -111,83 +141,131 @@ class G2 {
    */
   const ROUTE_WIPE_ONE = 'g2.wipe.one';
 
+  /**
+   * The name of the core config.factory service.
+   */
+  const SVC_CONF = 'config.factory';
+
+  /**
+   * The name of the core entity_type.manager service.
+   */
+  const SVC_ETM = 'entity_type.manager';
+
+  /**
+   * The logger.channel.g2 service.
+   */
+  const SVC_LOGGER = 'logger.channel.g2';
+
+  /**
+   * The name of the g2.random service.
+   */
+  const SVC_RANDOM = 'g2.random';
+
+  /**
+   * The state service.
+   */
+  const SVC_STATE = 'state';
+
+  /**
+   * The name of the g2.test.logger service.
+   *
+   * Beware: this is NOT a Drupal logger channel, just a PSR-3 test helper.
+   */
+  const SVC_TEST_LOGGER = 'g2.test.logger';
+
+  /**
+   * The name of the g2.wotd service.
+   */
+  const SVC_WOTD = 'g2.wotd';
+
+  const TITLE_MAIN = 'Glossary';
+
+  /**
+   * In this version, G2 entries are a node bundle (content type).
+   *
+   * This is likely to change as some point in the future.
+   */
+  const TYPE = 'node';
+
+  /**
+   * The config path for the alphabar contents.
+   */
+  const VARALPHABARCONTENTS = 'services.alphabar.contents';
+
+  const VARLOGREFERRERS = 'g2-log-referrers';
 
   // Constants in this group are only listed to remove WSODs, but they still
   // need the associated logic to be converted from variables to config.
   const VARNOFREETAGGING = 'g2-no-freetagging';
-  const DEFNOFREETAGGING = FALSE;
-  const VARREMOTEG2 = 'g2-remote';
-  const DEFREMOTEG2 = FALSE;
-  const DEFREMOTENO = '';
-  const VARTOOLTIPS = 'g2-tooltips';
-  const DEFTOOLTIPS = FALSE;
+
   const VARPAGETITLE = 'g2-page-title';
-  const DEFPAGETITLE = TRUE;
+
+  const VARPATHMAIN = 'g2-path-main';
+  /**
+   * The State key for the current stored random entry.
+   */
+  const VARRANDOMENTRY = 'g2.random-entry';
+  /**
+   * The config path for the random entry storage choice.
+   */
+  const VARRANDOMSTORE = 'services.random.store';
+
+  const VARREMOTEG2 = 'g2-remote';
+  const VARTOOLTIPS = 'g2-tooltips';
+
+  const VARTOPITEMCOUNT = 'g2-top-item-count';
+
+  /**
+   * The config path for the WOTD auto_change property.
+   */
+  const VARWOTDAUTOCHANGE = 'services.wotd.auto_change';
+
+  /**
+   * The state path for the WOTD auto_change date.
+   *
+   * The associated value is a date("Y-m-d").
+   */
+  const VARWOTDDATE = 'g2.wotd-date';
 
   /**
    * The config path for the WOTD entry.
    */
   const VARWOTDENTRY = 'services.wotd.entry';
 
-  /**
-   * The config default for the WOTD entry.
-   */
-  const DEFWOTDENTRY = '';
+  const VARWOTDFEEDAUTHOR = 'g2-wotd-feed-author';
+
+  const VARWOTDFEEDDESCR = 'g2-wotd-feed-description';
+
+  const VARWOTDFEEDLINK = 'g2-wotd-feed-link';
 
   /**
-   * Teh config path for the random entry storage choice.
+   * Default is DEFWOTDTITLE, Use g2.settings.controller.wotd.title.
    */
-  const VARRANDOMSTORE = 'services.random.store';
-
-  /**
-   * The State key for the current stored random entry.
-   */
-  const VARRANDOMENTRY = 'g2.random-entry';
-
-  /**
-   * The State default for the current stored random entry.
-   */
-  const DEFRANDOMENTRY = '';
-
-  const VARWOTDTERMS = 'g2-wotd-terms';
-  const DEFWOTDTERMS = FALSE;
-
-  // Default is DEFWOTDTITLE.
-  // Use g2.settings.controller.wotd.title.
   const VARWOTDFEEDTITLE = 'g2-wotd-feed-title';
 
   const VARWOTDTITLE = 'g2-wotd-title';
-  const DEFWOTDTITLE = '';
-  const VARWOTDFEEDDESCR = 'g2-wotd-feed-description';
-  const DEFWOTDFEEDDESCR = '';
-  const VARWOTDBODYSIZE = 'g2-wotd-body-size';
-  const DEFWOTDBODYSIZE = 100;
-  const VARWOTDAUTOCHANGE = 'g2-wotd-auto-change';
-  const DEFWOTDAUTOCHANGE = TRUE;
-  const VARWOTDFEEDLINK = 'g2-wotd-feed-link';
-  const DEFWOTDFEEDLINK = TRUE;
-  const VARWOTDFEEDAUTHOR = 'g2-wotd-feed-author';
-  const DEFWOTDFEEDAUTHOR = '';
-  // Uses mktime() for default.
-  const VARWOTDDATE = 'g2-wotd-date';
-  const VARPATHMAIN = 'g2-path-main';
-  const DEFPATHMAIN = 'g2.main';
-  const VARLOGREFERRERS = 'g2-log-referrers';
-  const DEFLOGREFERRERS = TRUE;
-  const VARTOPITEMCOUNT = 'g2-top-item-count';
-  const DEFTOPITEMCOUNT = 5;
+
+  /**
+   * The public-facing version: two first levels for semantic versioning.
+   */
+  const VERSION = '8.1';
 
   // View modes.
-  const VM_G2_BLOCK = 'g2_block';
+  const VM_BLOCK = 'g2_block';
 
-  // Constants in this group are only listed to remove WSODs, but they still
-  // need to be converting from hook_menu to Symfony routing.
-  const PATH_ENTRIES = 'g2/entries';
-  const PATH_INITIAL = 'g2/initial';
-  const PATH_NODE_ADD = 'node/add/g2';
-  const PATH_SETTINGS = 'g2/admin/settings';
+  const VM_ENTRY_LIST = 'g2_entry_list';
 
-  const TITLE_MAIN = 'Glossary';
+  const VM_HOMONYMS_PAGE = 'g2_homonyms_page';
+
+  /**
+   * Return the API version.
+   *
+   * @return int
+   *   The version of the API format.
+   */
+  public static function api() {
+    return static::API_VERSION;
+  }
 
   /**
    * Encodes terminal path portions for G2.
@@ -213,16 +291,6 @@ class G2 {
       '+' => '%2B',
     ]);
     return $terminal;
-  }
-
-  /**
-   * Return the API version.
-   *
-   * @return int
-   *   The version of the API format.
-   */
-  public static function api() {
-    return static::API_VERSION;
   }
 
 }

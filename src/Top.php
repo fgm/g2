@@ -109,10 +109,10 @@ class Top {
    *   The type of statistic by which to order. Must be one of the
    *   self::STATISTICS_* individual statistics.
    *
-   * @return array<integer\Drupal\g2\TopRecord>
+   * @return arrayinteger\Drupal\g2\TopRecord
    *   A node-by-nid hash, ordered by latest change timestamp.
    */
-  public function getEntries($count, $statistic = self::STATISTICS_DAY) {
+  public function getEntries(int $count, string $statistic = self::STATISTICS_DAY): array {
     if (!$this->available) {
       return [];
     }
@@ -195,10 +195,10 @@ class Top {
    *   The type of statistic by which to order. Must be one of the
    *   self::STATISTICS_* individual statistics.
    *
-   * @return array<string\Drupal\Core\GeneratedLink>
-   *   A hash of nid to to entry links.
+   * @return arraystring\Drupal\Core\GeneratedLink
+   *   A hash of nid to entry links.
    */
-  public function getLinks($count, $statistic = self::STATISTICS_DAY) {
+  public function getLinks(int $count, string $statistic = self::STATISTICS_DAY): array {
     $result = [];
     if (!$this->available) {
       return $result;

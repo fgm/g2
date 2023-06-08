@@ -2,6 +2,7 @@
 
 namespace Drupal\g2\Tests;
 
+use Drupal\Core\Session\AccountInterface;
 use Drupal\g2\G2;
 
 /**
@@ -37,7 +38,7 @@ class G2IssuesTest extends DrupalWebTestCase {
    */
   public function setUp() {
     parent::setUp('taxonomy', 'g2');
-    $this->admin = $this->drupalCreateUser([G2::PERM_VIEW, G2::PERM_ADMIN]);
+    $this->admin = $this->drupalCreateUser(['access content', G2::PERM_ADMIN]);
     $this->root = $this->drupalCreateUser(module_invoke_all('perm'));
   }
 
@@ -61,7 +62,10 @@ class G2IssuesTest extends DrupalWebTestCase {
     ];
     $roles = user_roles();
     foreach ($roles as $rid => $role) {
-      if (!in_array($rid, [DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID])) {
+      if (!in_array($rid, [
+        AccountInterface::ANONYMOUS_ROLE,
+        AccountInterface::AUTHENTICATED_ROLE,
+      ])) {
         $edit["roles[$rid]"] = 1;
       }
     }
@@ -76,7 +80,8 @@ class G2IssuesTest extends DrupalWebTestCase {
     $formats = filter_formats();
     $ret = NULL;
     foreach ($formats as $fid => $format) {
-      if ($format->name == $format_name) {
+      // @todo or label() ?
+      if ($format->id() == $format_name) {
         $ret = $fid;
         break;
       }

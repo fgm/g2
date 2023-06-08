@@ -2,6 +2,9 @@ type: module
 name: 'G2 glossary'
 description: 'Manage a node-based glossary'
 dependencies:
+  - block
+  # We provide help links to G2 configuration in Field UI.
+  - field_ui
   - node
   - taxonomy
 package: Content display

@@ -145,7 +145,7 @@ class Initial implements ContainerInjectionInterface {
     else {
       $result = [
         'stats-basic' => ['#markup' => $stats_basic],
-        'entries' => node_view_multiple($nodes, Homonyms::VIEW_MODE),
+        'entries' => node_view_multiple($nodes, G2::VM_ENTRY_LIST),
       ];
     }
 

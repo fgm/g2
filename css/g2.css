@@ -1,0 +1,12 @@
+@CHARSET "UTF-8";
+/**
+ *
+ * @file
+ * Default stylesheet for G2 Glossary module.
+ *
+ * @copyright 2005-2023 Frédéric G. Marand, for Ouest Systemes Informatiques.
+ */
+
+.g2-entries .more-link {
+  display: inline;
+}

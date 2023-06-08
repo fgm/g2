@@ -44,29 +44,7 @@ g2.settings:
         wotd:
           label: 'Word of the day'
           type: mapping
-          mapping:
-            auto_change:
-              type: boolean
-              label: 'Automatically change the WOTD every day ?'
-            body_size:
-              type: integer
-              label: 'Size of body summary included in WOTD block.'
-            links:
-              type: mapping
-              label: 'Links included in the WOTD block'
-              mapping:
-                feed:
-                  type: boolean
-                  label: 'Link to the WOTD feed'
-                node:
-                  type: boolean
-                  label: 'Link to the WOTD node'
-                terms:
-                  type: boolean
-                  label: 'Link to the term feeds, if show_terms is true. Ignored otherwise.'
-            show_terms:
-              type: boolean
-              label: 'Show terms on WOTD node'
+          mapping: {}
     services:
       type: mapping
       label: 'Services'
@@ -86,27 +64,27 @@ g2.settings:
               type: integer
               label: 'Maximum number of entries in latest(n) list.'
         random:
-            type: mapping
-            label: 'Random word'
-            mapping:
-              store:
-                type: boolean
-                label: |
-                  Store the last random value.
-                  <p>When this setting is true, the latest random value is kept
-                    in the database.</p>
-                  <ul>
-                    <li>For small glossaries, it is usually best to keep it
-                      saved, to avoid showing the same pseudo-random value on
-                      consecutive random entry generations.</li>
-                    <li>For larger ones, randomness will be sufficient,
-                      and unchecking this setting will remove one database write
-                      with locking.</li>
-                    </ul>
-                  <p>Note that this applies to random generation, but the random
-                    block may use caching to avoid calling random generation on
-                    every page. Configure it at
-                    <a href="./block">admin/config/content/g2/block</a>.</p>
+          type: mapping
+          label: 'Random word'
+          mapping:
+            store:
+              type: boolean
+              label: |
+                Store the last random value.
+                <p>When this setting is true, the latest random value is kept
+                  in the database.</p>
+                <ul>
+                  <li>For small glossaries, it is usually best to keep it
+                    saved, to avoid showing the same pseudo-random value on
+                    consecutive random entry generations.</li>
+                  <li>For larger ones, randomness will be sufficient,
+                    and unchecking this setting will remove one database write
+                    with locking.</li>
+                  </ul>
+                <p>Note that this applies to random generation, but the random
+                  block may use caching to avoid calling random generation on
+                  every page. Configure it at
+                  <a href="./block">admin/config/content/g2/block</a>.</p>
         top:
           type: mapping
           label: 'Most viewed entries'
@@ -118,9 +96,12 @@ g2.settings:
           type: mapping
           label: 'Word of the day'
           mapping:
+            auto_change:
+              type: boolean
+              label: 'Automatically change the WOTD every day? This setting will only work if some form of cron is used, e.g. a system cron task, or the core Automated Cron module.'
             entry:
               type: integer
-              label: 'Node ID of the current WOTD'
+              label: 'Current WOTD'
 
     controller:
       type: mapping

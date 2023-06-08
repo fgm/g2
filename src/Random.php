@@ -7,6 +7,7 @@ use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\State\StateInterface;
+use Drupal\g2\Exception\RandomException;
 use Drupal\node\NodeInterface;
 
 /**
@@ -41,6 +42,30 @@ class Random {
    * @var \Drupal\Core\State\StateInterface
    */
   protected StateInterface $state;
+
+  /**
+   * Random constructor.
+   *
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config
+   *   The config.factory service.
+   * @param \Drupal\Core\Database\Connection $db
+   *   The database service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
+   *   The entity_type.manager server.
+   * @param \Drupal\Core\State\StateInterface $state
+   *   The state service.
+   */
+  public function __construct(
+    ConfigFactoryInterface $config,
+    Connection $db,
+    EntityTypeManagerInterface $etm,
+    StateInterface $state,
+  ) {
+    $this->config = $config;
+    $this->db = $db;
+    $this->etm = $etm;
+    $this->state = $state;
+  }
 
   /**
    * Get the list of current nodes to avoid, by nid or title.
@@ -81,12 +106,12 @@ class Random {
    * PHP 8.1, the former is faster than the latter by a factor of up to 6:
    * 0.2-0.4 msec vs 1.2-2 msec.
    *
-   * @return object
-   *   Title / nid / teaser. Unfiltered contents.
+   * @return \Drupal\node\NodeInterface
+   *   The chosen random node.
    *
    * @throws \Drupal\Core\Database\DatabaseExceptionWrapper
    */
-  public function get() {
+  public function get(): NodeInterface {
     $conf = $this->config->get(G2::CONFIG_NAME);
     $avoided = $this->getAvoidedEntries($conf);
     $randomTitle = $avoided['title'] ?? '';
@@ -108,7 +133,7 @@ class Random {
       ->execute()
       ->fetchField();
     if ($n === 0) {
-      throw new \Exception("No entry outside WOTD and stored random");
+      throw new RandomException("No entry outside WOTD and stored random.");
     }
 
     // No longer need to mt_srand() since PHP 4.2.
@@ -137,7 +162,7 @@ class Random {
       ->getStorage(G2::TYPE)
       ->load($nid);
     if (empty($node)) {
-      throw new \Exception("Found no random node, but expected to find one.");
+      throw new RandomException("Found no random node, but expected to find one.");
     }
 
     if ($conf->get(G2::VARRANDOMSTORE)) {
@@ -146,30 +171,6 @@ class Random {
     }
 
     return $node;
-  }
-
-  /**
-   * Random constructor.
-   *
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config
-   *   The config.factory service.
-   * @param \Drupal\Core\Database\Connection $db
-   *   The database service.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
-   *   The entity_type.manager server.
-   * @param \Drupal\Core\State\StateInterface $state
-   *   The state service.
-   */
-  public function __construct(
-    ConfigFactoryInterface $config,
-    Connection $db,
-    EntityTypeManagerInterface $etm,
-    StateInterface $state,
-  ) {
-    $this->config = $config;
-    $this->db = $db;
-    $this->etm = $etm;
-    $this->state = $state;
   }
 
 }

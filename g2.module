@@ -19,13 +19,13 @@
 
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\Core\Entity\Entity\EntityViewMode;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\GeneratedLink;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\g2\G2;
-use Drupal\g2\Random;
 use Drupal\g2\Top;
 use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
@@ -214,7 +214,34 @@ function g2_help($route_name, RouteMatchInterface $route_match) {
       }
       $result = $definition['help'] ?? '';
       break;
+
+    case 'entity.entity_view_display.node.view_mode':
+      if ($route_match->getParameter('entity_type_id') != G2::TYPE) {
+        break;
+      }
+      if ($route_match->getParameter('bundle') !== G2::BUNDLE) {
+        break;
+      }
+      $name = $route_match->getParameter('view_mode_name');
+      $args = ['%vm' => EntityViewMode::load(G2::TYPE . ".${name}")->label()];
+      switch ($name) {
+        case G2::VM_BLOCK:
+          $result = t('The %vm display is used by the G2 Random and WOTD blocks.', $args);
+          break;
+
+        case G2::VM_ENTRY_LIST:
+          $result = t('The %vm display is used by the G2 "terms by initial" page.', $args);
+          break;
+
+        case G2::VM_HOMONYMS_PAGE:
+          $result = t('The %vm display is used by the G2 homonyms disambiguation page when it is configured to use a node instead of a route', $args);
+          break;
+      }
+      if (!empty($result)) {
+        $result = ['#markup' => "<p>${result}</p>\n"];
+      }
   }
+
   return $result;
 }
 
@@ -462,17 +489,11 @@ function _g2_referer_wipe($nid = NULL) {
  *   Teaser and Body are returned already filtered, not stripped.
  */
 function _g2_wotd($bodysize = 0) {
-  // No need for a static: this function is normally never called twice.
-  $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
-  $node = Drupal::service('entity_type.manager')
-    ->getStorage(G2::TYPE)
-    ->load($nid);
+  /** @var \Drupal\g2\WOTD $wotd */
+  $wotd = \Drupal::service(G2::SVC_WOTD);
+  $node = $wotd->get();
   if (empty($node)) {
     return NULL;
-  }
-
-  if (variable_get(G2::VARWOTDTERMS, G2::DEFWOTDTERMS)) {
-    $node->taxonomy = _g2_comb_taxonomy(taxonomy_node_get_terms($node));
   }
 
   $node->teaser = check_markup($node->teaser, $node->format);
@@ -503,7 +524,7 @@ function g2_access($op /* , $node, $account */) {
       break;
 
     case 'view':
-      $ret = user_access(G2::PERM_VIEW);
+      $ret = user_access('access content');
       break;
   }
 
@@ -514,82 +535,9 @@ function g2_access($op /* , $node, $account */) {
  * Implements hook_block().
  */
 function g2_block($op = 'list', $delta = 0, $edit = []) {
-  if ($op == 'list') {
-    $blocks = [];
-    $blocks[G2::DELTA_WOTD]['info'] = variable_get('g2_wotd_info',
-      t('G2 Word of the day'));
-
-    // Else it couldn't be random.
-    $blocks[G2::DELTA_WOTD]['cache'] = BLOCK_CACHE_GLOBAL;
-    $ret = $blocks;
-  }
-  elseif ($op == 'configure') {
+  if ($op == 'configure') {
     switch ($delta) {
       case G2::DELTA_WOTD:
-        // Convert nid to "title [<nid>]" even if missing.
-        // @see _g2_autocomplete()
-        $nid = variable_get(G2::VARWOTDENTRY, G2::DEFWOTDENTRY);
-        $node = Drupal::service('entity_type.manager')
-          ->getStorage(G2::TYPE)
-          ->load($nid);
-        if (empty($node)) {
-          $node = new stdClass();
-          $node->nid = 0;
-          $node->title = NULL;
-        }
-        $form[G2::VARWOTDENTRY] = [
-          '#type' => 'textfield',
-          '#title' => t('Entry for the day'),
-          '#maxlength' => 60,
-          '#autocomplete_route_name' => G2::ROUTE_AUTOCOMPLETE,
-          '#required' => TRUE,
-          // !title: we don't filter since this is input, not output,
-          // and can contain normally escaped characters, to accommodate
-          // entries like "<", "C#" or "AT&T"
-          '#default_value' => t(
-            '!title [@nid]',
-            [
-              '!title' => $node->title,
-              '@nid' => $nid,
-            ]
-          ),
-        ];
-        $form[G2::VARWOTDBODYSIZE] = [
-          '#type' => 'textfield',
-          '#title' => t('Number of text characters to be displayed from entry definition body, if one exists'),
-          '#size' => 4,
-          '#maxlength' => 4,
-          '#required' => TRUE,
-          '#default_value' => variable_get(G2::VARWOTDBODYSIZE,
-            G2::DEFWOTDBODYSIZE),
-        ];
-        $form[G2::VARWOTDAUTOCHANGE] = [
-          '#type' => 'checkbox',
-          '#title' => t('Auto-change daily'),
-          '#required' => TRUE,
-          '#default_value' => variable_get(G2::VARWOTDAUTOCHANGE,
-            G2::DEFWOTDAUTOCHANGE),
-          '#description' => t('This setting will only work if cron or poormanscron is used.'),
-        ];
-        $form[G2::VARWOTDTERMS] = [
-          '#type' => 'checkbox',
-          '#title' => t('Return taxonomy terms for the current entry'),
-          '#default_value' => variable_get(G2::VARWOTDTERMS, G2::DEFWOTDTERMS),
-          '#description' => t(
-            'The taxonomy terms will be returned by the API and made available to the theme.
-           Default G2 themeing will display them.'
-          ),
-        ];
-        $form[G2::VARWOTDTITLE] = [
-          '#type' => 'textfield',
-          '#title' => t('Title for the WOTD block'),
-          '#description' => t(
-            'This title is also the default title for the WOTD feed, if none is defined. It is overridden by the default Drupal block title, if the latter is not empty.'
-          ),
-          '#required' => TRUE,
-          '#default_value' => variable_get(G2::VARWOTDTITLE, G2::DEFWOTDTITLE),
-        ];
-
         $form['wotd_feed'] = [
           '#type' => 'fieldset',
           '#title' => t('RSS Feed'),
@@ -653,45 +601,17 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
     $ret = NULL;
     switch ($delta) {
       case G2::DELTA_WOTD:
-        // Convert "some title [<nid>, sticky]" to nid.
-        $entry = $edit[G2::VARWOTDENTRY];
-        $matches = [];
-        $count = preg_match('/.*\[(\d*).*\]$/', $entry, $matches);
-        $nid = $count ? $matches[1] : 0;
-
-        variable_set(G2::VARWOTDENTRY, $nid);
-        variable_set(G2::VARWOTDBODYSIZE, $edit[G2::VARWOTDBODYSIZE]);
-        variable_set(G2::VARWOTDAUTOCHANGE, $edit[G2::VARWOTDAUTOCHANGE]);
-        variable_set(G2::VARWOTDDATE, mktime());
-        variable_set(G2::VARWOTDTERMS, $edit[G2::VARWOTDTERMS]);
         variable_set(G2::VARWOTDFEEDLINK, $edit[G2::VARWOTDFEEDLINK]);
         variable_set(G2::VARWOTDFEEDTITLE, $edit[G2::VARWOTDFEEDTITLE]);
         variable_set(G2::VARWOTDFEEDDESCR, $edit[G2::VARWOTDFEEDDESCR]);
         variable_set(G2::VARWOTDFEEDAUTHOR, $edit[G2::VARWOTDFEEDAUTHOR]);
-        variable_set(G2::VARWOTDTITLE, $edit[G2::VARWOTDTITLE]);
         break;
 
       default:
         break;
     }
   }
-  elseif ($op == 'view') {
-    switch ($delta) {
-      case G2::DELTA_WOTD:
-        $block['subject'] = variable_get(G2::VARWOTDTITLE, G2::DEFWOTDTITLE);
-        $block['content'] = theme('g2_wotd',
-          _g2_wotd(variable_get(G2::VARWOTDBODYSIZE, G2::DEFWOTDBODYSIZE)));
-        break;
 
-      // Should happen only when using a new code version on an older schema
-      // without updating: ignore.
-      default:
-        $block = NULL;
-        break;
-    }
-
-    $ret = $block;
-  }
   return $ret;
 }
 
@@ -702,17 +622,9 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
  * which is the default case.
  */
 function g2_cron() {
-  if (variable_get(G2::VARWOTDAUTOCHANGE, G2::DEFWOTDAUTOCHANGE)) {
-    $date0 = date('z', variable_get(G2::VARWOTDDATE, mktime()));
-    $date1 = date('z');
-    if ($date1 <> $date0) {
-      /** @var \Drupal\g2\Random $svcRandom */
-      $svcRandom = \Drupal::service(G2::SVC_RANDOM);
-      $random = $svcRandom->get();
-      variable_set(G2::VARWOTDENTRY, $random->nid);
-      variable_set(G2::VARWOTDDATE, mktime());
-    }
-  }
+  /** @var \Drupal\g2\WOTD $wotdCron */
+  $wotd = \Drupal::service(G2::SVC_WOTD);
+  $wotd->cron();
 }
 
 /**
@@ -836,10 +748,6 @@ function g2_perm() {
           'Access administrative information on G2 entries. This permission does not grant access to the module settings, which are controlled by the "administer site configuration" permission.'
         ),
       ],
-      G2::PERM_VIEW => [
-        'title' => t('View G2 entries'),
-        'description' => t('This permission allows viewing G2 entries, subject to additional node access control.'),
-      ],
     ]
   );
 
@@ -913,7 +821,7 @@ function g2_referer_wipe_confirm_form(
  * @param \Drupal\Core\Form\FormStateInterface $form_state
  *   The form state.
  */
-function g2_referer_wipe_confirm_form_submit(array $form, &$form_state) {
+function g2_referer_wipe_confirm_form_submit(array $form, FormStateInterface $form_state) {
   _g2_referer_wipe();
   Drupal::messenger()
     ->addStatus(t('Referer information has been erased on all G2 entries'));

@@ -41,7 +41,7 @@ class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
    *   The block configuration.
    * @param string $plugin_id
    *   The block ID.
-   * @param mixed $plugin_definition
+   * @param array $plugin_definition
    *   The block definition.
    * @param \Drupal\g2\Top $top
    *   The g2.top service.

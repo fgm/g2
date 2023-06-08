@@ -30,8 +30,6 @@ class Homonyms implements ContainerInjectionInterface {
    */
   const ENTRIES_BY_INITIAL = 'G2 entries starting with initial %initial';
 
-  const VIEW_MODE = 'g2_entry_list';
-
   /**
    * The g2.settings configuration.
    *
@@ -147,7 +145,7 @@ class Homonyms implements ContainerInjectionInterface {
    *   A render array.
    */
   protected function indexMatches($raw_match, array $g2_match) {
-    $entries = node_view_multiple($g2_match, 'g2_entry_list');
+    $entries = node_view_multiple($g2_match, G2::VM_ENTRY_LIST);
     $result = [
       '#theme' => 'g2_entries',
       '#raw_entry' => $raw_match,
@@ -177,7 +175,7 @@ class Homonyms implements ContainerInjectionInterface {
     $node = $this->etm
       ->getStorage(G2::TYPE)
       ->load($nid);
-    $result = node_view($node, 'g2_homonyms_page');
+    $result = node_view($node, G2::VM_HOMONYMS_PAGE);
     return $result;
   }
 

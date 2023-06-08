@@ -23,6 +23,10 @@ services:
       - '@entity_type.manager'
       - '@state'
 
+  # A test helper logger.
+  g2.test.logger:
+    class: '\Drupal\g2\TestLogger'
+
   # Provides a list of the most visited G2 entries
   g2.top:
     class: '\Drupal\g2\Top'
@@ -33,6 +37,17 @@ services:
       - '@module_handler'
       - '@database'
       - '@logger.channel.g2'
+
+  g2.wotd:
+    class: '\Drupal\g2\WOTD'
+    arguments:
+      - '@config.factory'
+      - '@database'
+      - '@entity_type.manager'
+      - '@logger.channel.g2'
+      - '@g2.random'
+      - '@state'
+      - '@datetime.time'
 
   logger.channel.g2:
     parent: logger.channel_base

@@ -1,11 +1,13 @@
 <?php
 
-namespace Drupal\g2;
+namespace Drupal\g2\Tests\Kernel;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\State\StateInterface;
+use Drupal\g2\G2;
+use Drupal\g2\Random;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\Tests\node\Traits\NodeCreationTrait;
 
@@ -84,7 +86,7 @@ class RandomTest extends KernelTestBase {
   /**
    * The state service.
    *
-   * @var \Drupal\Core\State\StateInterface|\Drupal\Core\State\State|object|null
+   * @var \Drupal\Core\State\StateInterface
    */
   protected StateInterface $state;
 
@@ -111,7 +113,7 @@ class RandomTest extends KernelTestBase {
     $this->config = $this->container->get(G2::SVC_CONF);
     $this->db = $this->container->get('database');
     $this->etm = $this->container->get(G2::SVC_ETM);
-    $this->state = $this->container->get('state');
+    $this->state = $this->container->get(G2::SVC_STATE);
     $this->random = $this->container->get(G2::SVC_RANDOM);
   }
 
@@ -127,15 +129,15 @@ class RandomTest extends KernelTestBase {
    */
   public function providerGet() {
     return [
-      [[], FALSE, TRUE, ''],
-      [[static::TITLE_WOTD], FALSE, TRUE, ''],
-      [
+      'no nodes, disabled' => [[], FALSE, TRUE, ''],
+      'wotd, disabled' => [[static::TITLE_WOTD], FALSE, TRUE, ''],
+      'wotd+any, disabled' => [
         [static::TITLE_FOO, static::TITLE_WOTD],
         FALSE,
         FALSE,
         static::TITLE_FOO,
       ],
-      [
+      '3 nodes, enabled' => [
         [static::TITLE_FOO, static::TITLE_STORED, static::TITLE_WOTD],
         TRUE,
         FALSE,

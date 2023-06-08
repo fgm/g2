@@ -75,7 +75,7 @@ class RandomBlock extends BlockBase implements ContainerFactoryPluginInterface {
   public function build() {
     $viewBuilder = $this->etm->getViewBuilder(G2::TYPE);
     $random = $this->random->get();
-    $build = $viewBuilder->view($random, G2::VM_G2_BLOCK);
+    $build = $viewBuilder->view($random, G2::VM_BLOCK);
     return $build;
   }
 

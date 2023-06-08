@@ -64,10 +64,10 @@ class Alphabar {
   /**
    * Return an array of links to entries-by-initial pages.
    *
-   * @return array<string\Drupal\Core\GeneratedLink>
+   * @return arraystring\Drupal\Core\GeneratedLink
    *   A hash of initials to entry pages.
    */
-  public function getLinks() {
+  public function getLinks(): array {
     $result = [];
     $options = [
       // So alphabar can be used outside site pages.
