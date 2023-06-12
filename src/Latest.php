@@ -4,30 +4,17 @@ namespace Drupal\g2;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Routing\UrlGeneratorInterface;
-use Drupal\Core\Url;
-use Drupal\Core\Utility\LinkGenerator;
 
 /**
  * Class Latest implements the g2.latest service.
  */
 class Latest {
   /**
-   * The configuration hash for this service.
+   * The config.factory service.
    *
-   * Keys:
-   * - max: the maximum number of entries returned. 0 for unlimited.
-   *
-   * @var array
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
-  protected $config;
-
-  /**
-   * The link generator service.
-   *
-   * @var \Drupal\Core\Utility\LinkGenerator
-   */
-  protected $linkGenerator;
+  protected $configFactory;
 
   /**
    * The entity_type.manager service.
@@ -37,36 +24,19 @@ class Latest {
   protected $etm;
 
   /**
-   * The URL generator service.
-   *
-   * @var \Drupal\Core\Routing\UrlGeneratorInterface
-   */
-  protected $urlGenerator;
-
-  /**
    * Constructor.
    *
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
    *   The config factory service.
-   * @param \Drupal\Core\Utility\LinkGenerator $link_generator
-   *   The link generator service.
-   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
-   *   The URL generator service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
    *   The entity_type.manager service.
    */
   public function __construct(
-    ConfigFactoryInterface $config,
-    LinkGenerator $link_generator,
-    UrlGeneratorInterface $url_generator,
+    ConfigFactoryInterface $configFactory,
     EntityTypeManagerInterface $etm
   ) {
+    $this->configFactory = $configFactory;
     $this->etm = $etm;
-    $this->linkGenerator = $link_generator;
-    $this->urlGenerator = $url_generator;
-
-    $g2_config = $config->get(G2::CONFIG_NAME);
-    $this->config = $g2_config->get('services.latest');
   }
 
   /**
@@ -83,12 +53,15 @@ class Latest {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function getEntries($count) {
-    $count_limit = $this->config['max_count'];
+    $config = $this->configFactory
+      ->get(G2::CONFIG_NAME);
+    $count_limit = $config->get(G2::VARLATESTMAXCOUNT);
     $count = min($count, $count_limit);
 
     $query = $this->etm
       ->getStorage(G2::TYPE)
       ->getQuery()
+      ->accessCheck()
       ->condition('type', G2::BUNDLE)
       ->sort('changed', 'DESC')
       ->range(0, $count);
@@ -106,8 +79,10 @@ class Latest {
    *   The maximum number of entries to return. Limited both by the configured
    *   maximum number of entries and the actual number of entries available.
    *
-   * @return arraystring\Drupal\Core\GeneratedLink
+   * @return arraystring\Drupal\Core\Link
    *   A hash of nid to entry links.
+   *
+   * @throws \Drupal\Core\Entity\EntityMalformedException
    */
   public function getLinks($count) {
     $result = [];
@@ -117,13 +92,9 @@ class Latest {
       // To preserve the pre-encoded path.
       'html'     => TRUE,
     ];
-    $route_name = 'entity.node.canonical';
-
     /** @var \Drupal\node\NodeInterface $node */
     foreach ($this->getEntries($count) as $node) {
-      $parameters = [G2::TYPE => $node->id()];
-      $url = Url::fromRoute($route_name, $parameters, $options);
-      $result[] = $this->linkGenerator->generate($node->label(), $url);
+      $result[] = $node->toLink(NULL, 'canonical', $options);
     }
 
     return $result;

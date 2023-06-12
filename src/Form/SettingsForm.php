@@ -535,7 +535,6 @@ another site, while the server allows your site to provide entries to such
           'message' => $this->t('Scanning G2 entries for their initials.'),
         ],
       ],
-      // '#element_validate' => ['::generateAlphabar'],
     ];
 
     $element = &$form[$section]['random'];
@@ -549,9 +548,9 @@ another site, while the server allows your site to provide entries to such
       $element = &$form[$section][$service];
       $element['max_count'] = [
         '#type' => 'number',
-        '#title' => $schema[$service]['mapping']['max_count']['label'],
         '#default_value' => $config[$service]['max_count'],
-      ];
+        '#min' => 1,
+      ] + $this->getInfoFromLabel($schema[$service]['mapping']['max_count']['label']);
 
       $element = &$form[$section]['wotd'];
       $wotd = $this->wotd->get();

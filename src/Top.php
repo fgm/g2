@@ -210,11 +210,10 @@ class Top {
       // To preserve the pre-encoded path.
       'html' => TRUE,
     ];
-    $route_name = 'entity.node.canonical';
     /** @var \Drupal\g2\TopRecord $record */
     foreach ($this->getEntries($count, $statistic) as $record) {
       $parameters = [G2::TYPE => $record->nid];
-      $url = Url::fromRoute($route_name, $parameters, $options);
+      $url = Url::fromRoute(G2::ROUTE_NODE_CANONICAL, $parameters, $options);
       $result[] = $this->linkGenerator->generate($record->title, $url);
     }
 

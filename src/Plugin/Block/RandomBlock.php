@@ -12,8 +12,10 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Class Random contains the G2 Random block plugin.
  *
- * Note that, since it is not cacheable, in order to actually display changing
- * content, it prevents page-level caching.
+ * Note that, since it has limited cacheability, in order to actually display
+ * changing content, it prevents long-lasting page-level caching.
+ *
+ * @todo Feature request: re-implement as a cacheable block using the API.
  *
  * @Block(
  *   id = "g2_random",
@@ -21,17 +23,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   category = @Translation("G2"),
  *   help = @Translation("This block displays a pseudo-random entry from the G2 glossary."),
  * )
- *
- * @state g2.random.entry
  */
 class RandomBlock extends BlockBase implements ContainerFactoryPluginInterface {
-
-  /**
-   * The g2.random service.
-   *
-   * @var \Drupal\g2\Random
-   */
-  protected Random $random;
 
   /**
    * The entity_type.manager service.
@@ -41,11 +34,18 @@ class RandomBlock extends BlockBase implements ContainerFactoryPluginInterface {
   protected EntityTypeManagerInterface $etm;
 
   /**
+   * The g2.random service.
+   *
+   * @var \Drupal\g2\Random
+   */
+  protected Random $random;
+
+  /**
    * {@inheritDoc}
    */
   public function __construct(
     array $configuration,
-    $plugin_id,
+    string $plugin_id,
     array $plugin_definition,
     EntityTypeManagerInterface $etm,
     Random $random,
@@ -64,8 +64,12 @@ class RandomBlock extends BlockBase implements ContainerFactoryPluginInterface {
     $plugin_id,
     $plugin_definition
   ) {
+    /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
     $etm = $container->get(G2::SVC_ETM);
+
+    /** @var \Drupal\g2\Random $random */
     $random = $container->get(G2::SVC_RANDOM);
+
     return new static($configuration, $plugin_id, $plugin_definition, $etm, $random);
   }
 
@@ -83,7 +87,7 @@ class RandomBlock extends BlockBase implements ContainerFactoryPluginInterface {
    * {@inheritDoc}
    */
   public function getCacheMaxAge() {
-    // Rate-limit changes to 5 seconds as part of DoS protection.
+    // Allow a 5 seconds cache as part of DoS protection.
     return 5;
   }
 

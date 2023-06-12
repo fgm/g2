@@ -125,6 +125,11 @@ class G2 {
   const ROUTE_MAIN = 'g2.main';
 
   /**
+   * The name of the canonical node route.
+   */
+  const ROUTE_NODE_CANONICAL = 'entity.node.canonical';
+
+  /**
    * Route: show referrers to a g2_entry.
    */
   const ROUTE_REFERRERS = 'g2.node_referrers';
@@ -158,6 +163,11 @@ class G2 {
    * The name of the core entity_type.manager service.
    */
   const SVC_ETM = 'entity_type.manager';
+
+  /**
+   * The name of the g2.latest service.
+   */
+  const SVC_LATEST = 'g2.latest';
 
   /**
    * The logger.channel.g2 service.
@@ -209,6 +219,16 @@ class G2 {
    * The config path for the alphabar visual row length.
    */
   const VARALPHABARROWLENGTH = 'block.alphabar.row_length';
+
+  /**
+   * The config path for the Latest(n) block entry count.
+   */
+  const VARLATESTCOUNT = 'block.latest.count';
+
+  /**
+   * The config path for the Latest(n) service maximum entry count.
+   */
+  const VARLATESTMAXCOUNT = 'services.latest.max_count';
 
   const VARLOGREFERRERS = 'g2-log-referrers';
 

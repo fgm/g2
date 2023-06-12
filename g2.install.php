@@ -153,7 +153,6 @@ SQL;
    */
   $delta_changes = [
     2 => G2::DELTA_TOP,
-    4 => G2::DELTA_LATEST,
   ];
   $sql = "UPDATE {blocks} b SET delta = '%s' WHERE module = '%s' AND delta = %d ";
   $count = 0;

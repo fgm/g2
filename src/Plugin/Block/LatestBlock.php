@@ -3,6 +3,9 @@
 namespace Drupal\g2\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
+use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\g2\G2;
 use Drupal\g2\Latest;
@@ -15,17 +18,25 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *   id = "g2_latest",
  *   admin_label = @Translation("G2 Latest(n)"),
  *   category = @Translation("G2"),
- *   help = @Translation("This block displays a list of the most recently updated entries in the G2 glossary."),
+ *   help = @Translation("This block displays a list of the most recently
+ *   updated entries in the G2 glossary."),
  * )
  */
 class LatestBlock extends BlockBase implements ContainerFactoryPluginInterface {
 
   /**
-   * The g2.settings.block.latest configuration.
+   * The config.factory service.
    *
-   * @var array
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
-  protected $blockConfig;
+  protected ConfigFactoryInterface $configFactory;
+
+  /**
+   * The entity_type.manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected EntityTypeManagerInterface $etm;
 
   /**
    * The g2.latest service.
@@ -35,59 +46,24 @@ class LatestBlock extends BlockBase implements ContainerFactoryPluginInterface {
   protected $latest;
 
   /**
-   * Constructor.
-   *
-   * @param array $configuration
-   *   The block configuration.
-   * @param string $plugin_id
-   *   The block ID.
-   * @param array $plugin_definition
-   *   The block definition.
-   * @param \Drupal\g2\Latest $latest
-   *   The g2.latest service.
-   * @param array $block_config
-   *   The block configuration.
+   * {@inheritDoc}
    */
   public function __construct(
     array $configuration,
     string $plugin_id,
     array $plugin_definition,
+    ConfigFactoryInterface $configFactory,
+    EntityTypeManagerInterface $etm,
     Latest $latest,
-    array $block_config,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->configFactory = $configFactory;
+    $this->etm = $etm;
     $this->latest = $latest;
-    $this->blockConfig = $block_config;
   }
 
   /**
    * {@inheritdoc}
-   */
-  public function build() {
-    $count = $this->blockConfig['count'];
-    $links = $this->latest->getLinks($count);
-
-    $result = [
-      '#theme' => 'item_list',
-      '#items' => $links,
-    ];
-    return $result;
-  }
-
-  /**
-   * Creates an instance of the plugin.
-   *
-   * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
-   *   The container to pull out services used in the plugin.
-   * @param array $configuration
-   *   A configuration array containing information about the plugin instance.
-   * @param string $plugin_id
-   *   The plugin ID for the plugin instance.
-   * @param mixed $plugin_definition
-   *   The plugin implementation definition.
-   *
-   * @return static
-   *   Returns an instance of this plugin.
    */
   public static function create(
     ContainerInterface $container,
@@ -95,19 +71,42 @@ class LatestBlock extends BlockBase implements ContainerFactoryPluginInterface {
     $plugin_id,
     $plugin_definition
   ) {
+    /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
+    $etm = $container->get(G2::SVC_ETM);
+
     /** @var \Drupal\g2\Latest $latest */
-    $latest = $container->get('g2.latest');
+    $latest = $container->get(G2::SVC_LATEST);
 
-    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
-    $config_factory = $container->get(G2::SVC_CONF);
+    /** @var \Drupal\Core\Config\ConfigFactoryInterface $configFactory */
+    $configFactory = $container->get(G2::SVC_CONF);
+    return new static($configuration, $plugin_id, $plugin_definition, $configFactory, $etm, $latest);
+  }
 
-    /** @var \Drupal\Core\Config\ImmutableConfig $config */
-    $config = $config_factory->get(G2::CONFIG_NAME);
-
-    $block_config = $config->get('block.latest');
-
-    return new static($configuration, $plugin_id, $plugin_definition,
-      $latest, $block_config);
+  /**
+   * {@inheritdoc}
+   */
+  public function build() {
+    $count = $this->configFactory
+      ->get(G2::CONFIG_NAME)
+      ->get(G2::VARLATESTCOUNT);
+    $links = $this->latest->getLinks($count);
+    $md = (new CacheableMetadata())
+      ->addCacheTags([
+        "config:" . (G2::CONFIG_NAME),
+        "node_list:" . (G2::BUNDLE),
+      ]);
+    /** @var \Drupal\Core\Link $link */
+    foreach ($links as $link) {
+      /** @var \Drupal\node\NodeInterface $node */
+      $node = $link->getUrl()->getOption('entity');
+      $md->addCacheableDependency($node);
+    }
+    $build = [
+      '#theme' => 'item_list',
+      '#items' => $links,
+    ];
+    $md->applyTo($build);
+    return $build;
   }
 
 }

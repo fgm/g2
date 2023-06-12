@@ -62,7 +62,7 @@ g2.settings:
           mapping:
             max_count:
               type: integer
-              label: 'Maximum number of entries in latest(n) list.'
+              label: 'Maximum number of entries in latest(n) list. This will be the maximum available when configuring the Latest(n) block. You probably want to keep it below 10.'
         random:
           type: mapping
           label: 'Random word'
@@ -91,7 +91,7 @@ g2.settings:
           mapping:
             max_count:
               type: integer
-              label: 'Maximum number of entries in top(n) list.'
+              label: 'Maximum number of entries in top(n) list. This will be the maximum available when configuring the Top(n) block. You probably want to keep it below 10.'
         wotd:
           type: mapping
           label: 'Word of the day'

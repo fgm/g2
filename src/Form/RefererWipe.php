@@ -154,7 +154,7 @@ class RefererWipe extends ConfirmFormBase {
         $node = $this->etm
           ->getStorage(G2::TYPE)
           ->load($matches[1]);
-        $title = Link::createFromRoute($node->label(), 'entity.node.canonical', ['node' => $node->id()]);
+        $title = Link::createFromRoute($node->label(), G2::ROUTE_NODE_CANONICAL, ['node' => $node->id()]);
       }
       else {
         $title = NULL;

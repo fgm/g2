@@ -146,7 +146,7 @@ class Requirements implements ContainerInjectionInterface {
         ];
       }
       else {
-        $url = Url::fromRoute('entity.node.canonical', [G2::TYPE => $main])
+        $url = Url::fromRoute(G2::ROUTE_NODE_CANONICAL, [G2::TYPE => $main])
           ->toString();
         $result += [
           'value' => $this->t('Valid node: <a href=":url">:url</a>',

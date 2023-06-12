@@ -13,8 +13,6 @@ services:
     class: '\Drupal\g2\Latest'
     arguments:
       - '@config.factory'
-      - '@link_generator'
-      - '@url_generator'
       - '@entity_type.manager'
 
   g2.random:
