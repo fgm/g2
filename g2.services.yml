@@ -4,7 +4,9 @@ services:
     class: '\Drupal\g2\Alphabar'
     arguments:
       - '@config.factory'
+      - '@entity_type.manager'
       - '@link_generator'
+      - '@language_manager'
 
   # Provides a list of the latest updated G2 entries
   g2.latest:

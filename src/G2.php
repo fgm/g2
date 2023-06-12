@@ -21,7 +21,9 @@ class G2 {
   const CONFIG_NAME = 'g2.settings';
 
   const DEFLOGREFERRERS = TRUE;
+
   const DEFNOFREETAGGING = FALSE;
+
   const DEFPAGETITLE = TRUE;
 
   const DEFPATHMAIN = 'g2.main';
@@ -30,11 +32,17 @@ class G2 {
    * The State default for the current stored random entry.
    */
   const DEFRANDOMENTRY = '';
+
   const DEFREMOTEG2 = FALSE;
+
   const DEFREMOTENO = '';
+
   const DEFTOOLTIPS = FALSE;
+
   const DEFTOPITEMCOUNT = 5;
+
   const DEFWOTDAUTOCHANGE = TRUE;
+
   /**
    * The config default for the WOTD entry.
    */
@@ -47,11 +55,6 @@ class G2 {
   const DEFWOTDFEEDLINK = TRUE;
 
   const DEFWOTDTITLE = '';
-
-  /**
-   * Block: alphabar.
-   */
-  const DELTA_ALPHABAR = 'alphabar';
 
   /**
    * Block: n most recent.
@@ -142,6 +145,11 @@ class G2 {
   const ROUTE_WIPE_ONE = 'g2.wipe.one';
 
   /**
+   * The name of the g2.alphabar service.
+   */
+  const SVC_ALPHABAR = 'g2.alphabar';
+
+  /**
    * The name of the core config.factory service.
    */
   const SVC_CONF = 'config.factory';
@@ -188,9 +196,19 @@ class G2 {
   const TYPE = 'node';
 
   /**
+   * The config path for the route service the "entries by initial" page.
+   */
+  const VARCONTROLLERINITIAL = 'controller.initial.route';
+
+  /**
    * The config path for the alphabar contents.
    */
   const VARALPHABARCONTENTS = 'services.alphabar.contents';
+
+  /**
+   * The config path for the alphabar visual row length.
+   */
+  const VARALPHABARROWLENGTH = 'block.alphabar.row_length';
 
   const VARLOGREFERRERS = 'g2-log-referrers';
 
@@ -201,16 +219,19 @@ class G2 {
   const VARPAGETITLE = 'g2-page-title';
 
   const VARPATHMAIN = 'g2-path-main';
+
   /**
    * The State key for the current stored random entry.
    */
   const VARRANDOMENTRY = 'g2.random-entry';
+
   /**
    * The config path for the random entry storage choice.
    */
   const VARRANDOMSTORE = 'services.random.store';
 
   const VARREMOTEG2 = 'g2-remote';
+
   const VARTOOLTIPS = 'g2-tooltips';
 
   const VARTOPITEMCOUNT = 'g2-top-item-count';

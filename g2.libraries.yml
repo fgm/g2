@@ -3,4 +3,9 @@ g2-alphabar:
   css:
     component:
       css/g2-alphabar.css: {}
+
+g2:
+  version: 1.x
+  css:
+    component:
       css/g2.css: {}

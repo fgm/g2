@@ -12,16 +12,8 @@
  */
 .g2-alphabar a {
   border: thin solid transparent;
-  -webkit-box-sizing: content-box;
-  -moz-box-sizing: content-box;
   box-sizing: content-box;
   display: inline-block;
   text-align: center;
   width: 1.5em;
-}
-
-.g2-alphabar a:hover {
-  -webkit-appearance: button;
-  -moz-appearance: button;
-  appearance: auto;
 }

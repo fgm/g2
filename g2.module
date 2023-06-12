@@ -8,8 +8,6 @@
  *
  * @todo For D8, in decreasing priorities
  *  - implement SettingsForm::validateForm() using Requirements
- *  - ensure theme is flushed whenever block.alphabar.row_length config is
- *    updated.
  *  - make g2_requirements() less verbose, at least on success.
  *  - find a way to add the title to the node.add route for ease of creation.
  * @copyright 2005-2023 Frédéric G. Marand, for Ouest Systemes Informatiques.
@@ -38,13 +36,8 @@ use Drupal\node\NodeInterface;
  */
 function _g2_alphabar() {
   /** @var \Drupal\g2\Alphabar $alphabar */
-  $alphabar = Drupal::service('g2.alphabar');
-  $ret = array_map(
-    function (GeneratedLink $link) {
-      return "$link";
-    },
-    $alphabar->getLinks()
-  );
+  $alphabar = Drupal::service(G2::SVC_ALPHABAR);
+  $ret = array_map(fn(GeneratedLink $link) => "$link", $alphabar->getLinks());
   return $ret;
 }
 
@@ -249,13 +242,13 @@ function g2_help($route_name, RouteMatchInterface $route_match) {
  * Implements hook_theme().
  */
 function g2_theme() {
-  $config = Drupal::config('g2.settings');
+  $config = Drupal::config(G2::CONFIG_NAME);
   $ret = [
-    // Checked for D8.
+    // Checked for D8/9/10.
     'g2_alphabar' => [
       'variables' => [
         'alphabar' => [],
-        'row_length' => $config->get('block.alphabar.row_length'),
+        'row_length' => $config->get(G2::VARALPHABARROWLENGTH),
       ],
     ],
     'g2_entries' => [
@@ -274,7 +267,7 @@ function g2_theme() {
     ],
     'g2_main' => [
       'variables' => [
-        'alphabar' => $config->get('service.alphabar.contents'),
+        'alphabar' => $config->get(G2::VARALPHABARCONTENTS),
         'text' => '',
       ],
     ],
@@ -883,8 +876,8 @@ function g2_node_view(array &$build, EntityInterface $node, EntityViewDisplayInt
   $config = Drupal::config(G2::CONFIG_NAME);
 
   // On the WOTD feed, force the node date to the WOTD date or current time.
-  if ($view_mode === 'rss' && Drupal::routeMatch()
-    ->getRouteName() === G2::ROUTE_FEED_WOTD) {
+  if ($view_mode === 'rss' &&
+    Drupal::routeMatch()->getRouteName() === G2::ROUTE_FEED_WOTD) {
     $node->created = (Drupal::state()->get(G2::VARWOTDDATE) ?: time());
   }
 

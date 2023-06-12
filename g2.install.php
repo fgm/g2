@@ -152,9 +152,7 @@ SQL;
    * This is really only needed for sites upgrading from D5.
    */
   $delta_changes = [
-    0 => G2::DELTA_ALPHABAR,
     2 => G2::DELTA_TOP,
-    3 => G2::DELTA_WOTD,
     4 => G2::DELTA_LATEST,
   ];
   $sql = "UPDATE {blocks} b SET delta = '%s' WHERE module = '%s' AND delta = %d ";

@@ -7,9 +7,9 @@ version 2 or later.
 
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FGM/g2/badges/quality-score.png?b=8.x-1.x)](https://scrutinizer-ci.com/g/FGM/g2/?branch=8.x-1.x)
 
-**WARNING** 2023-05-28 : This version of the project is only partially usable
-at the moment : it is very much a work in progress.
-An complete usable version is expected before 2023-07-01.
+**WARNING** 2023-06-12 : This version of the project is only partially usable
+at the moment. A complete version is expected before 2023-07-01.
+
 
 ## Table of contents
 
@@ -38,9 +38,7 @@ in multi-byte character sets and terms containing special characters like
 slashes or ampersands without any specific markup.
 
 [glossary]: https://www.drupal.org/project/glossary
-
 [glossify]: https://www.drupal.org/project/glossify
-
 [lexicon]: https://www.drupal.org/project/lexicon
 
 It has been designed to handle glossaries with many thousands of nodes without
@@ -57,13 +55,13 @@ Its development to this date has been entirely sponsored by [OSInet].
 * Sample implementation (about 6000 terms, localized to french)
   https://riff.org/glossaire
 
-## Completion status as of 2023-06-09
+## Completion status as of 2023-06-12
 
 ### Main features
 
 | Feature  | Block   | Service | API     | Block / controller |
 |----------|---------|---------|---------|--------------------|
-| Alphabar | Working | Working | Working | Working            |
+| Alphabar | Done    | Done    | Working | Working            |
 | API      | n.a.    | Working | n.a.    |                    |
 | Latest   | Working | Working | Working | Working            |
 | Random   | Done    | Done    |         |                    |
@@ -84,13 +82,11 @@ Its development to this date has been entirely sponsored by [OSInet].
 | settings      | Working |
 | WOTD feed     | TBD     |
 
-
 ## Prerequisites
 
 * Any Drupal version since 9.0
 * A compatible database, configured for UTF-8 encoding (utf8mb4_general_ci)
 * PHP 8.1.x or 8.2.x
-
 
 ## Version notes
 
@@ -99,23 +95,22 @@ Since 2009-09-27:
 - sites not configured with clean URLs are no longer taken into account
 - the module is only maintained/evolved for the Drupal 9.x/10.x branches.
 
-
 ## Installing / upgrading / uninstalling
+
 ### Upgrading
 
-|   From...To |  4.7.y   |   5.y    |   6.y    |    7.y     | 8.y &rarr; 10.y |
-|------------:|:--------:|:--------:|:--------:|:----------:|:---------------:|
-|       4.7.x | standard | standard |          |            |                 |
-|         5.x |          | standard | standard | conf. only |                 |
-|         6.x |          |          | standard | conf. only |                 |
-|         7.x |          |          |          |  standard  |      n.a.       |
-| 8.x to 10.x |          |          |          |            |    standard     |
+| From...To |  4.7.y   |   5.y    |   6.y    |    7.y     | 8.y &rarr; 10.y |
+|----------:|:--------:|:--------:|:--------:|:----------:|:---------------:|
+|     4.7.x | standard | standard |          |            |                 |
+|       5.x |          | standard | standard | conf. only |                 |
+|       6.x |          |          | standard | conf. only |                 |
+|       7.x |          |          |          |  standard  |      n.a.       |
+|   8.x-9.x |          |          |          |            |    standard     |
 
 As this matrix shows, beyond Drupal 6.x, update features are limited.
 The D7 upgrade path only convers configuration,
 and no standard upgrade path exists towards D8+:
 these case always have to be upgraded manually.
-
 
 ## Feature changes in the D9/D10 version
 
@@ -124,6 +119,8 @@ these case always have to be upgraded manually.
   Since fields and view modes have been a standard for quite a long time and
   provide a better administrative UI, all the display configuration and specific
   templates have been removed in favor of using specific view modes.
+- The Alphabar service now provides a button to automatically rebuild the bar
+  from existing G2 entries.
 
 ## Ruby XML-RPC client
 
@@ -172,8 +169,8 @@ Drupal will be missing the module to load G2 entries. If you do not modify
 any of these nodes, reinstalling the module will restore consistency and
 enable a clean node deletion and uninstall later on.
 
-
 ## NOTICE
+
 ### Statistics
 
 The statistics displayed on the "entries starting by initial ..." page

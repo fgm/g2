@@ -82,7 +82,11 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
       '#attached' => [
         'library' => ['g2/g2-alphabar'],
       ],
+      '#cache' => [
+        'tags' => ["config:" . (G2::CONFIG_NAME)],
+      ],
     ];
+
     return $result;
   }
 

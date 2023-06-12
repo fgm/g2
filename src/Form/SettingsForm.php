@@ -2,6 +2,8 @@
 
 namespace Drupal\g2\Form;
 
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\ReplaceCommand;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
@@ -10,9 +12,11 @@ use Drupal\Core\Routing\RouteBuilderInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
+use Drupal\g2\Alphabar;
 use Drupal\g2\G2;
 use Drupal\g2\WOTD;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -25,6 +29,18 @@ use Symfony\Component\HttpFoundation\Response;
 class SettingsForm extends ConfigFormBase {
 
   use StringTranslationTrait;
+
+  /**
+   * The ID of the Alphabar contents in the form. Used for the Ajax callback.
+   */
+  const ALPHABAR_WRAPPER_ID = 'services-alphabar-contents-wrapper';
+
+  /**
+   * The g2.alphabar service.
+   *
+   * @var \Drupal\g2\Alphabar
+   */
+  protected Alphabar $alphabar;
 
   /**
    * The schema information for the module configuration.
@@ -65,6 +81,8 @@ class SettingsForm extends ConfigFormBase {
    *   The schema array for the configuration data.
    * @param \Drupal\Core\Routing\RouteBuilderInterface $router_builder
    *   The router.builder service.
+   * @param \Drupal\g2\Alphabar $alphabar
+   *   The g2.alphabar service.
    * @param \Drupal\g2\WOTD $wotd
    *   The g2.wotd service.
    */
@@ -73,9 +91,11 @@ class SettingsForm extends ConfigFormBase {
     ConfigFactoryInterface $config_factory,
     array $config_schema,
     RouteBuilderInterface $router_builder,
+    Alphabar $alphabar,
     WOTD $wotd,
   ) {
     parent::__construct($config_factory);
+    $this->alphabar = $alphabar;
     $this->etm = $etm;
     $this->configSchema = $config_schema;
     $this->routerBuilder = $router_builder;
@@ -100,6 +120,8 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
+    $alphabar = $container->get(G2::SVC_ALPHABAR);
+
     /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
     $etm = $container->get(G2::SVC_ETM);
 
@@ -115,7 +137,7 @@ class SettingsForm extends ConfigFormBase {
     /** @var \Drupal\g2\WOTD $wotd */
     $wotd = $container->get(G2::SVC_WOTD);
 
-    return new static($etm, $config_factory, $typed_config->getDefinition(G2::CONFIG_NAME), $router_builder, $wotd);
+    return new static($etm, $config_factory, $typed_config->getDefinition(G2::CONFIG_NAME), $router_builder, $alphabar, $wotd);
   }
 
   /**
@@ -188,6 +210,8 @@ class SettingsForm extends ConfigFormBase {
    *
    * @param array $form
    *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
    * @param array $config
    *   The configuration for which to build a form.
    * @param array $schema
@@ -196,7 +220,7 @@ class SettingsForm extends ConfigFormBase {
    * @return array
    *   The form array.
    */
-  public function buildBlockForm(array $form, array $config, array $schema) {
+  public function buildBlockForm(array $form, FormStateInterface $formState, array $config, array $schema) {
     $section = 'block';
     $form = $this->prepareTopLevelDetails($form, $schema, $section);
     $service_config = $this->config(G2::CONFIG_NAME)->get('services');
@@ -261,6 +285,8 @@ class SettingsForm extends ConfigFormBase {
    *
    * @param array $form
    *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
    * @param array $config
    *   The configuration for which to build a form.
    * @param array $schema
@@ -273,7 +299,7 @@ class SettingsForm extends ConfigFormBase {
    * @todo provide an auto-complete for node ids instead of using a plain
    *   number.
    */
-  public function buildControllerForm(array $form, array $config, array $schema) {
+  public function buildControllerForm(array $form, FormStateInterface $formState, array $config, array $schema) {
     $section = 'controller';
     $form = $this->prepareTopLevelDetails($form, $schema, $section);
     $this->messenger()
@@ -371,6 +397,8 @@ class SettingsForm extends ConfigFormBase {
    *
    * @param array $form
    *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
    * @param array $config
    *   The configuration for which to build a form.
    * @param array $schema
@@ -379,7 +407,7 @@ class SettingsForm extends ConfigFormBase {
    * @return array
    *   The form array.
    */
-  public function buildFormattingForm(array $form, array $config, array $schema) {
+  public function buildFormattingForm(array $form, FormStateInterface $formState, array $config, array $schema) {
     $element = 'hide_free_tagging';
     $form['formatting'][$element] = [
       '#type' => 'checkbox',
@@ -412,6 +440,8 @@ class SettingsForm extends ConfigFormBase {
    *
    * @param array $form
    *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
    * @param array $config
    *   The configuration for which to build a form.
    * @param array $schema
@@ -420,7 +450,7 @@ class SettingsForm extends ConfigFormBase {
    * @return array
    *   The form array.
    */
-  public function buildApiForm(array $form, array $config, array $schema) {
+  public function buildApiForm(array $form, FormStateInterface $formState, array $config, array $schema) {
     $form['api']['help'] = [
       '#markup' => '<p>'
       . $this->t('Configure the G2 API client and server if needed.
@@ -469,6 +499,8 @@ another site, while the server allows your site to provide entries to such
    *
    * @param array $form
    *   The form array.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
    * @param array $config
    *   The configuration for which to build a form.
    * @param array $schema
@@ -477,15 +509,33 @@ another site, while the server allows your site to provide entries to such
    * @return array
    *   The form array.
    */
-  public function buildServicesForm(array $form, array $config, array $schema) {
+  public function buildServicesForm(array $form, FormStateInterface $formState, array $config, array $schema) {
     $section = 'services';
     $form = $this->prepareTopLevelDetails($form, $schema, $section);
 
+    $wrapperID = str_replace('.', '-', G2::VARALPHABARCONTENTS) . '-wrapper';
     $element = &$form[$section]['alphabar'];
     $element['contents'] = [
       '#type' => 'textfield',
       '#title' => $schema['alphabar']['mapping']['contents']['label'],
       '#default_value' => $config['alphabar']['contents'],
+      '#prefix' => "<div id='${wrapperID}'>",
+      '#suffix' => '</div>',
+    ];
+    $element['generate'] = [
+      '#type' => 'button',
+      '#value' => $this->t('Rebuild from existing G2 entries'),
+      '#name' => 'generate',
+      '#ajax' => [
+        'callback' => '::generateAlphabar',
+        'disable-refocus' => TRUE,
+        'wrapper' => $wrapperID,
+        'progress' => [
+          'type' => 'throbber',
+          'message' => $this->t('Scanning G2 entries for their initials.'),
+        ],
+      ],
+      // '#element_validate' => ['::generateAlphabar'],
     ];
 
     $element = &$form[$section]['random'];
@@ -549,10 +599,31 @@ another site, while the server allows your site to provide entries to such
     if (method_exists($this, $builder)) {
       $config = $this->config(G2::CONFIG_NAME)->get($section);
       $schema = $this->configSchema['mapping'][$section]['mapping'];
-      $form = $this->{$builder}($form, $config, $schema);
+      $form = $this->{$builder}($form, $form_state, $config, $schema);
     }
 
     return parent::buildForm($form, $form_state);
+  }
+
+  /**
+   * AJAX callback for Services/Alphabar form "Generate from G2 entries" button.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  public function generateAlphabar(array &$form, FormStateInterface $formState, Request $request) {
+    $trigger = $formState->getTriggeringElement();
+    if (($trigger['#name'] ?? '') !== 'generate') {
+      return NULL;
+    }
+    $entries = $this->alphabar->fromEntries();
+    $contents = implode(array_keys($entries));
+    $element = $form['services']['alphabar']['contents'];
+    $element['#value'] = $contents;
+    $element['#description'] = $this->t('Alphabar regenerated. You can still update it before submitting the form.');
+    $res = new AjaxResponse();
+    $res->addCommand(new ReplaceCommand(NULL, $element));
+    return $res;
   }
 
   /**

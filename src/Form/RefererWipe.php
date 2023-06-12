@@ -114,7 +114,7 @@ class RefererWipe extends ConfirmFormBase {
    *
    * @param array $form
    *   The initial form, containing the form_id attribute.
-   * @param object $node
+   * @param \Drupal\node\NodeInterface $node
    *   The node to examine.
    *
    * @return string
