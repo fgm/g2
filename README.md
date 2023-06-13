@@ -55,7 +55,7 @@ Its development to this date has been entirely sponsored by [OSInet].
 * Sample implementation (about 6000 terms, localized to french)
   https://riff.org/glossaire
 
-## Completion status as of 2023-06-12
+## Completion status as of 2023-06-13
 
 ### Main features
 
@@ -63,7 +63,7 @@ Its development to this date has been entirely sponsored by [OSInet].
 |----------|---------|---------|---------|--------------------|
 | Alphabar | Done    | Done    | Working | Working            |
 | API      | n.a.    | Working | n.a.    |                    |
-| Latest   | Working | Working | Working | Working            |
+| Latest   | Done    | Done    | Working | Working            |
 | Random   | Done    | Done    |         |                    |
 | Top      | Working | Working | Working | Working            |
 | WOTD     | Done    | Done    |         |                    |
@@ -120,7 +120,7 @@ these case always have to be upgraded manually.
   provide a better administrative UI, all the display configuration and specific
   templates have been removed in favor of using specific view modes.
 - The Alphabar service now provides a button to automatically rebuild the bar
-  from existing G2 entries.
+  from existing G2 entries. The bar can then be manually adjusted before saving.
 
 ## Ruby XML-RPC client
 
