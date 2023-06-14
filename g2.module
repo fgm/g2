@@ -728,26 +728,6 @@ function g2_node_load($us_nid = 0) {
 }
 
 /**
- * Implements hook_perm().
- *
- * The extended form used here is drawn from the D7 version.
- */
-function g2_perm() {
-  $ret = array_keys(
-    [
-      G2::PERM_ADMIN => [
-        'title' => t('Administer G2 entries'),
-        'description' => t(
-          'Access administrative information on G2 entries. This permission does not grant access to the module settings, which are controlled by the "administer site configuration" permission.'
-        ),
-      ],
-    ]
-  );
-
-  return $ret;
-}
-
-/**
  * Submit handler for "wipe referers" button.
  *
  * @param array $form

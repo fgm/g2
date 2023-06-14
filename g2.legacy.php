@@ -385,22 +385,6 @@ function zg2_node_access($node, $op, $account) {
 }
 
 /**
- * Implements hook_permission().
- */
-function zg2_permission() {
-  $ret = [
-    G2::PERM_ADMIN => [
-      'title' => t('Administer G2 entries'),
-      'description' => t(
-        'Access administrative information on G2 entries. This permission does not grant access to the module settings, which are controlled by the "administer site configuration" permission.'
-      ),
-      'restrict access' => TRUE,
-    ],
-  ];
-  return $ret;
-}
-
-/**
  * Implements hook_user_load().
  */
 function zg2_user_load($users) {
