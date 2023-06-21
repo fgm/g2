@@ -8,6 +8,13 @@ services:
       - '@link_generator'
       - '@language_manager'
 
+  # Maintains the Aho-Corasick FSM of G2 entries.
+  g2.matcher:
+    class: '\Drupal\g2\Matcher'
+    arguments:
+      - '@entity_type.manager'
+      - '@keyvalue'
+
   # Provides a list of the latest updated G2 entries
   g2.latest:
     class: '\Drupal\g2\Latest'

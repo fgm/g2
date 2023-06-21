@@ -76,7 +76,6 @@ g2.settings:
     _title: 'G2 Glossary'
   requirements:
     _permission: "administer site configuration"
-
 g2.settings.api:
   path: "admin/config/content/g2/api"
   defaults:

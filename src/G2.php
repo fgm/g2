@@ -72,6 +72,16 @@ class G2 {
   const DELTA_WOTD = 'wotd';
 
   /**
+   * The key for the titles MSM in the Indexer KV collection.
+   */
+  const KV_MSM = 'g2:msm';
+
+  /**
+   * The key for the titles map in the Indexer KV collection.
+   */
+  const KV_TITLES = 'g2:titles';
+
+  /**
    * The module name.
    *
    * Meant to be used to identify the origin of stored data emanating from this
@@ -81,8 +91,6 @@ class G2 {
 
   // Constants in this group are only listed to remove WSODs, but they still
   // need to be converting from hook_menu to Symfony routing.
-  const PATH_ENTRIES = 'g2/entries';
-
   const PATH_INITIAL = 'g2/initial';
 
   const PATH_NODE_ADD = 'node/add/g2';
@@ -113,6 +121,12 @@ class G2 {
    * Route: The core block administration page.
    */
   const ROUTE_BLOCKS = 'block.admin_display';
+
+  /**
+   * Route: expose the entries with a given title.
+   */
+  const ROUTE_HOMONYMS = 'g2.homonyms';
+
 
   /**
    * Route: WOTD RSS feed.
@@ -165,6 +179,16 @@ class G2 {
   const SVC_ETM = 'entity_type.manager';
 
   /**
+   * The name of the G2 matcher service.
+   */
+  const SVC_MATCHER = 'g2.matcher';
+
+  /**
+   * The name of the core keyvalue service.
+   */
+  const SVC_KV = 'keyvalue';
+
+  /**
    * The name of the g2.latest service.
    */
   const SVC_LATEST = 'g2.latest';
@@ -198,6 +222,10 @@ class G2 {
 
   const TITLE_MAIN = 'Glossary';
 
+  const TOOLTIPS_NONE = 0;
+  const TOOLTIPS_TITLES = 1;
+  const TOOLTIPS_TEASERS = 2;
+
   /**
    * In this version, G2 entries are a node bundle (content type).
    *
@@ -210,6 +238,8 @@ class G2 {
    */
   const VARCONTROLLERINITIAL = 'controller.initial.route';
 
+  const VARCONTROLLERHOMONYMS = 'controller.homonyms';
+
   /**
    * The config path for the alphabar contents.
    */
@@ -219,6 +249,27 @@ class G2 {
    * The config path for the alphabar visual row length.
    */
   const VARALPHABARROWLENGTH = 'block.alphabar.row_length';
+
+  /**
+   * The config path for the homonyms redirect on single match.
+   */
+  const VARHOMONYMSREDIRECTSINGLE = 'controller.homonyms.redirect_on_single_match';
+
+  /**
+   * The config path for the homonyms listing node.
+   */
+  const VARHOMONYMSNID = 'controller.homonyms.nid';
+
+  /**
+   * The config path for the homonyms listing view.
+   */
+  const VARHOMONYMSVID = 'controller.homonyms.vid';
+
+  /**
+   * The config path for the homonyms redirect HTTP status.
+   */
+  const VARHOMONYMSREDIRECTSTATUS = 'controller.homonyms.redirect_status';
+
 
   /**
    * The config path for the Latest(n) block entry count.
@@ -250,9 +301,15 @@ class G2 {
    */
   const VARRANDOMSTORE = 'services.random.store';
 
-  const VARREMOTEG2 = 'g2-remote';
+  /**
+   * The config path for the URL of the remote glossary server.
+   */
+  const VARREMOTEG2 = 'api.client.remote';
 
-  const VARTOOLTIPS = 'g2-tooltips';
+  /**
+   * The config path for the level of tooltips features.
+   */
+  const VARTOOLTIPS = 'formatting.tooltips_level';
 
   const VARTOPITEMCOUNT = 'g2-top-item-count';
 
@@ -294,9 +351,23 @@ class G2 {
   // View modes.
   const VM_BLOCK = 'g2_block';
 
+  /**
+   * The view display used on the homonyms "plain node list" page.
+   */
   const VM_ENTRY_LIST = 'g2_entry_list';
 
+  /**
+   * The view display used on the deprecated homonyms node-based page.
+   *
+   * @deprecated in drupal:8.1.0 and is removed from drupal:11.0.0. Use a view.
+   * @see https://www.drupal.org/project/g2/issues/3369887
+   */
   const VM_HOMONYMS_PAGE = 'g2_homonyms_page';
+
+  /**
+   * The view display used for tooltips on definition links.
+   */
+  const VM_TOOLTIPS = 'g2_tooltips';
 
   /**
    * Return the API version.

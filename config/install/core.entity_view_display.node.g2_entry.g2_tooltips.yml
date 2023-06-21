@@ -2,7 +2,7 @@ langcode: en
 status: true
 dependencies:
   config:
-    - core.entity_view_mode.node.g2_homonyms_page
+    - core.entity_view_mode.node.g2_tooltips
     - field.field.node.g2_entry.body
     - field.field.node.g2_entry.g2_complement
     - field.field.node.g2_entry.g2_context
@@ -16,10 +16,10 @@ dependencies:
   enforced:
     module:
       - g2
-id: node.g2_entry.g2_homonyms_page
+id: node.g2_entry.g2_tooltips
 targetEntityType: node
 bundle: g2_entry
-mode: g2_homonyms_page
+mode: g2_tooltips
 content:
   g2_expansion:
     type: text_default

@@ -23,7 +23,7 @@ class LatestTest extends KernelTestBase {
   }
 
   /**
-   * Maximum number of latest entries in configuration.
+   * Maximum number of latest G2 entries in configuration.
    */
   const MAX = 2;
 

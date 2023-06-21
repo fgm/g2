@@ -419,9 +419,9 @@ class SettingsForm extends ConfigFormBase {
     $form['formatting'][$element] = [
       '#type' => 'select',
       '#options' => [
-        0 => $this->t('None'),
-        1 => $this->t('Titles'),
-        2 => $this->t('Teasers'),
+        G2::TOOLTIPS_NONE => $this->t('None'),
+        G2::TOOLTIPS_TITLES => $this->t('Titles'),
+        G2::TOOLTIPS_TEASERS => $this->t('Teasers'),
       ],
       '#default_value' => $config[$element],
     ] + $this->getInfoFromLabel($schema[$element]['label']);

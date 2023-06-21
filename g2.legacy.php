@@ -223,23 +223,6 @@ function zg2_field_extra_fields() {
 }
 
 /**
- * Implements hook_filter_info().
- */
-function zg2_filter_info() {
-  $filters = [
-    'filter_g2' => [
-      'title' => t('G2 Glossary filter'),
-      'description' => t('Allows users to link to G2 entries using &lt;dfn&gt; elements.'),
-      'prepare callback' => 'G2::filter_prepare',
-      'process callback' => 'G2::filter_process',
-      'tips callback' => 'G2::filter_tips',
-    ],
-  ];
-
-  return $filters;
-}
-
-/**
  * Implements hook_form().
  *
  * XXX 20110122 use fields, not properties for expansion/period/editor info.

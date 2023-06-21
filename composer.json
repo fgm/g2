@@ -13,7 +13,8 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=8.1",
-        "laminas/laminas-feed": "^2"
+        "laminas/laminas-feed": "^2",
+        "wikimedia/aho-corasick": "dev-master"
     },
     "require-dev": {
         "mikey179/vfsstream": "v1.6.11"

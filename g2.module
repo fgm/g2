@@ -27,6 +27,148 @@ use Drupal\g2\G2;
 use Drupal\g2\Top;
 use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
+use function Drupal\g2\Indexer;
+
+// Code in this part of the module is finalized for Drupal 10/9.
+
+/**
+ * Implements hook_cron().
+ *
+ * In G2's case, change the WOTD once a day if this feature is enabled,
+ * which is the default case.
+ */
+function g2_cron() {
+  /** @var \Drupal\g2\WOTD $wotd */
+  $wotd = \Drupal::service(G2::SVC_WOTD);
+  $wotd->cron();
+}
+
+/**
+ * Implements hook_help().
+ */
+function g2_help($route_name, RouteMatchInterface $route_match) {
+  $result = '';
+  switch ($route_name) {
+    case 'help.page.g2':
+      $result = t(
+        '<p>G2 defines a glossary service for Drupal sites.
+       To compare it with the Glossary and Lexicon modules:</p>
+       <ul>
+         <li>G2 content is node-based, not term-based, allowing node access control</li>
+         <li>G2 leverages existing code from glossary for input filtering and node marking</li>
+         <li>G2 RAM use does not significantly increase with larger entry counts, which makes is more suitable for larger glossaries</li>
+         <li>G2 requests much less from the database than the default glossary</li>
+         <li>G2 uses a "G2 Context" taxonomy vocabulary by default, but does not require it.</li>
+         <li>G2 defines optional blocks</li>
+         <li>G2 provides a client and server XML-RPC API</li>
+         <li>G2 does not provide term feeds</li>
+         </ul>'
+      );
+      break;
+
+    case 'entity.block.edit_form':
+      // G2 block plugins contain a "help" annotation.
+      $definition = $route_match
+        ->getParameter('block')
+        ->getPlugin()
+        ->getPluginDefinition();
+      if ($definition['provider'] !== 'g2') {
+        return NULL;
+      }
+      $result = $definition['help'] ?? '';
+      break;
+
+    case 'entity.entity_view_display.node.view_mode':
+      if ($route_match->getParameter('entity_type_id') != G2::TYPE) {
+        break;
+      }
+      if ($route_match->getParameter('bundle') !== G2::BUNDLE) {
+        break;
+      }
+      $name = $route_match->getParameter('view_mode_name');
+      $args = ['%vm' => EntityViewMode::load(G2::TYPE . ".${name}")->label()];
+      switch ($name) {
+        case G2::VM_BLOCK:
+          $result = t('The %vm display is used by the G2 Random and WOTD blocks.', $args);
+          break;
+
+        case G2::VM_ENTRY_LIST:
+          $result = t('The %vm display is used by the G2 "terms by initial" page and the homonyms page in "plain node list" mode.', $args);
+          break;
+
+        case G2::VM_HOMONYMS_PAGE:
+          $result = t('The %vm display is used by the G2 homonyms disambiguation page when it is configured to use a node (which is deprecated) instead of a route.', $args);
+          break;
+
+        case G2::VM_TOOLTIPS:
+          $result = t('The %vm display is used by the G2 definition filter when tooltips are configured to use teasers');
+          break;
+      }
+      if (!empty($result)) {
+        $result = ['#markup' => "<p>${result}</p>\n"];
+      }
+  }
+
+  return $result;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_delete() for nodes.
+ */
+function g2_node_delete(NodeInterface $node) {
+  /** @var \Drupal\g2\Matcher $matcher */
+  $matcher = Drupal::service(G2::SVC_MATCHER);
+  $matcher->rebuild();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for nodes.
+ */
+function g2_node_insert(NodeInterface $node) {
+  /** @var \Drupal\g2\Matcher $matcher */
+  $matcher = Drupal::service(G2::SVC_MATCHER);
+  $matcher->rebuild();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for nodes.
+ */
+function g2_node_update(NodeInterface $node) {
+  /** @var \Drupal\g2\Matcher $matcher */
+  $matcher = Drupal::service(G2::SVC_MATCHER);
+  $matcher->rebuild();
+}
+
+// Code in this part of the module works in D10/9 but may not be finalized.
+
+/**
+ * Implements hook_xmlrpc().
+ *
+ * Note that functions returning node portions return them unfiltered.
+ * It is the caller's responsibility to apply filtering depending on
+ * its actual use of the data.
+ */
+function g2_xmlrpc() {
+  /** @var \Drupal\g2\Random svcRandom */
+  $mapping = [
+    'g2.alphabar' => '_g2_alphabar',
+    'g2.api' => '_g2_api',
+    'g2.latest' => '_g2_latest',
+    'g2.random' => [\Drupal::service(G2::SVC_RANDOM), 'get'],
+    'g2.stats' => '_g2_stats',
+    'g2.top' => '_g2_top',
+    'g2.wotd' => '_g2_wotd',
+  ];
+
+  $enabled = Drupal::config(G2::CONFIG_NAME)->get('api.server.enabled');
+  if (!$enabled) {
+    $mapping = [];
+  }
+
+  return $mapping;
+}
+
+// Code in this part of the module is still unchecked.
 
 /**
  * XML-RPC callback : returns alphabar data.
@@ -111,7 +253,7 @@ SQL;
  *   Note that the results are NOT filtered, and must be filtered when used.
  */
 function _g2_latest($count = NULL) {
-  $config = Drupal::config('g2.settings');
+  $config = Drupal::config(G2::CONFIG_NAME);
   $service_max = $config->get('services.latest.max_count');
   $api_throttle = $config->get('api.server.throttle');
   $actual_max = $api_throttle * $service_max;
@@ -150,7 +292,7 @@ function _g2_latest($count = NULL) {
  *   Note that the title of the nodes is NOT filtered.
  */
 function _g2_top($count = NULL, $daily_top = FALSE) {
-  $config = Drupal::config('g2.settings');
+  $config = Drupal::config(G2::CONFIG_NAME);
   $service_max = $config->get('services.top.max_count');
   $api_throttle = $config->get('api.server.throttle');
   $actual_max = $api_throttle * $service_max;
@@ -174,71 +316,6 @@ function _g2_top($count = NULL, $daily_top = FALSE) {
 }
 
 /**
- * Implements hook_help().
- */
-function g2_help($route_name, RouteMatchInterface $route_match) {
-  $result = '';
-  switch ($route_name) {
-    case 'help.page.g2':
-      $result = t(
-        '<p>G2 defines a glossary service for Drupal sites.
-       To compare it with the Glossary and Lexicon modules:</p>
-       <ul>
-         <li>G2 content is node-based, not term-based, allowing node access control</li>
-         <li>G2 leverages existing code from glossary for input filtering and node marking</li>
-         <li>G2 RAM use does not significantly increase with larger entry counts, which makes is more suitable for larger glossaries</li>
-         <li>G2 requests much less from the database than the default glossary</li>
-         <li>G2 uses a "G2 Context" taxonomy vocabulary by default, but does not require it.</li>
-         <li>G2 defines optional blocks</li>
-         <li>G2 provides a client and server XML-RPC API</li>
-         <li>G2 does not provide term feeds</li>
-         </ul>'
-      );
-      break;
-
-    case 'entity.block.edit_form':
-      // G2 block plugins contain a "help" annotation.
-      $definition = $route_match
-        ->getParameter('block')
-        ->getPlugin()
-        ->getPluginDefinition();
-      if ($definition['provider'] !== 'g2') {
-        return NULL;
-      }
-      $result = $definition['help'] ?? '';
-      break;
-
-    case 'entity.entity_view_display.node.view_mode':
-      if ($route_match->getParameter('entity_type_id') != G2::TYPE) {
-        break;
-      }
-      if ($route_match->getParameter('bundle') !== G2::BUNDLE) {
-        break;
-      }
-      $name = $route_match->getParameter('view_mode_name');
-      $args = ['%vm' => EntityViewMode::load(G2::TYPE . ".${name}")->label()];
-      switch ($name) {
-        case G2::VM_BLOCK:
-          $result = t('The %vm display is used by the G2 Random and WOTD blocks.', $args);
-          break;
-
-        case G2::VM_ENTRY_LIST:
-          $result = t('The %vm display is used by the G2 "terms by initial" page.', $args);
-          break;
-
-        case G2::VM_HOMONYMS_PAGE:
-          $result = t('The %vm display is used by the G2 homonyms disambiguation page when it is configured to use a node instead of a route', $args);
-          break;
-      }
-      if (!empty($result)) {
-        $result = ['#markup' => "<p>${result}</p>\n"];
-      }
-  }
-
-  return $result;
-}
-
-/**
  * Implements hook_theme().
  */
 function g2_theme() {
@@ -251,6 +328,7 @@ function g2_theme() {
         'row_length' => $config->get(G2::VARALPHABARROWLENGTH),
       ],
     ],
+    // Checked for D8/9/10.
     'g2_entries' => [
       'variables' => [
         'raw_entry' => '',
@@ -259,12 +337,14 @@ function g2_theme() {
         'offer' => NULL,
       ],
     ],
+    // Not checked
     'g2_initial' => [
       'variables' => [
         'initial' => NULL,
         'entries' => [],
       ],
     ],
+    // Not checked
     'g2_main' => [
       'variables' => [
         'alphabar' => $config->get(G2::VARALPHABARCONTENTS),
@@ -343,74 +423,6 @@ function _g2_entry_terms($node) {
     }
     $ret = theme('links', $terms);
   }
-  return $ret;
-}
-
-/**
- * Translate glossary linking elements (<dfn>) to actual links)
- *
- * This function generates absolute links, for the benefit of the WOTD RSS feed
- * If this feed is not used, it is possible to use the (shorter) relative URLs
- * by swapping comments.
- *
- * @param string $entry
- *   An entry.
- *
- * @return string
- *   HTML.
- */
-function _g2_filter_process($entry) {
-  // [0] is the original string.
-  $entry = $entry[1];
-  $target = variable_get(G2::VARREMOTEG2, G2::DEFREMOTEG2);
-
-  // If we are not using a remote glossary.
-  if ($target == G2::DEFREMOTENO) {
-    $target = G2::PATH_ENTRIES;
-
-    // No tooltips on remote glossaries: too slow.
-    if (variable_get(G2::VARTOOLTIPS, G2::DEFTOOLTIPS)) {
-      $nodes = g2_entry_load($entry);
-      $count = count($nodes);
-      if ($count == 1) {
-        $node = reset($nodes);
-        $tooltip = check_markup($node->teaser, $nodes->format);
-      }
-      elseif ($count) {
-        $tooltip = t(
-          '@count entries for @entry',
-          [
-            '@count' => $count,
-            '@entry' => $entry,
-          ]
-        );
-      }
-      else {
-        $tooltip = t('No such term.');
-      }
-    }
-  }
-  else {
-    $tooltip = NULL;
-  }
-
-  $path = urlencode(G2::encodeTerminal($entry));
-  $attributes = [
-    'class' => 'g2-dfn-link',
-  ];
-  if (isset($tooltip)) {
-    $attributes['title'] = $tooltip;
-  }
-
-  $ret = l(
-    $entry,
-    $target . '/' . $path,
-    [
-      'absolute' => TRUE,
-      'html' => FALSE,
-      'attributes' => $attributes,
-    ]
-  );
   return $ret;
 }
 
@@ -609,26 +621,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
 }
 
 /**
- * Implements hook_cron().
- *
- * In G2's case, change the WOTD once a day if this feature is enabled,
- * which is the default case.
- */
-function g2_cron() {
-  /** @var \Drupal\g2\WOTD $wotdCron */
-  $wotd = \Drupal::service(G2::SVC_WOTD);
-  $wotd->cron();
-}
-
-/**
- * Implements hook_delete().
- */
-function g2_delete(&$node) {
-  Drupal::database()
-    ->query('DELETE FROM {g2_node} WHERE nid = %d', $node->nid);
-}
-
-/**
  * Loader for G2_entries.
  *
  * Only returns unpublished nodes to users with "administer nodes".
@@ -639,66 +631,22 @@ function g2_delete(&$node) {
  * @return array
  *   Nodes matching the title.
  *
- * @see _g2_filter_process
+ * @see \Drupal\g2\Plugin\Filter\Definition::doProcess
  */
-function g2_entry_load($title) {
-  $sq = <<<SQL
-SELECT n.nid
-FROM {node} n
-WHERE n.type = '%s' AND n.status >= %d AND n.title LIKE '%s%%';
-SQL;
-  $sq = db_rewrite_sql($sq);
-
-  $min_status = user_access('administer nodes')
-    ? Node::NOT_PUBLISHED
-    : Node::PUBLISHED;
-  $q = Drupal::database()->query($sq, G2::BUNDLE, $min_status, $title);
-  $nodes = [];
-  while (is_object($node = db_fetch_object($q))) {
-    $nodes[$node->nid] = Drupal::service('entity_type.manager')
-      ->getStorage(G2::TYPE)
-      ->load($node->nid);
+function g2_entry_load(string $title) {
+  $storage = \Drupal::entityTypeManager()->getStorage(G2::TYPE);
+  $nids = $storage->getQuery()
+    ->accessCheck()
+    ->condition('type', G2::BUNDLE)
+    ->condition('status', NodeInterface::PUBLISHED)
+    ->condition('title', $title)
+    ->execute();
+  if (empty($nids)) {
+    return [];
   }
+
+  $nodes = $storage->loadMultiple($nids);
   return $nodes;
-}
-
-/**
- * Implements hook_filter().
- *
- * @link http://drupal.org/node/267484 @endlink
- * @link http://drupal.org/node/209715 @endlink
- */
-function g2_filter($op, $delta = 0, $format = -1, $text = '', $cache_id = 0) {
-  switch ($op) {
-    case 'list':
-      return [0 => t('G2 Glossary filter')];
-
-    case 'description':
-      return t('Allows users to link to G2 entries using &lt;dfn&gt; elements.');
-
-    case 'prepare':
-      $text = preg_replace('@<dfn>(.+?)</dfn>@s', "[g2-dfn]\\1[/g2-dfn]",
-        $text);
-      return $text;
-
-    case "process":
-      $text = preg_replace_callback('@\[g2-dfn\](.+?)\[/g2-dfn\]@s',
-        '_g2_filter_process', $text);
-      return $text;
-
-    default:
-      return $text;
-  }
-}
-
-/**
- * Implements hook_filter_tips().
- */
-function g2_filter_tips($delta, $format, $long = FALSE) {
-  $ret = $long
-    ? t('Wrap &lt;dfn&gt; elements around the terms for which you want a link to the available G2 definition(s).')
-    : t('You may link to G2 definitions using &lt;dfn&gt; elements.');
-  return $ret;
 }
 
 /**
@@ -876,33 +824,6 @@ function g2_views_api() {
     'api' => '2.0',
     'path' => ExtensionPathResolver::getPath('module', 'g2') . '/views',
   ];
-}
-
-/**
- * Implements hook_xmlrpc().
- *
- * Note that functions returning node portions return them unfiltered.
- * It is the caller's responsibility to apply filtering depending on
- * its actual use of the data.
- */
-function g2_xmlrpc() {
-  /** @var \Drupal\g2\Random svcRandom */
-  $mapping = [
-    'g2.alphabar' => '_g2_alphabar',
-    'g2.api' => '_g2_api',
-    'g2.latest' => '_g2_latest',
-    'g2.random' => [\Drupal::service(G2::SVC_RANDOM), 'get'],
-    'g2.stats' => '_g2_stats',
-    'g2.top' => '_g2_top',
-    'g2.wotd' => '_g2_wotd',
-  ];
-
-  $enabled = Drupal::config(G2::CONFIG_NAME)->get('api.server.enabled');
-  if (!$enabled) {
-    $mapping = [];
-  }
-
-  return $mapping;
 }
 
 /**
