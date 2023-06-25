@@ -283,6 +283,14 @@ class G2 {
 
   const VARLOGREFERRERS = 'g2-log-referrers';
 
+  /**
+   * The config path for the node used to build the main G2 page.
+   *
+   * @deprecated in drupal:8.1.0 and is removed from drupal:11.0.0. Use a view.
+   * @see https://www.drupal.org/project/g2/issues/3369887
+   */
+  const VARMAINNID = 'controller.main.nid';
+
   // Constants in this group are only listed to remove WSODs, but they still
   // need the associated logic to be converted from variables to config.
   const VARNOFREETAGGING = 'g2-no-freetagging';

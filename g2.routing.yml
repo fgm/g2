@@ -38,6 +38,8 @@ g2.initial:
   requirements:
     _permission: 'access content'
     g2_initial: '[_\-0-9a-zA-Z]'
+    # Once https://www.drupal.org/project/drupal/issues/3369925 is fixed, replace by
+    # g2_initial: '[\p{Ll}\p{Lm}\p{Lo}\p{Lt}\p{Lu}\p{Mc}\p{Nd}\p{Nl}\p{No} _-]'
 
 # G2 default main page.
 g2.main:

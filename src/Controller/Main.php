@@ -2,14 +2,15 @@
 
 namespace Drupal\g2\Controller;
 
-use Drupal\Core\Config\ImmutableConfig;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 
+use Drupal\Core\Link;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\g2\Alphabar;
 use Drupal\g2\G2;
 
-use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -18,6 +19,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Class Main contains the G2 main page controller.
  */
 class Main implements ContainerInjectionInterface {
+
+  use StringTranslationTrait;
+
   /**
    * Title of the G2 main page.
    */
@@ -31,11 +35,11 @@ class Main implements ContainerInjectionInterface {
   protected $alphabar;
 
   /**
-   * The module configuration.
+   * The core config factory service.
    *
-   * @var \Drupal\Core\Config\ImmutableConfig
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
-  protected $config;
+  protected $configFactory;
 
   /**
    * The entity_type.manager service.
@@ -51,17 +55,112 @@ class Main implements ContainerInjectionInterface {
    *   The entity_type.manager service.
    * @param \Drupal\g2\Alphabar $alphabar
    *   The g2.alphabar service.
-   * @param \Drupal\Core\Config\ImmutableConfig $config
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
    *   The module configuration.
    */
   public function __construct(
     EntityTypeManagerInterface $etm,
     Alphabar $alphabar,
-    ImmutableConfig $config,
+    ConfigFactoryInterface $configFactory,
   ) {
     $this->alphabar = $alphabar;
-    $this->config = $config;
+    $this->configFactory = $configFactory;
     $this->etm = $etm;
+  }
+
+  /**
+   * Build additional content on the page using an unpublished node.
+   *
+   * @param int $nid
+   *   The node id.
+   *
+   * @return array
+   *   A render array.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   *
+   * @deprecated in drupal:8.1.0 and is removed from drupal:11.0.0. Use a view.
+   * @see https://www.drupal.org/project/g2/issues/3369887
+   */
+  protected function buildFromNode(int $nid): array {
+    $node = $this->etm
+      ->getStorage(G2::TYPE)
+      ->load($nid);
+    if (!($node instanceof NodeInterface)) {
+      return [];
+    }
+
+    // @todo Ensure we still want to override the site name.
+    /* _g2_override_site_name(); */
+
+    if ($node->body->isEmpty()) {
+      return [];
+    }
+
+    // Simulate publishing.
+    $node->setPublished();
+    // Remove the title : we used it for the page title.
+    $title = $node->label();
+    $node->setTitle(NULL);
+
+    $builder = $this->etm->getViewBuilder($node->getEntityTypeId());
+    $text = $builder->view($node);
+    $text['#original_title'] = $title;
+    return $text;
+  }
+
+  /**
+   * Build a default G2 main page body as a per-initial count list.
+   *
+   * @return array|array[]
+   *   Render array.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  protected function buildDefault(): array {
+    $build = [
+      'list' => [
+        '#theme' => 'item_list',
+        '#items' => [],
+      ],
+    ];
+    $items = &$build['list']['#items'];
+    $alphabar = $this->alphabar->getContents();
+    if (empty($alphabar)) {
+      return [];
+    }
+    $config = $this->configFactory->get(G2::CONFIG_NAME);
+    $route = $config->get(G2::VARCONTROLLERINITIAL);
+
+    $storage = $this->etm->getStorage(G2::TYPE);
+
+    foreach (mb_str_split($alphabar) as $rune) {
+      $n = $storage->getQuery()
+        ->condition('type', G2::BUNDLE)
+        ->condition('title', "${rune}%", 'LIKE')
+        ->condition('status', NodeInterface::PUBLISHED)
+        ->accessCheck()
+        ->count()
+        ->execute();
+      $text = $this->formatPlural($n,
+        "@initial - one definition",
+        "@initial - @count definitions",
+        ['@initial' => $rune],
+      );
+      $items[] = Link::createFromRoute($text, $route, ['g2_initial' => $rune]);
+    }
+    $type = G2::TYPE;
+    $bundle = G2::BUNDLE;
+    $confName = G2::CONFIG_NAME;
+    $build['#cache'] = [
+      'tags' => [
+        "config:$confName",
+        "${type}_list:${bundle}",
+      ],
+    ];
+    return $build;
   }
 
   /**
@@ -71,44 +170,22 @@ class Main implements ContainerInjectionInterface {
    *   A render array.
    */
   public function indexAction() {
-    $alphabar = [
+    $alphaLinks = [
       '#theme' => 'g2_alphabar',
       '#alphabar' => $this->alphabar->getLinks(),
       // Set Row_length so that only an extremely long alphabar would wrap.
       '#row_length' => 2 << 16,
     ];
 
-    $generator = $this->config->get('controller.main.nid');
-    $node = $this->etm
-      ->getStorage(G2::TYPE)
-      ->load($generator);
-    if ($node instanceof NodeInterface) {
-      $title = $node->label();
-
-      // @todo Ensure we still want to override the site name.
-      /* _g2_override_site_name(); */
-
-      if (!$node->body->isEmpty()) {
-        // Simulate publishing.
-        $node->setPublished(Node::PUBLISHED);
-        // Remove the title : we used it for the page title.
-        $node->setTitle(NULL);
-        $builder = $this->etm->getViewBuilder($node->getEntityTypeId());
-        $text = $builder->view($node);
-      }
-      else {
-        // Empty or missing body field.
-        $text = [];
-      }
-    }
-    else {
-      // Node not found.
-      $text = [];
-    }
+    $config = $this->configFactory->get(G2::CONFIG_NAME);
+    $nid = $config->get(G2::VARMAINNID);
+    $text = $nid
+      ? $this->buildFromNode($nid)
+      : $this->buildDefault();
 
     $ret = [
       '#theme' => 'g2_main',
-      '#alphabar' => $alphabar,
+      '#alphabar' => $alphaLinks,
       '#text' => $text,
     ];
 
@@ -126,16 +203,13 @@ class Main implements ContainerInjectionInterface {
     /** @var \Drupal\g2\Alphabar $alphabar */
     $alphabar = $container->get('g2.alphabar');
 
-    /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
-    $config_factory = $container->get(G2::SVC_CONF);
+    /** @var \Drupal\Core\Config\ConfigFactoryInterface $configFactory */
+    $configFactory = $container->get(G2::SVC_CONF);
 
     /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $etm */
     $etm = $container->get(G2::SVC_ETM);
 
-    /** @var \Drupal\Core\Config\ImmutableConfig $config */
-    $config = $config_factory->get(G2::CONFIG_NAME);
-
-    return new static($etm, $alphabar, $config);
+    return new static($etm, $alphabar, $configFactory);
   }
 
 }
