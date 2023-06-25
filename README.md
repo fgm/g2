@@ -1,4 +1,4 @@
-# Glossary2 (G2)
+# Glossary 2 (G2)
 
 (c) 2005-2023 Frederic G. MARAND
 
@@ -7,8 +7,8 @@ version 2 or later.
 
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FGM/g2/badges/quality-score.png?b=8.x-1.x)](https://scrutinizer-ci.com/g/FGM/g2/?branch=8.x-1.x)
 
-**WARNING** 2023-06-12 : This version of the project is only partially usable
-at the moment. A complete version is expected before 2023-07-01.
+**WARNING** 2023-06-25 : This version of the project is only alpha level
+at the moment, rapidly evolving with a stable version expected for 2023-07.
 
 
 ## Table of contents
@@ -55,7 +55,7 @@ Its development to this date has been entirely sponsored by [OSInet].
 * Sample implementation (about 6000 terms, localized to french)
   https://riff.org/glossaire
 
-## Completion status as of 2023-06-13
+## Completion status as of 2023-06-25 (alpha1)
 
 ### Main features
 
@@ -75,10 +75,10 @@ Its development to this date has been entirely sponsored by [OSInet].
 
 | Page          | Status  |
 |---------------|---------|
-| main          | Working |
-| entries       | Working |
+| main          | Done    |
+| homonyms      | Done    |
 | initial       | Working |
-| node add form | Working |
+| node add form | Done    |
 | settings      | Working |
 | WOTD feed     | TBD     |
 
@@ -97,6 +97,11 @@ Since 2009-09-27:
 
 ## Installing / upgrading / uninstalling
 
+### Installing
+
+Installing is Drupal standard: just copy the module, enable it and configure it
+by going through each of the tabs starting at `/admin/content/g2/services`
+
 ### Upgrading
 
 | From...To |  4.7.y   |   5.y    |   6.y    |    7.y     | 8.y &rarr; 10.y |
@@ -108,19 +113,22 @@ Since 2009-09-27:
 |   8.x-9.x |          |          |          |            |    standard     |
 
 As this matrix shows, beyond Drupal 6.x, update features are limited.
-The D7 upgrade path only convers configuration,
-and no standard upgrade path exists towards D8+:
-these case always have to be upgraded manually.
+
+- The D7 upgrade path only convers configuration,
+  and there is no standard upgrade path towards D8+:
+  these cases always have to be upgraded manually.
+- The D9/D10 upgrade is transparent for the module.
 
 ## Feature changes in the D9/D10 version
 
-- G2 versions since Drupal 4.x have been manually handling the display
+- New in alpha1: the Alphabar service configuration now provides a button to
+  automatically rebuild the bar from existing G2 entries.
+  The bar can then be manually adjusted before saving.
+- No-code: G2 versions since Drupal 4.x have been manually handling the display
   configuration on G2 entries.
   Since fields and view modes have been a standard for quite a long time and
   provide a better administrative UI, all the display configuration and specific
   templates have been removed in favor of using specific view modes.
-- The Alphabar service now provides a button to automatically rebuild the bar
-  from existing G2 entries. The bar can then be manually adjusted before saving.
 
 ## Ruby XML-RPC client
 
@@ -144,32 +152,26 @@ visible entries.
 
 Since G2 is designed for large glossaries, this is not considered a bug.
 
----
-
-Everything below this line related to the 7.x-1.x branch, and is likely to be
-incorrect for Drupal 8+.
-
----
-
-### Installing
-
-Installing is Drupal standard: just copy the module, enable it and configure it.
-
 ### Uninstalling
 
 WARNING: Should you want to uninstall the module, take care to first remove
 all _G2 Entry_ nodes before removing the module. This includes:
 
 - your glossary definitions,
-- the unpublished page used for the glossary home page skeleton.
-- the unpublished page used for the disambiguation skeleton
+- the unpublished page used for the glossary home page skeleton, if any
+- the unpublished page used for the disambiguation skeleton, if any
 
 Unless you do this, you will have inconsistent nodes in your system, because
 Drupal will be missing the module to load G2 entries. If you do not modify
 any of these nodes, reinstalling the module will restore consistency and
 enable a clean node deletion and uninstall later on.
 
-## NOTICE
+---
+
+Everything below this line related to the 7.x-1.x branch, and is likely to be
+incorrect for Drupal 8+.
+
+---
 
 ### Statistics
 
