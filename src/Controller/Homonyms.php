@@ -148,9 +148,9 @@ class Homonyms implements ContainerInjectionInterface {
    *   A render array.
    */
   protected function indexMatches($raw_match, array $g2_match) {
-    $builder = $this->etm->getViewBuilder(G2::TYPE);
-
-    $entries = $builder->viewMultiple($g2_match, G2::VM_ENTRY_LIST);
+    $entries = $this->etm
+      ->getViewBuilder(G2::TYPE)
+      ->viewMultiple($g2_match, G2::VM_ENTRY_LIST);
     $result = [
       '#theme' => 'g2_entries',
       '#raw_entry' => $raw_match,
@@ -172,7 +172,7 @@ class Homonyms implements ContainerInjectionInterface {
    * @return arraystringarray|string
    *   A render array.
    *
-   * @deprecated in drupal:8.1.0 and is removed from drupal:11.0.0. Use a view.
+   * @deprecated in drupal:8.1.0 and is removed from drupal:8.2.0. Use a view.
    * @see https://www.drupal.org/project/g2/issues/3369887
    */
   protected function indexUsingNode($nid) {
@@ -215,7 +215,7 @@ class Homonyms implements ContainerInjectionInterface {
   }
 
   /**
-   * Controller for g2.entries.
+   * Controller for g2.homonyms.
    *
    * @param \Drupal\Core\Routing\RouteMatchInterface $route
    *   The current route.
@@ -266,7 +266,7 @@ class Homonyms implements ContainerInjectionInterface {
   }
 
   /**
-   * Title callback for g2.entries.
+   * Title callback for g2.homonyms.
    *
    * @param \Drupal\Core\Routing\RouteMatchInterface $route
    *   The current route match.

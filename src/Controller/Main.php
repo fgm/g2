@@ -80,7 +80,7 @@ class Main implements ContainerInjectionInterface {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    *
-   * @deprecated in drupal:8.1.0 and is removed from drupal:11.0.0. Use a view.
+   * @deprecated in drupal:8.1.0 and is removed from drupal:8.2.0. Use a view.
    * @see https://www.drupal.org/project/g2/issues/3369887
    */
   protected function buildFromNode(int $nid): array {

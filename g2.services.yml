@@ -30,6 +30,11 @@ services:
       - '@entity_type.manager'
       - '@state'
 
+  g2.route_filter:
+    class: '\Drupal\g2\RouteFilter'
+    arguments:
+      - '@router.route_provider'
+
   # A test helper logger.
   g2.test.logger:
     class: '\Drupal\g2\TestLogger'

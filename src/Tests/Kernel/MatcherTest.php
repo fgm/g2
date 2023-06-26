@@ -22,7 +22,7 @@ class MatcherTest extends KernelTestBase {
   /**
    * Maximum number of G2 entries to create.
    *
-   * This is the order of magnitude of the Riff glossary of computing.
+   * This is 1/10 the order of magnitude of the Riff glossary of computing.
    */
   const MAX = 600;
 

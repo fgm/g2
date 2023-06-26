@@ -128,7 +128,7 @@ class G2IssuesTest extends DrupalWebTestCase {
     $href = (string) $attributes['href'];
     $this->drupalGet($href);
     $this->assertLink('create', 0,
-      $this->t('Found G2 "create" link on g2/entries/HTML'), self::$group);
+      $this->t('Found G2 "create" link on g2/homonyms/HTML'), self::$group);
     $link = $this->xpath('//a[text()="create"]');
     if (empty($link)) {
       return;
@@ -137,7 +137,7 @@ class G2IssuesTest extends DrupalWebTestCase {
     $attributes = $link[0]->attributes();
     $href = (string) $attributes['href'];
     $this->assertEqual($href, url('node/add/g2-entry/HTML'),
-      $this->t('Found G2 node creation link on g2/entries/HTML'), self::$group);
+      $this->t('Found G2 node creation link on g2/homonyms/HTML'), self::$group);
   }
 
 }

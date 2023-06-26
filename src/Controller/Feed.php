@@ -121,7 +121,7 @@ class Feed implements ContainerInjectionInterface {
     $entry->setLink($node->toUrl()->toString());
     $feed->addEntry($entry);
 
-    $rss = $feed->export('rss');
+    $rss = $feed->export(G2::VM_RSS);
     $xml = new XmlResponse($rss);
     return $xml;
   }

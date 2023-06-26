@@ -124,7 +124,7 @@ class RefererWipe extends ConfirmFormBase {
    */
   public function countReferrers(array $form, NodeInterface $node) {
     // Build list of referers.
-    $nid = $node->id();
+    $nid = (int) $node->id();
 
     $header = [
       ['data' => t('Clicks'), 'field' => 'incoming', 'sort' => 'desc'],
@@ -154,7 +154,11 @@ class RefererWipe extends ConfirmFormBase {
         $node = $this->etm
           ->getStorage(G2::TYPE)
           ->load($matches[1]);
-        $title = Link::createFromRoute($node->label(), G2::ROUTE_NODE_CANONICAL, ['node' => $node->id()]);
+        $title = Link::createFromRoute(
+          $node->label(),
+          G2::ROUTE_NODE_CANONICAL,
+          ['node' => $node->id()],
+        )->toString();
       }
       else {
         $title = NULL;
@@ -165,7 +169,7 @@ class RefererWipe extends ConfirmFormBase {
         : [
           $row->incoming,
           Link::fromTextAndUrl($row->referer, Url::fromUserInput($row->referer)),
-          $title->toString(),
+          $title,
         ];
     }
 
@@ -184,7 +188,8 @@ class RefererWipe extends ConfirmFormBase {
     }
 
     if (!empty($rows)) {
-      $form['links']['#suffix'] = t(
+      // @todo explain what these stats really measure.
+      $form['links']['#suffix'] = $this->t(
         "<p>WARNING: just because a click came from a node doesn't mean the node has a link.
     The click may have come from a block on the page. These stats are just a hint for editors.</p>"
       );

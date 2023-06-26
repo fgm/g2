@@ -26,27 +26,12 @@ class G2 {
 
   const DEFPAGETITLE = TRUE;
 
-  const DEFPATHMAIN = 'g2.main';
-
   /**
    * The State default for the current stored random entry.
    */
   const DEFRANDOMENTRY = '';
 
-  const DEFREMOTEG2 = FALSE;
-
-  const DEFREMOTENO = '';
-
-  const DEFTOOLTIPS = FALSE;
-
-  const DEFTOPITEMCOUNT = 5;
-
-  const DEFWOTDAUTOCHANGE = TRUE;
-
-  /**
-   * The config default for the WOTD entry.
-   */
-  const DEFWOTDENTRY = '';
+  const DEFTOPMAXCOUNT = 5;
 
   const DEFWOTDFEEDAUTHOR = '';
 
@@ -55,11 +40,6 @@ class G2 {
   const DEFWOTDFEEDLINK = TRUE;
 
   const DEFWOTDTITLE = '';
-
-  /**
-   * Block: n most recent.
-   */
-  const DELTA_LATEST = 'latest';
 
   /**
    * Block: n most viewed.
@@ -108,14 +88,34 @@ class G2 {
   const ROUTE_ADMIN_CONTENT = 'system.admin_content';
 
   /**
+   * Route: autocomplete G2 entry by title.
+   */
+  const ROUTE_AUTOCOMPLETE_ENTRY = 'g2.autocomplete.entry';
+
+  /**
+   * Route: autocomplete route by name, only listing routes without parameters.
+   */
+  const ROUTE_AUTOCOMPLETE_ROUTE_0PARAM = 'g2.autocomplete.route_0param';
+
+  /**
+   * Route: autocomplete route by name, only listing routes with one parameter.
+   */
+  const ROUTE_AUTOCOMPLETE_ROUTE_1PARAM = 'g2.autocomplete.route_1param';
+
+  /**
+   * Route: the G2 API configuration form.
+   */
+  const ROUTE_CONFIG_API = 'g2.settings.api';
+
+  /**
+   * Route: the G2 formatting configuration form.
+   */
+  const ROUTE_CONFIG_FORMATTING = 'g2.settings.formatting';
+
+  /**
    * Route: the G2 services configuration form.
    */
   const ROUTE_CONFIG_SERVICES = 'g2.settings.services';
-
-  /**
-   * Route: autocomplete by title.
-   */
-  const ROUTE_AUTOCOMPLETE = 'g2.autocomplete';
 
   /**
    * Route: The core block administration page.
@@ -126,7 +126,6 @@ class G2 {
    * Route: expose the entries with a given title.
    */
   const ROUTE_HOMONYMS = 'g2.homonyms';
-
 
   /**
    * Route: WOTD RSS feed.
@@ -184,11 +183,6 @@ class G2 {
   const SVC_MATCHER = 'g2.matcher';
 
   /**
-   * The name of the core keyvalue service.
-   */
-  const SVC_KV = 'keyvalue';
-
-  /**
    * The name of the g2.latest service.
    */
   const SVC_LATEST = 'g2.latest';
@@ -202,6 +196,11 @@ class G2 {
    * The name of the g2.random service.
    */
   const SVC_RANDOM = 'g2.random';
+
+  /**
+   * The name of the g2.route_filter service.
+   */
+  const SVC_ROUTE_FILTER = 'g2.route_filter';
 
   /**
    * The state service.
@@ -223,7 +222,9 @@ class G2 {
   const TITLE_MAIN = 'Glossary';
 
   const TOOLTIPS_NONE = 0;
+
   const TOOLTIPS_TITLES = 1;
+
   const TOOLTIPS_TEASERS = 2;
 
   /**
@@ -232,6 +233,16 @@ class G2 {
    * This is likely to change as some point in the future.
    */
   const TYPE = 'node';
+
+  /**
+   * The config path for the XML-RPC API server enabling.
+   */
+  const VARAPIENABLED = 'api.server.enabled';
+
+  /**
+   * The config path for the api throttle limiter.
+   */
+  const VARAPITHROTTLE = 'api.server.throttle';
 
   /**
    * The config path for the route service the "entries by initial" page.
@@ -257,8 +268,16 @@ class G2 {
 
   /**
    * The config path for the homonyms listing node.
+   *
+   * @deprecated in drupal:8.1.0 and is removed from drupal:8.2.0. Use a view.
+   * @see https://www.drupal.org/project/g2/issues/3369887
    */
   const VARHOMONYMSNID = 'controller.homonyms.nid';
+
+  /**
+   * The config path for the homonyms page route.
+   */
+  const VARHOMONYMSROUTE = 'controller.homonyms.route';
 
   /**
    * The config path for the homonyms listing view.
@@ -270,7 +289,6 @@ class G2 {
    */
   const VARHOMONYMSREDIRECTSTATUS = 'controller.homonyms.redirect_status';
 
-
   /**
    * The config path for the Latest(n) block entry count.
    */
@@ -281,21 +299,31 @@ class G2 {
    */
   const VARLATESTMAXCOUNT = 'services.latest.max_count';
 
-  const VARLOGREFERRERS = 'g2-log-referrers';
+  /**
+   * The config path for the referrer logging feature.
+   */
+  const VARLOGREFERRERS = 'controller.main.log_referrers';
 
   /**
    * The config path for the node used to build the main G2 page.
    *
-   * @deprecated in drupal:8.1.0 and is removed from drupal:11.0.0. Use a view.
+   * @deprecated in drupal:8.1.0 and is removed from drupal:8.2.0. Use a view.
    * @see https://www.drupal.org/project/g2/issues/3369887
    */
   const VARMAINNID = 'controller.main.nid';
 
   // Constants in this group are only listed to remove WSODs, but they still
   // need the associated logic to be converted from variables to config.
-  const VARNOFREETAGGING = 'g2-no-freetagging';
 
-  const VARPAGETITLE = 'g2-page-title';
+  /**
+   * The config path for the free tagging choice on node formatting.
+   */
+  const VARNOFREETAGGING = 'formatting.hide_free_tagging';
+
+  /**
+   * The config path for the title override on G2 entry pages.
+   */
+  const VARPAGETITLE = 'formatting.title';
 
   const VARPATHMAIN = 'g2-path-main';
 
@@ -319,7 +347,10 @@ class G2 {
    */
   const VARTOOLTIPS = 'formatting.tooltips_level';
 
-  const VARTOPITEMCOUNT = 'g2-top-item-count';
+  /**
+   * The config path for the Top(n) service maximum entry count.
+   */
+  const VARTOPMAXCOUNT = 'services.top.max_count';
 
   /**
    * The config path for the WOTD auto_change property.
@@ -367,10 +398,15 @@ class G2 {
   /**
    * The view display used on the deprecated homonyms node-based page.
    *
-   * @deprecated in drupal:8.1.0 and is removed from drupal:11.0.0. Use a view.
+   * @deprecated in drupal:8.1.0 and is removed from drupal:8.2.0. Use a view.
    * @see https://www.drupal.org/project/g2/issues/3369887
    */
   const VM_HOMONYMS_PAGE = 'g2_homonyms_page';
+
+  /**
+   * The core RSS view display.
+   */
+  const VM_RSS = 'rss';
 
   /**
    * The view display used for tooltips on definition links.
@@ -383,7 +419,7 @@ class G2 {
    * @return int
    *   The version of the API format.
    */
-  public static function api() {
+  public static function api(): int {
     return static::API_VERSION;
   }
 
@@ -402,7 +438,7 @@ class G2 {
    * @return string
    *   The encoded terminal.
    */
-  public static function encodeTerminal($terminal): string {
+  public static function encodeTerminal(string $terminal): string {
     $terminal = strtr($terminal, [
       '.' => '%2E',
       '/' => '%2F',

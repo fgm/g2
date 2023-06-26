@@ -24,12 +24,8 @@ controller:
     nid: 0
     route: g2.main
     log_referrers: true
-  entries:
-    route: g2.entries
   initial:
     route: g2.initial
-  adder:
-    route: g2.add
   homonyms:
     redirect_on_single_match: true
     nid: 0
@@ -46,8 +42,6 @@ api:
   server:
     enabled: false
     throttle: !!float 1
-  # TODO check whether this is not actually a constant.
-  local: '<local>'
 formatting:
   hide_free_tagging: true
   tooltips_level: 0

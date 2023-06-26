@@ -16,13 +16,17 @@
  */
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\Entity\EntityViewMode;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\GeneratedLink;
+use Drupal\Core\Link;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\g2\G2;
 use Drupal\g2\Top;
 use Drupal\node\Entity\Node;
@@ -149,18 +153,20 @@ function g2_node_update(NodeInterface $node) {
  * its actual use of the data.
  */
 function g2_xmlrpc() {
-  /** @var \Drupal\g2\Random svcRandom */
   $mapping = [
+    // D10/9 OK
     'g2.alphabar' => '_g2_alphabar',
-    'g2.api' => '_g2_api',
+    'g2.api' => [G2::class, 'api'],
     'g2.latest' => '_g2_latest',
-    'g2.random' => [\Drupal::service(G2::SVC_RANDOM), 'get'],
     'g2.stats' => '_g2_stats',
     'g2.top' => '_g2_top',
+
+    // D10/9 exception
+    'g2.random' => [\Drupal::service(G2::SVC_RANDOM), 'get'],
     'g2.wotd' => '_g2_wotd',
   ];
 
-  $enabled = Drupal::config(G2::CONFIG_NAME)->get('api.server.enabled');
+  $enabled = Drupal::config(G2::CONFIG_NAME)->get(G2::VARAPIENABLED);
   if (!$enabled) {
     $mapping = [];
   }
@@ -184,16 +190,6 @@ function _g2_alphabar() {
 }
 
 /**
- * XML-RPC callback : returns the current XML-RPC API version.
- *
- * @return int
- *   The G2 XML-RPC API major version.
- */
-function _g2_api() {
-  return G2::api();
-}
-
-/**
  * Log a hit from a referrer.
  *
  * Note that this does not work on cached pages, and will log hits from all
@@ -211,12 +207,12 @@ function _g2_insert_referrer(EntityInterface $node): void {
   }
   // For now, we do not handle non-local referers, which are no longer emitted
   // by modern (2025) browsers in most cases.
-  if (!str_starts_with($referer, $base_url . '/')) {
+  if (!str_starts_with($referer, "${base_url}/")) {
     return;
   }
 
   // Extract local path, possibly aliased.
-  $referer = mb_substr($referer, mb_strlen($base_url) + 1);
+  $referer = mb_substr($referer, mb_strlen($base_url));
   // Unalias it.
   $referer = Drupal::service('path_alias.manager')->getPathByAlias($referer);
   // Sanitize it.
@@ -246,17 +242,21 @@ SQL;
  *
  * "Latest" nodes are identified by time of latest update.
  *
- * @param int|null $count
+ * @param int $count
  *   The maximum number of entries to return.
  *
  * @return array
  *   Note that the results are NOT filtered, and must be filtered when used.
+ *
+ * @throws \Drupal\Core\Entity\EntityMalformedException
  */
-function _g2_latest($count = NULL) {
+function _g2_latest(int $count = 0): array {
   $config = Drupal::config(G2::CONFIG_NAME);
-  $service_max = $config->get('services.latest.max_count');
-  $api_throttle = $config->get('api.server.throttle');
-  $actual_max = $api_throttle * $service_max;
+  /** @var int $service_max */
+  $service_max = $config->get(G2::VARLATESTMAXCOUNT);
+  /** @var float $api_throttle */
+  $api_throttle = $config->get(G2::VARAPITHROTTLE);
+  $actual_max = (int) ceil($api_throttle * $service_max);
 
   // Limit extraction.
   if (empty($count) || ($count > $actual_max)) {
@@ -264,15 +264,68 @@ function _g2_latest($count = NULL) {
   }
 
   /** @var \Drupal\g2\Latest $latest */
-  $latest = Drupal::service('g2.latest');
+  $latest = Drupal::service(G2::SVC_LATEST);
   $links = $latest->getLinks($count);
   $result = [];
 
-  /** @var \Drupal\Core\GeneratedLink $link */
+  /** @var \Drupal\Core\Link $link */
   foreach ($links as $link) {
-    $result[] = $link->__toString();
+    $result[] = "{$link->toString()}";
   }
   return $result;
+}
+
+/**
+ * Extract statistics from the G2 glossary.
+ *
+ * @param int $tid
+ *   Taxonomy term id
+ * @param string $initial
+ *   Initial segment
+ *
+ * @return array
+ *   - g2 entries having chosen taxonomy term
+ *   - g2 entries starting with chosen initial segment
+ */
+function _g2_stats(int $tid = 0, string $initial = ''): array {
+  $db = Drupal::database();
+
+  $qUnpub = $db->select('node', 'n');
+  $unPubAlias = $qUnpub->innerJoin('node_field_data', 'nfd', 'nfd.nid = n.nid');
+  $qUnpub
+    ->condition('n.type', G2::BUNDLE)
+    ->condition("${unPubAlias}.status", NodeInterface::NOT_PUBLISHED)
+    ->addTag('node_access');
+
+  $qPub = $db->select('node', 'n');
+  $pubAlias = $qPub->innerJoin('node_field_data', 'nfd', 'nfd.nid = n.nid');
+  $qPub
+    ->condition('n.type', G2::BUNDLE)
+    ->condition("${pubAlias}.status", NodeInterface::PUBLISHED)
+    ->addTag('node_access');
+
+  if (!empty($tid)) {
+    $qUnpub->innerJoin('taxonomy_index', 'ti', 'n.nid = ti.nid');
+    $qPub->innerJoin('taxonomy_index', 'ti', 'n.nid = ti.nid');
+    $qUnpub = $qUnpub->condition('ti.tid', $tid);
+    $qPub = $qPub->condition('ti.tid', $tid);
+  }
+
+  if (!empty($initial)) {
+    $qUnpub = $qUnpub->condition("${unPubAlias}.title", "$initial%", 'LIKE');
+    $qPub = $qPub->condition("${pubAlias}.title", "$initial%", 'LIKE');
+  }
+
+  $unpub = $qUnpub->countQuery()->execute();
+  $pub = $qPub->countQuery()->execute();
+
+  // Avoid empty returns
+  $ret = [
+    NodeInterface::NOT_PUBLISHED => $unpub->fetchField(),
+    NodeInterface::PUBLISHED => $pub->fetchField()
+  ];
+
+  return $ret;
 }
 
 /**
@@ -293,8 +346,8 @@ function _g2_latest($count = NULL) {
  */
 function _g2_top($count = NULL, $daily_top = FALSE) {
   $config = Drupal::config(G2::CONFIG_NAME);
-  $service_max = $config->get('services.top.max_count');
-  $api_throttle = $config->get('api.server.throttle');
+  $service_max = $config->get(G2::VARLATESTMAXCOUNT);
+  $api_throttle = $config->get(G2::VARAPITHROTTLE);
   $actual_max = $api_throttle * $service_max;
 
   // Limit extraction.
@@ -369,6 +422,8 @@ function g2_theme() {
  *
  * @return array
  *   The taxonomy terms, with tags removed if applicable.
+ *
+ * FIXME most likely redundant with view modes.
  */
 function _g2_comb_taxonomy(array $taxonomy = []) {
   // Filter tag vocabularies for non-G2 admins if this is requested.
@@ -518,22 +573,39 @@ function _g2_wotd($bodysize = 0) {
 }
 
 /**
- * Implements hook_access().
+ * Implements hook_ENTITY_TYPE_access() for nodes.
+ *
+ * @throws \Drupal\Core\Entity\EntityMalformedException
  */
-function g2_access($op /* , $node, $account */) {
+function g2_node_access(
+  EntityInterface $node,
+  string $op,
+  AccountInterface $account
+): AccessResultInterface {
+  if ($node->bundle() != G2::BUNDLE) {
+    return AccessResult::neutral("Not a G2 entry");
+  }
   switch ($op) {
     case 'create':
     case 'delete':
     case 'update':
-      $ret = user_access(G2::PERM_ADMIN);
-      break;
+      return AccessResult::allowedIfHasPermission($account, G2::PERM_ADMIN);
+
+    case 'view all revisions':
+      return AccessResult::allowedIfHasPermission($account, 'view all revisions');
 
     case 'view':
-      $ret = user_access('access content');
-      break;
-  }
+      return AccessResult::allowedIfHasPermission($account, 'access content');
 
-  return $ret;
+    default:
+      \Drupal::logger(G2::NAME)
+        ->notice('Node access for invalid op %op', [
+          '%op' => $op,
+          'link' => Link::fromTextAndUrl($node->label(), $node->toUrl())
+            ->toRenderable(),
+        ]);
+      return AccessResult::neutral();
+  }
 }
 
 /**
@@ -804,12 +876,12 @@ function g2_node_view(array &$build, EntityInterface $node, EntityViewDisplayInt
   $config = Drupal::config(G2::CONFIG_NAME);
 
   // On the WOTD feed, force the node date to the WOTD date or current time.
-  if ($view_mode === 'rss' &&
+  if ($view_mode === G2::VM_RSS &&
     Drupal::routeMatch()->getRouteName() === G2::ROUTE_FEED_WOTD) {
     $node->created = (Drupal::state()->get(G2::VARWOTDDATE) ?: time());
   }
 
-  if ($config->get('controller.main.log_referrers')) {
+  if ($config->get(G2::VARLOGREFERRERS)) {
     _g2_insert_referrer($node);
   }
 

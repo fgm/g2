@@ -26,11 +26,11 @@ function zg2_block_configure($delta) {
 
   switch ($delta) {
     case G2::DELTA_TOP:
-      $form[G2::VARTOPITEMCOUNT] = [
+      $form[G2::VARTOPMAXCOUNT] = [
         '#type' => 'select',
         '#title' => t('Number of items'),
-        '#default_value' => variable_get(G2::VARTOPITEMCOUNT,
-          G2::DEFTOPITEMCOUNT),
+        '#default_value' => variable_get(G2::VARTOPMAXCOUNT,
+          G2::DEFTOPMAXCOUNT),
         '#options' => $count_options,
       ];
       break;
@@ -114,11 +114,10 @@ function zg2_block_info() {
 function zg2_block_save($delta, $edit) {
   switch ($delta) {
     case G2::DELTA_TOP:
-      variable_set(G2::VARTOPITEMCOUNT, $edit[G2::VARTOPITEMCOUNT]);
+      variable_set(G2::VARTOPMAXCOUNT, $edit[G2::VARTOPMAXCOUNT]);
       break;
 
     case G2::DELTA_WOTD:
-
       variable_set(G2::VARWOTDFEEDLINK, $edit[G2::VARWOTDFEEDLINK]);
       variable_set(G2::VARWOTDFEEDTITLE, $edit[G2::VARWOTDFEEDTITLE]);
       variable_set(G2::VARWOTDFEEDDESCR, $edit[G2::VARWOTDFEEDDESCR]);
@@ -136,7 +135,7 @@ function zg2_block_save($delta, $edit) {
 function zg2_block_view($delta) {
   switch ($delta) {
     case G2::DELTA_TOP:
-      $max = variable_get(G2::VARTOPITEMCOUNT, G2::DEFTOPITEMCOUNT);
+      $max = variable_get(G2::VARTOPMAXCOUNT, G2::DEFTOPMAXCOUNT);
       $block['subject'] = t(
         '@count most popular G2 glossary entries',
         ['@count' => $max]
@@ -314,57 +313,6 @@ function zg2_form(&$node, $form_state) {
   ];
 
   return $form;
-}
-
-/**
- * Menu loader for g2_node.
- *
- * @param int $us_nid
- *   Safety with regard to $us_nid is checked within node_load().
- *
- * @return object|false|null
- *   - loaded object if accessible G2 node
- *   - NULL if accessible object is not a G2 node
- *   - FALSE otherwise
- */
-function zg2_nid_load($us_nid = 0) {
-  $node = \Drupal::service(G2::SVC_ETM)
-    ->getStorage(G2::TYPE)
-    ->load($us_nid);
-  if ($node->type != G2::BUNDLE) {
-    $node = NULL;
-  }
-  return $node;
-}
-
-/**
- * Implements hook_node_access().
- */
-function zg2_node_access($node, $op, $account) {
-  switch ($op) {
-    case 'create':
-    case 'delete':
-    case 'update':
-      $ret = user_access(G2::PERM_ADMIN, $account);
-      break;
-
-    case 'view':
-      $ret = user_access('access content', $account);
-      break;
-
-    default:
-      $uri = entity_uri(G2::TYPE, $node);
-      watchdog(
-        'g2',
-        'Node access for invalid op %op',
-        ['%op' => $op],
-        WATCHDOG_NOTICE,
-        l($node->title, $uri['path'], $uri['options'])
-      );
-      $ret = FALSE;
-  }
-
-  return $ret;
 }
 
 /**

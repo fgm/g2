@@ -15,6 +15,7 @@ use Drupal\Core\Url;
 use Drupal\g2\Alphabar;
 use Drupal\g2\G2;
 use Drupal\g2\WOTD;
+use Drupal\node\NodeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -303,36 +304,41 @@ class SettingsForm extends ConfigFormBase {
     $section = 'controller';
     $form = $this->prepareTopLevelDetails($form, $schema, $section);
     $this->messenger()
-      ->addStatus($this->t('Be aware that saving this configuration will rebuild the router.'));
+      ->addStatus($this->t('Be aware that saving configuration on this tab will mark the router as needing a rebuild.'));
+
     $element = &$form['controller']['main'];
     $element['nid'] = [
       '#type' => 'number',
       '#default_value' => $config['main']['nid'],
+      '#element_validate' => [[$this, 'validateControllerMainNid']],
     ] + $this->getInfoFromLabel($schema['main']['mapping']['nid']['label']);
 
-    foreach (['main', 'entries', 'initial', 'adder', 'homonyms'] as $top) {
-      $element = &$form['controller'][$top];
+    foreach ([
+      'main' => G2::ROUTE_AUTOCOMPLETE_ROUTE_0PARAM,
+      'initial' => G2::ROUTE_AUTOCOMPLETE_ROUTE_1PARAM,
+      'homonyms' => G2::ROUTE_AUTOCOMPLETE_ROUTE_1PARAM,
+    ] as $name => $route) {
+      $element = &$form['controller'][$name];
       $element['route'] = [
         '#type' => 'textfield',
-        '#default_value' => $config[$top]['route'],
-      ] + $this->getInfoFromLabel($schema[$top]['mapping']['route']['label']);
+        '#autocomplete_route_name' => $route,
+        '#default_value' => $config[$name]['route'],
+      ] + $this->getInfoFromLabel($schema[$name]['mapping']['route']['label']);
     }
 
-    $element = &$form['controller']['main'];
-    $element['log_referrers'] = [
+    $path = explode('.', G2::VARLOGREFERRERS);
+    [$section, $group, $key] = $path;
+    $element = &$form[$section][$group];
+    $element[$key] = [
       '#type' => 'checkbox',
-      '#default_value' => $config['main']['log_referrers'],
-    ] + $this->getInfoFromLabel($schema['main']['mapping']['log_referrers']['label']);
+      '#default_value' => $config[$group][$key],
+    ] + $this->getInfoFromLabel($schema[$group]['mapping'][$key]['label']);
 
     $element = &$form['controller']['homonyms'];
     $element['redirect_on_single_match'] = [
       '#type' => 'checkbox',
       '#default_value' => $config['homonyms']['redirect_on_single_match'],
     ] + $this->getInfoFromLabel($schema['homonyms']['mapping']['redirect_on_single_match']['label']);
-    $element['nid'] = [
-      '#type' => 'number',
-      '#default_value' => $config['homonyms']['nid'],
-    ] + $this->getInfoFromLabel($schema['homonyms']['mapping']['nid']['label']);
 
     $redirects = [
       Response::HTTP_MOVED_PERMANENTLY,
@@ -373,6 +379,10 @@ class SettingsForm extends ConfigFormBase {
       '#options' => $options,
       '#default_value' => $config['homonyms']['vid'],
     ] + $this->getInfoFromLabel($schema['homonyms']['mapping']['vid']['label']);
+    $element['nid'] = [
+      '#type' => 'number',
+      '#default_value' => $config['homonyms']['nid'],
+    ] + $this->getInfoFromLabel($schema['homonyms']['mapping']['nid']['label']);
 
     $element = &$form['controller']['wotd'];
     $element['title'] = [
@@ -408,14 +418,14 @@ class SettingsForm extends ConfigFormBase {
    *   The form array.
    */
   public function buildFormattingForm(array $form, FormStateInterface $formState, array $config, array $schema) {
-    $element = 'hide_free_tagging';
+    [, $element] = explode('.', G2::VARNOFREETAGGING);
     $form['formatting'][$element] = [
       '#type' => 'checkbox',
       '#title' => $schema[$element]['label'],
       '#default_value' => $config[$element],
     ];
 
-    $element = 'tooltips_level';
+    [, $element] = explode('.', G2::VARTOOLTIPS);
     $form['formatting'][$element] = [
       '#type' => 'select',
       '#options' => [
@@ -424,9 +434,10 @@ class SettingsForm extends ConfigFormBase {
         G2::TOOLTIPS_TEASERS => $this->t('Teasers'),
       ],
       '#default_value' => $config[$element],
+      '#element_validate' => [[$this, 'validateFormattingTooltips']],
     ] + $this->getInfoFromLabel($schema[$element]['label']);
 
-    $element = 'title';
+    [, $element] = explode('.', G2::VARPAGETITLE);
     $form['formatting'][$element] = [
       '#type' => 'textfield',
       '#default_value' => $config[$element],
@@ -465,9 +476,9 @@ another site, while the server allows your site to provide entries to such
     ];
     $form['api']['client']['remote'] = [
       '#type' => 'textfield',
-      '#title' => $schema['client']['mapping']['remote']['label'],
       '#default_value' => $config['client']['remote'],
-    ];
+      '#element_validate' => [[$this, 'validateApiRemote']],
+    ] + $this->getInfoFromLabel($schema['client']['mapping']['remote']['label']);
 
     $form['api']['server'] = [
       '#type' => 'details',
@@ -484,13 +495,18 @@ another site, while the server allows your site to provide entries to such
       '#max' => 1.0,
       '#min' => 0.0,
       '#step' => 0.1,
+      '#element_validate' => [[$this, 'validateApiThrottle']],
     ] + $this->getInfoFromLabel($schema['server']['mapping']['throttle']['label']);
 
-    $form['api']['local'] = [
-      '#type' => 'textfield',
-      '#title' => $schema['local']['label'],
-      '#default_value' => $config['local'],
+    $form['api']['version'] = [
+      '#markup' => '<p>'
+      . $this->t('This site is running G2 version %version. See the <a href=":page" title="G2 Glossary project page">G2 project page</a> on Drupal.org.', [
+        '%version' => G2::VERSION,
+        ':page' => 'http://drupal.org/project/g2',
+      ])
+      . '</p>',
     ];
+
     return $form;
   }
 
@@ -558,11 +574,11 @@ another site, while the server allows your site to provide entries to such
       $element[$key] = [
         '#type' => 'textfield',
         '#title' => $schema['wotd']['mapping'][$key]['label'],
-        '#autocomplete_route_name' => G2::ROUTE_AUTOCOMPLETE,
+        '#autocomplete_route_name' => G2::ROUTE_AUTOCOMPLETE_ENTRY,
         '#maxlength' => 60,
         '#required' => TRUE,
         '#default_value' => $this->wotd->numberedTitleInput($wotd),
-        '#element_validate' => [[$this, 'validateWordOfTheDay']],
+        '#element_validate' => [[$this, 'validateServicesWordOfTheDay']],
       ];
 
       $key = $this->component(G2::VARWOTDAUTOCHANGE);
@@ -626,12 +642,11 @@ another site, while the server allows your site to provide entries to such
   }
 
   /**
-   * Additional submit handler for the block configuration form.
+   * Additional submit handler for the controller configuration form.
    */
-  public function submitControllerForm() {
-    // @todo Really necessary ? We change selected routes, not modifying them.
-    $this->routerBuilder->rebuild();
-    $this->messenger()->addStatus($this->t('The router has been rebuilt.'));
+  public function submitControllerForm(array &$form, FormStateInterface $form_state) {
+    $this->routerBuilder->setRebuildNeeded();
+    $this->messenger()->addStatus($this->t('The router has been marked for rebuilding.'));
   }
 
   /**
@@ -641,18 +656,164 @@ another site, while the server allows your site to provide entries to such
     $values = $form_state->getValues();
     $section = $values['section'];
     $values = $values[$section];
-    $config = $this->configFactory()
-      ->getEditable(G2::CONFIG_NAME);
-    $config->set($section, $values)
+    $this->configFactory()
+      ->getEditable(G2::CONFIG_NAME)
+      ->set($section, $values)
       ->save();
 
     $handler = 'submit' . ucfirst($section) . 'Form';
     if (method_exists($this, $handler)) {
-      $this->{$handler}();
+      $this->{$handler}($form, $form_state);
     }
 
     $this->messenger()
       ->addStatus($this->t('The configuration options have been saved.'));
+  }
+
+  /**
+   * Callback for #elementValidate on controller main nid.
+   *
+   * @param array $element
+   *   The element.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
+   * @param array $form
+   *   The complete form.
+   *
+   * @return array
+   *   The modified element.
+   */
+  public function validateControllerMainNid(
+    array &$element,
+    FormStateInterface $formState,
+    array $form,
+  ) {
+    $path = explode('.', G2::VARMAINNID);
+    [$section, $group, $key] = $path;
+    $nid = (int) $formState->getValue($path);
+    if (empty($nid)) {
+      $element['#value'] = 0;
+      return $element;
+    }
+
+    /** @var \Drupal\node\NodeInterface $node */
+    $node = $this->etm
+      ->getStorage(G2::TYPE)
+      ->load($nid);
+    if (empty($node) || $node->status->value == NodeInterface::PUBLISHED) {
+      $formState->setError($form[$section][$group][$key],
+        $this->t('The node chosen for the main page must be a valid unpublished one, or 0: "@nid" does not satisfy these requirements.', ['@nid' => $nid]));
+    }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    // Remove non-input elements.
+    $form_state->unsetValue(['services', 'alphabar', 'generate']);
+    parent::validateForm($form, $form_state);
+  }
+
+  /**
+   * Callback for #elementValidate on formatting tooltips.
+   *
+   * @param array $element
+   *   The element.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
+   * @param array $form
+   *   The complete form.
+   *
+   * @return array
+   *   The modified element.
+   */
+  public function validateFormattingTooltips(
+    array &$element,
+    FormStateInterface $formState,
+    array $form,
+  ) {
+    $ttPath = explode('.', G2::VARTOOLTIPS);
+    [$section, $key] = $ttPath;
+    $level = (int) $formState->getValue($ttPath);
+    if (empty($level)) {
+      $element['#value'] = 0;
+      return $element;
+    }
+
+    $remote = $this->configFactory->get(G2::CONFIG_NAME)->get(G2::VARREMOTEG2);
+    if (!empty($remote)) {
+      $formState->setError($form[$section][$key],
+        $this->t('Tooltips are only available on local glossaries, but this G2 glossary is <a href=":admin">configured</a> to use the remote glossary at <a href=":remote">:remote</a>.', [
+          ':admin' => Url::fromRoute(G2::ROUTE_CONFIG_API)->toString(),
+          ':remote' => $remote,
+        ]));
+    }
+    return $element;
+  }
+
+  /**
+   * Callback for #elementValidate on API remote client URL.
+   *
+   * @param array $element
+   *   The element.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
+   * @param array $form
+   *   The complete form.
+   *
+   * @return array
+   *   The modified element.
+   */
+  public function validateApiRemote(
+    array &$element,
+    FormStateInterface $formState,
+    array $form,
+  ) {
+    $remPath = explode('.', G2::VARREMOTEG2);
+    [$section, $group, $key] = $remPath;
+    $url = $formState->getValue($remPath);
+    if (empty($url)) {
+      $element['#value'] = NULL;
+      return $element;
+    }
+
+    $tt = $this->configFactory->get(G2::CONFIG_NAME)->get(G2::VARTOOLTIPS);
+    if (!empty($tt)) {
+      $formState->setError($form[$section][$group][$key],
+        $this->t('This configuration attempts to enable the G2 remote client,
+          although tooltips are <a href=":admin">configured</a>.', [
+            ':admin' => Url::fromRoute(G2::ROUTE_CONFIG_FORMATTING)->toString(),
+          ]
+      ));
+    }
+    return $element;
+  }
+
+  /**
+   * Callback for #elementValidate on API remote server throttle.
+   *
+   * @param array $element
+   *   The element.
+   * @param \Drupal\Core\Form\FormStateInterface $formState
+   *   The form state.
+   * @param array $form
+   *   The complete form.
+   *
+   * @return array
+   *   The modified element.
+   */
+  public function validateApiThrottle(
+    array &$element,
+    FormStateInterface $formState,
+    array $form,
+  ) {
+    // Sanitize API throttle.
+    $tPath = explode('.', G2::VARAPITHROTTLE);
+    $throttle = (float) $formState->getValue($tPath);
+    $formState->setValueForElement($element, $throttle);
+
+    return $element;
   }
 
   /**
@@ -668,13 +829,13 @@ another site, while the server allows your site to provide entries to such
    * @return array
    *   The modified element.
    */
-  public function validateWordOfTheDay(
+  public function validateServicesWordOfTheDay(
     array &$element,
     FormStateInterface $formState,
     array $form,
   ): array {
-    $wotdPath = explode('.', G2::VARWOTDENTRY);
-    $value = $formState->getValue($wotdPath);
+    $path = explode('.', G2::VARWOTDENTRY);
+    $value = $formState->getValue($path);
     if (empty($value)) {
       $element['#value'] = '';
       return $element;

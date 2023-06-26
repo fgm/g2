@@ -143,9 +143,10 @@ class Initial implements ContainerInjectionInterface {
       ];
     }
     else {
+      $builder = $this->etm->getViewBuilder(G2::TYPE);
       $result = [
         'stats-basic' => ['#markup' => $stats_basic],
-        'entries' => node_view_multiple($nodes, G2::VM_ENTRY_LIST),
+        'entries' => $builder->viewMultiple($nodes, G2::VM_ENTRY_LIST),
       ];
     }
 
