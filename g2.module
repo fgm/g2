@@ -846,16 +846,6 @@ function g2_node_view(array &$build, EntityInterface $node, EntityViewDisplayInt
 }
 
 /**
- * Implements hook_views_api().
- */
-function g2_views_api() {
-  return [
-    'api' => '2.0',
-    'path' => ExtensionPathResolver::getPath('module', 'g2') . '/views',
-  ];
-}
-
-/**
  * Theme a random entry.
  *
  * This is actually a short view for just about any single node, but it
