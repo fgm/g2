@@ -573,42 +573,6 @@ function _g2_wotd($bodysize = 0) {
 }
 
 /**
- * Implements hook_ENTITY_TYPE_access() for nodes.
- *
- * @throws \Drupal\Core\Entity\EntityMalformedException
- */
-function g2_node_access(
-  EntityInterface $node,
-  string $op,
-  AccountInterface $account
-): AccessResultInterface {
-  if ($node->bundle() != G2::BUNDLE) {
-    return AccessResult::neutral("Not a G2 entry");
-  }
-  switch ($op) {
-    case 'create':
-    case 'delete':
-    case 'update':
-      return AccessResult::allowedIfHasPermission($account, G2::PERM_ADMIN);
-
-    case 'view all revisions':
-      return AccessResult::allowedIfHasPermission($account, 'view all revisions');
-
-    case 'view':
-      return AccessResult::allowedIfHasPermission($account, 'access content');
-
-    default:
-      \Drupal::logger(G2::NAME)
-        ->notice('Node access for invalid op %op', [
-          '%op' => $op,
-          'link' => Link::fromTextAndUrl($node->label(), $node->toUrl())
-            ->toRenderable(),
-        ]);
-      return AccessResult::neutral();
-  }
-}
-
-/**
  * Implements hook_block().
  */
 function g2_block($op = 'list', $delta = 0, $edit = []) {

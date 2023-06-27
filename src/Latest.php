@@ -4,11 +4,16 @@ namespace Drupal\g2;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\node\NodeInterface;
 
 /**
  * Class Latest implements the g2.latest service.
  */
 class Latest {
+
+  use StringTranslationTrait;
+
   /**
    * The config.factory service.
    *
@@ -65,6 +70,9 @@ class Latest {
       ->condition('type', G2::BUNDLE)
       ->sort('changed', 'DESC')
       ->range(0, $count);
+    if (!(\Drupal::currentUser()->hasPermission(G2::PERM_ADMIN))) {
+      $query = $query->condition('status', NodeInterface::PUBLISHED);
+    }
     $ids = $query->execute();
     $result = $this->etm
       ->getStorage(G2::TYPE)
@@ -90,10 +98,15 @@ class Latest {
       // So links can be used outside site pages.
       'absolute' => TRUE,
       // To preserve the pre-encoded path.
-      'html'     => TRUE,
+      'html' => TRUE,
     ];
     /** @var \Drupal\node\NodeInterface $node */
     foreach ($this->getEntries($count) as $node) {
+      if (!$node->isPublished()) {
+        $node->setTitle($this->t('@title [unpublished]', [
+          '@title' => $node->label(),
+        ]));
+      }
       $result[] = $node->toLink(NULL, 'canonical', $options);
     }
 
