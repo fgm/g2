@@ -127,9 +127,9 @@ class RefererWipe extends ConfirmFormBase {
     $nid = (int) $node->id();
 
     $header = [
-      ['data' => t('Clicks'), 'field' => 'incoming', 'sort' => 'desc'],
-      ['data' => t('Referer'), 'field' => 'referer', 'sort' => 'asc'],
-      ['data' => t('Related node')],
+      ['data' => $this->t('Clicks'), 'field' => 'incoming', 'sort' => 'desc'],
+      ['data' => $this->t('Referer'), 'field' => 'referer', 'sort' => 'asc'],
+      ['data' => $this->t('Related node')],
     ];
 
     // Can be generated for unpublished nodes by author or admin, so don't
@@ -175,7 +175,7 @@ class RefererWipe extends ConfirmFormBase {
 
     // Build form from results.
     $form['links'] = [
-      '#prefix' => t('<h3>Local referers for this node</h3>'),
+      '#prefix' => $this->t('<h3>Local referers for this node</h3>'),
     ];
     if (empty($rows)) {
       $form['links']['#type'] = 'markup';
