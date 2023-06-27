@@ -5,6 +5,7 @@ namespace Drupal\g2\Controller;
 use Drupal\Core\Config\ImmutableConfig;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Url;
 use Drupal\g2\G2;
 use Laminas\Diactoros\Response\XmlResponse;
@@ -45,6 +46,13 @@ class Feed implements ContainerInjectionInterface {
   protected ImmutableConfig $systemConfig;
 
   /**
+   * The language manager service.
+   *
+   * @var \Drupal\Core\Language\LanguageManagerInterface
+   */
+  protected $languageManager;
+
+  /**
    * Autocomplete constructor.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
@@ -53,15 +61,19 @@ class Feed implements ContainerInjectionInterface {
    *   The g2.settings/controller.wotd configuration.
    * @param \Drupal\Core\Config\ImmutableConfig $systemConfig
    *   The system email.
+   * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
+   *   The language manager service.
    */
   public function __construct(
     EntityTypeManagerInterface $etm,
     ImmutableConfig $g2Config,
-    ImmutableConfig $systemConfig
+    ImmutableConfig $systemConfig,
+    LanguageManagerInterface $language_manager
   ) {
     $this->etm = $etm;
     $this->g2Config = $g2Config;
     $this->systemConfig = $systemConfig;
+    $this->languageManager = $language_manager;
   }
 
   /**
@@ -92,7 +104,7 @@ class Feed implements ContainerInjectionInterface {
     $feed->setTitle($this->g2Config->get('controller.wotd.title'));
 
     // Language: Drupal 6 defaults to to $language->language.
-    $feed->setLanguage(\Drupal::languageManager()
+    $feed->setLanguage($this->languageManager
       ->getCurrentLanguage()
       ->getId());
 

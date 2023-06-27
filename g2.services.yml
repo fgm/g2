@@ -20,6 +20,7 @@ services:
     class: '\Drupal\g2\Latest'
     arguments:
       - '@config.factory'
+      - '@current_user'
       - '@entity_type.manager'
 
   g2.random:
@@ -72,4 +73,3 @@ services:
     arguments:
       - '@entity_type.manager'
       - '@current_user'
-

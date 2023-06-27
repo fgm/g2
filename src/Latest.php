@@ -4,6 +4,7 @@ namespace Drupal\g2;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\node\NodeInterface;
 
@@ -29,18 +30,29 @@ class Latest {
   protected $etm;
 
   /**
+   * The core current_user service.
+   *
+   * @var \Drupal\Core\Session\AccountProxyInterface
+   */
+  protected AccountProxyInterface $currentUser;
+
+  /**
    * Constructor.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
    *   The config factory service.
+   * @param \Drupal\Core\Session\AccountProxyInterface $currentUser
+   *   The current_user service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
    *   The entity_type.manager service.
    */
   public function __construct(
     ConfigFactoryInterface $configFactory,
+    AccountProxyInterface $currentUser,
     EntityTypeManagerInterface $etm
   ) {
     $this->configFactory = $configFactory;
+    $this->currentUser = $currentUser;
     $this->etm = $etm;
   }
 
@@ -70,7 +82,7 @@ class Latest {
       ->condition('type', G2::BUNDLE)
       ->sort('changed', 'DESC')
       ->range(0, $count);
-    if (!(\Drupal::currentUser()->hasPermission(G2::PERM_ADMIN))) {
+    if (!($this->currentUser->hasPermission(G2::PERM_ADMIN))) {
       $query = $query->condition('status', NodeInterface::PUBLISHED);
     }
     $ids = $query->execute();

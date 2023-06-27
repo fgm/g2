@@ -16,24 +16,17 @@
  */
 
 use Drupal\Component\Utility\Html;
-use Drupal\Core\Access\AccessResult;
-use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\Entity\EntityViewMode;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\GeneratedLink;
-use Drupal\Core\Link;
 use Drupal\Core\Routing\RouteMatchInterface;
-use Drupal\Core\Session\AccountInterface;
 use Drupal\g2\G2;
 use Drupal\g2\Top;
 use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
-use function Drupal\g2\Indexer;
-
-// Code in this part of the module is finalized for Drupal 10/9.
 
 /**
  * Implements hook_cron().
@@ -143,7 +136,7 @@ function g2_node_update(NodeInterface $node) {
   $matcher->rebuild();
 }
 
-// Code in this part of the module works in D10/9 but may not be finalized.
+/* Code in this part of the module works in D10/9 but may not be finalized. */
 
 /**
  * Implements hook_xmlrpc().
@@ -154,14 +147,14 @@ function g2_node_update(NodeInterface $node) {
  */
 function g2_xmlrpc() {
   $mapping = [
-    // D10/9 OK
+    // D10/9 OK.
     'g2.alphabar' => '_g2_alphabar',
     'g2.api' => [G2::class, 'api'],
     'g2.latest' => '_g2_latest',
     'g2.stats' => '_g2_stats',
     'g2.top' => '_g2_top',
 
-    // D10/9 exception
+    // D10/9 exception.
     'g2.random' => [\Drupal::service(G2::SVC_RANDOM), 'get'],
     'g2.wotd' => '_g2_wotd',
   ];
@@ -174,7 +167,7 @@ function g2_xmlrpc() {
   return $mapping;
 }
 
-// Code in this part of the module is still unchecked.
+/* Code in this part of the module is still unchecked. */
 
 /**
  * XML-RPC callback : returns alphabar data.
@@ -279,9 +272,9 @@ function _g2_latest(int $count = 0): array {
  * Extract statistics from the G2 glossary.
  *
  * @param int $tid
- *   Taxonomy term id
+ *   Taxonomy term id.
  * @param string $initial
- *   Initial segment
+ *   Initial segment.
  *
  * @return array
  *   - g2 entries having chosen taxonomy term
@@ -319,10 +312,10 @@ function _g2_stats(int $tid = 0, string $initial = ''): array {
   $unpub = $qUnpub->countQuery()->execute();
   $pub = $qPub->countQuery()->execute();
 
-  // Avoid empty returns
+  // Avoid empty returns.
   $ret = [
     NodeInterface::NOT_PUBLISHED => $unpub->fetchField(),
-    NodeInterface::PUBLISHED => $pub->fetchField()
+    NodeInterface::PUBLISHED => $pub->fetchField(),
   ];
 
   return $ret;
@@ -390,14 +383,14 @@ function g2_theme() {
         'offer' => NULL,
       ],
     ],
-    // Not checked
+    // Not checked.
     'g2_initial' => [
       'variables' => [
         'initial' => NULL,
         'entries' => [],
       ],
     ],
-    // Not checked
+    // Not checked.
     'g2_main' => [
       'variables' => [
         'alphabar' => $config->get(G2::VARALPHABARCONTENTS),
@@ -423,7 +416,7 @@ function g2_theme() {
  * @return array
  *   The taxonomy terms, with tags removed if applicable.
  *
- * FIXME most likely redundant with view modes.
+ *   FIXME most likely redundant with view modes.
  */
 function _g2_comb_taxonomy(array $taxonomy = []) {
   // Filter tag vocabularies for non-G2 admins if this is requested.

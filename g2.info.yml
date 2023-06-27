@@ -2,11 +2,12 @@ type: module
 name: 'G2 glossary'
 description: 'Manage a node-based glossary'
 dependencies:
-  - block
+  - drupal:block
   # We provide help links to G2 configuration in Field UI.
-  - field_ui
-  - node
-  - taxonomy
+  - drupal:field_ui
+  - drupal:node
+  - drupal:taxonomy
+  - xmlrpc:xmlrpc
 package: Content display
 core_version_requirement: ^9 || ^10
 configure: g2.settings.block

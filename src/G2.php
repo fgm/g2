@@ -312,9 +312,6 @@ class G2 {
    */
   const VARMAINNID = 'controller.main.nid';
 
-  // Constants in this group are only listed to remove WSODs, but they still
-  // need the associated logic to be converted from variables to config.
-
   /**
    * The config path for the free tagging choice on node formatting.
    */
