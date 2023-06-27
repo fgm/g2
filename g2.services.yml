@@ -35,6 +35,7 @@ services:
     class: '\Drupal\g2\RouteFilter'
     arguments:
       - '@router.route_provider'
+      - '@current_route_match'
 
   # A test helper logger.
   g2.test.logger:

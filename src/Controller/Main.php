@@ -91,9 +91,6 @@ class Main implements ContainerInjectionInterface {
       return [];
     }
 
-    // @todo Ensure we still want to override the site name.
-    /* _g2_override_site_name(); */
-
     if ($node->body->isEmpty()) {
       return [];
     }

@@ -2,6 +2,7 @@
 
 namespace Drupal\g2;
 
+use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
 
 /**
@@ -10,19 +11,32 @@ use Drupal\Core\Routing\RouteProviderInterface;
 class RouteFilter {
 
   /**
-   * The router.route_provider service.
+   * The core router.route_provider service.
    *
    * @var \Drupal\Core\Routing\RouteProviderInterface
    */
   protected RouteProviderInterface $routeProvider;
 
   /**
+   * The core current_route_match service.
+   *
+   * @var \Drupal\Core\Routing\RouteMatchInterface
+   */
+  protected RouteMatchInterface $routeMatch;
+
+  /**
    * Service constructor.
    *
    * @param \Drupal\Core\Routing\RouteProviderInterface $routeProvider
-   *   The router.route_provider service.
+   *   The core router.route_provider service.
+   * @param \Drupal\Core\Routing\RouteMatchInterface $routeMatch
+   *   The core current_route_match service.
    */
-  public function __construct(RouteProviderInterface $routeProvider) {
+  public function __construct(
+    RouteProviderInterface $routeProvider,
+    RouteMatchInterface $routeMatch,
+  ) {
+    $this->routeMatch = $routeMatch;
     $this->routeProvider = $routeProvider;
   }
 
@@ -81,6 +95,26 @@ class RouteFilter {
     }
 
     return $routes;
+  }
+
+  /**
+   * Define a G2 "context" for the current route match.
+   *
+   * @return bool
+   *   TRUE if the current route match is one of the G2 routes or a canonical
+   *   view of a G2 entry node.
+   */
+  public function isG2Route(): bool {
+    $name = $this->routeMatch->getRouteName();
+    if (str_starts_with($name, 'g2.')) {
+      return TRUE;
+    }
+    if ($name != G2::ROUTE_NODE_CANONICAL) {
+      return FALSE;
+    }
+    /** @var \Drupal\node\NodeInterface $node */
+    $node = $this->routeMatch->getParameter('node');
+    return $node->bundle() === G2::BUNDLE;
   }
 
 }

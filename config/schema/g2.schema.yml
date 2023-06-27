@@ -237,9 +237,8 @@ g2.settings:
         title:
           type: string
           label: |
-            Override for default site title on G2 entry node pages.
+            Override for default site title on G2 pages.
             <p>This setting allows site admins to modify the page title on G2
-              entry pages, typically for SEO purposes.
-              The value is translatable, and can include @title,
-              which will be replaced by the standard Drupal site title.
-              If set to empty, the default site name will not be overridden.</p>
+              entry pages, and G2 own pages, typically for SEO purposes.
+              The value can include @title which, if not empty, will be replaced
+              by the standard Drupal site name.</p>

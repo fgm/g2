@@ -24,8 +24,6 @@ class G2 {
 
   const DEFNOFREETAGGING = FALSE;
 
-  const DEFPAGETITLE = TRUE;
-
   /**
    * The State default for the current stored random entry.
    */
