@@ -127,15 +127,17 @@ class Feed implements ContainerInjectionInterface {
     $rp->setValue($feed, $data);
 
     $nid = $g2Config->get(G2::VARWOTDENTRY);
-    /** @var \Drupal\node\Entity\Node $node */
-    $node = $this->etm
-      ->getStorage(G2::TYPE)
-      ->load($nid);
-    if ($node instanceof NodeInterface) {
-      $entry = $feed->createEntry();
-      $entry->setTitle($node->label());
-      $entry->setLink($node->toUrl()->toString());
-      $feed->addEntry($entry);
+    if (!empty($nid)) {
+      /** @var \Drupal\node\Entity\Node $node */
+      $node = $this->etm
+        ->getStorage(G2::TYPE)
+        ->load($nid);
+      if ($node instanceof NodeInterface) {
+        $entry = $feed->createEntry();
+        $entry->setTitle($node->label());
+        $entry->setLink($node->toUrl()->toString());
+        $feed->addEntry($entry);
+      }
     }
 
     $rss = $feed->export(G2::VM_RSS);

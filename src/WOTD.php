@@ -178,19 +178,23 @@ class WOTD {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function get(): ?NodeInterface {
+    $nid = (int) $this->config
+      ->get(G2::CONFIG_NAME)
+      ->get(G2::VARWOTDENTRY);
+    if (empty($nid)) {
+      return NULL;
+    }
+
     return $this->etm
       ->getStorage(G2::TYPE)
-      ->load((int) $this->config
-        ->get(G2::CONFIG_NAME)
-        ->get(G2::VARWOTDENTRY),
-      );
+      ->load($nid);
   }
 
   /**
    * Return the title of the node completed by its nid in parentheses.
    *
    * This is meant to be used on input fields, not on displays, because it is
-   * not escapeD.
+   * not escaped.
    *
    * @param \Drupal\node\NodeInterface|null $node
    *   The node to label.

@@ -576,7 +576,7 @@ another site, while the server allows your site to provide entries to such
         '#title' => $schema['wotd']['mapping'][$key]['label'],
         '#autocomplete_route_name' => G2::ROUTE_AUTOCOMPLETE_ENTRY,
         '#maxlength' => 60,
-        '#required' => TRUE,
+        '#required' => FALSE,
         '#default_value' => $this->wotd->numberedTitleInput($wotd),
         '#element_validate' => [[$this, 'validateServicesWordOfTheDay']],
       ];
