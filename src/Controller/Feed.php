@@ -1,13 +1,17 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Drupal\g2\Controller;
 
-use Drupal\Core\Config\ImmutableConfig;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
 use Drupal\g2\G2;
+use Drupal\node\NodeInterface;
 use Laminas\Diactoros\Response\XmlResponse;
 use Laminas\Feed\Writer\Feed as FeedWriter;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -17,14 +21,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class Feed implements ContainerInjectionInterface {
 
-  /**
-   * The default description for the feed. Translatable.
-   *
-   * The @site placeholder is replaced by the default link to the site root.
-   *
-   * @see _g2_wotd_feed()
-   */
-  const DEFAULT_DESCRIPTION = 'A daily definition from the G2 Glossary at @site';
+  use StringTranslationTrait;
 
   /**
    * The default G2 author in feeds.
@@ -32,47 +29,36 @@ class Feed implements ContainerInjectionInterface {
   const DEFAULT_AUTHOR = '@author';
 
   /**
-   * The g2.settings configuration.
-   *
-   * @var \Drupal\Core\Config\ImmutableConfig
-   */
-  protected ImmutableConfig $g2Config;
-
-  /**
-   * The system.site configuration.
-   *
-   * @var \Drupal\Core\Config\ImmutableConfig|string
-   */
-  protected ImmutableConfig $systemConfig;
-
-  /**
    * The language manager service.
    *
    * @var \Drupal\Core\Language\LanguageManagerInterface
    */
-  protected $languageManager;
+  protected LanguageManagerInterface $languageManager;
+
+  /**
+   * The config.factory service.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected ConfigFactoryInterface $configFactory;
 
   /**
    * Autocomplete constructor.
    *
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
+   *   The config.factory service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
-   *   The entity.manager service.
-   * @param \Drupal\Core\Config\ImmutableConfig $g2Config
-   *   The g2.settings/controller.wotd configuration.
-   * @param \Drupal\Core\Config\ImmutableConfig $systemConfig
-   *   The system email.
+   *   The entity_type.manager service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager service.
    */
   public function __construct(
+    ConfigFactoryInterface $configFactory,
     EntityTypeManagerInterface $etm,
-    ImmutableConfig $g2Config,
-    ImmutableConfig $systemConfig,
     LanguageManagerInterface $language_manager
   ) {
+    $this->configFactory = $configFactory;
     $this->etm = $etm;
-    $this->g2Config = $g2Config;
-    $this->systemConfig = $systemConfig;
     $this->languageManager = $language_manager;
   }
 
@@ -80,15 +66,13 @@ class Feed implements ContainerInjectionInterface {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    /** @var \Drupal\Core\Config\ConfigFactoryInterface $config_factory */
-    $config_factory = $container->get(G2::SVC_CONF);
-
-    $g2Config = $config_factory->get(G2::CONFIG_NAME);
-    $systemConfig = $config_factory->get('system.site');
-
+    /** @var \Drupal\Core\Config\ConfigFactoryInterface $configFactory */
+    $configFactory = $container->get(G2::SVC_CONF);
     /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_manager */
     $entity_manager = $container->get(G2::SVC_ETM);
-    return new static($entity_manager, $g2Config, $systemConfig);
+    $lm = $container->get('language_manager');
+
+    return new static($configFactory, $entity_manager, $lm);
   }
 
   /**
@@ -99,39 +83,60 @@ class Feed implements ContainerInjectionInterface {
    */
   public function wotdAction() {
     $feed = new FeedWriter();
+    $g2Config = $this->configFactory->get(G2::CONFIG_NAME);
+    $sysConfig = $this->configFactory->get('system.site');
 
-    // Title: Drupal 6 defaults to site name.
-    $feed->setTitle($this->g2Config->get('controller.wotd.title'));
+    $title = $g2Config->get(G2::VARWOTDFEEDTITLE);
+    if (empty($title)) {
+      $title = $sysConfig->get('name');
+    }
+    // setTitle throws an exception on empty titles.
+    if (!empty($title)) {
+      $feed->setTitle($title);
+    }
 
-    // Language: Drupal 6 defaults to to $language->language.
     $feed->setLanguage($this->languageManager
       ->getCurrentLanguage()
       ->getId());
 
-    // Link element: Drupal 4.7->6 defaults to $base url.
-    $feed->setLink(Url::fromRoute('g2.main')->toString());
+    // Link element: Drupal 4.7->7 default to $base url.
+    // Drupal 8+ provides no default.
+    $main = $g2Config->get(G2::VARMAINROUTE);
+    $feed->setLink(Url::fromRoute($main)->toString());
 
-    // Description: Drupal defaults to $site_mission.
-    $descr = $this->g2Config->get('controller.wotd.description')
-      ?: static::DEFAULT_DESCRIPTION;
-    $feed->setDescription(strtr($descr, ['!site' => $GLOBALS['base_url']]));
+    // Description: Drupal 4.7->7 defaults to $site_mission.
+    // Drupal 8+ provides no default.
+    $descr = $g2Config->get(G2::VARWOTDFEEDDESCR)
+      ?: $this->t('One definition a day from the G2 Glossary on :site');
+    $feed->setDescription(strtr($descr, [':site' => $GLOBALS['base_url']]));
 
+    // Get the major Drupal version.
+    [$coreVersion] = explode('.', \Drupal::VERSION);
+    $feed->setGenerator(
+      'Glossary 2 module for Drupal', $coreVersion,
+      'https://www.drupal.org/project/g2',
+    );
+
+    // Laminas\Feed does not support setting the managingEditor,
+    // not setting a property by name, so we need to hack it a bit.
     $rc = new \ReflectionClass($feed);
     $rp = $rc->getProperty('data');
     $rp->setAccessible(TRUE);
     $data = $rp->getValue($feed);
-    $data['managingEditor'] = $this->systemConfig->get('mail');
+    $data['managingEditor'] = $sysConfig->get('mail');
     $rp->setValue($feed, $data);
 
-    $nid = $this->g2Config->get('services.wotd.entry');
+    $nid = $g2Config->get(G2::VARWOTDENTRY);
     /** @var \Drupal\node\Entity\Node $node */
     $node = $this->etm
       ->getStorage(G2::TYPE)
       ->load($nid);
-    $entry = $feed->createEntry();
-    $entry->setTitle($node->label());
-    $entry->setLink($node->toUrl()->toString());
-    $feed->addEntry($entry);
+    if ($node instanceof NodeInterface) {
+      $entry = $feed->createEntry();
+      $entry->setTitle($node->label());
+      $entry->setLink($node->toUrl()->toString());
+      $feed->addEntry($entry);
+    }
 
     $rss = $feed->export(G2::VM_RSS);
     $xml = new XmlResponse($rss);

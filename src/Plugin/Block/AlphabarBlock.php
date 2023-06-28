@@ -28,7 +28,7 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
   protected $alphabar;
 
   /**
-   * The g2.settings.block.alphabar configuration.
+   * The g2.settings/block.alphabar configuration.
    *
    * @var array
    */

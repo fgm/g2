@@ -34,7 +34,7 @@ controller:
     vid: g2_homonyms
   wotd:
     title: 'G2 word of the day RSS feed'
-    description: 'One definition a day from the G2 Glossary on !site.'
+    description: 'One definition a day from the G2 Glossary on :site'
     feed_author: false
 api:
   client:

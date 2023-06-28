@@ -21,7 +21,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
 
   /**
-   * The g2.settings.block.top configuration.
+   * The g2.settings/block.top configuration.
    *
    * @var array
    */

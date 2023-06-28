@@ -47,20 +47,6 @@ function zg2_block_configure($delta) {
           G2::DEFWOTDFEEDLINK),
         '#description' => t('Should the theme display the link to the RSS feed for this block ?'),
       ];
-      $form['wotd_feed'][G2::VARWOTDFEEDTITLE] = [
-        '#type' => 'textfield',
-        '#title' => t('The feed title'),
-        '#size' => 60,
-        '#maxlength' => 60,
-        '#required' => TRUE,
-        '#default_value' => variable_get(G2::VARWOTDFEEDTITLE,
-          variable_get(G2::VARWOTDTITLE, $default_wotd_title)),
-        '#description' => t(
-          'The title for the feed itself.
-         This will typically be used by aggregators to remind users of the feed and link to it.
-         If nulled, G2 will reset it to the title of the block.'
-        ),
-      ];
       $form['wotd_feed'][G2::VARWOTDFEEDAUTHOR] = [
         '#type' => 'textfield',
         '#title' => t('The feed item author'),
@@ -353,16 +339,6 @@ function zg2_user_view($account, $view_mode, $langcode) {
       '#markup' => theme('item_list', ['items' => $nodes]),
     ];
   }
-}
-
-/**
- * Implements hook_view_api().
- */
-function zg2_views_api() {
-  return [
-    'api' => '3.0',
-    'path' => ExtensionPathResolver::getPath('module', 'g2') . '/views',
-  ];
 }
 
 /**

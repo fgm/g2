@@ -571,8 +571,7 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
           '#size' => 60,
           '#maxlength' => 60,
           '#required' => TRUE,
-          '#default_value' => variable_get(G2::VARWOTDFEEDTITLE,
-            variable_get(G2::VARWOTDTITLE, G2::DEFWOTDTITLE)),
+          '#default_value' => variable_get(G2::VARWOTDFEEDTITLE, G2::DEFWOTDTITLE),
           '#description' => t(
             'The title for the feed itself.
            This will typically be used by aggregators to remind users of the feed and link to it.
@@ -827,7 +826,12 @@ SQL;
 /**
  * Implements hook_ENTITY_TYPE_view().
  */
-function g2_node_view(array &$build, EntityInterface $node, EntityViewDisplayInterface $display, $view_mode) {
+function g2_node_view(
+  array &$build,
+  EntityInterface $node,
+  EntityViewDisplayInterface $display,
+  string $view_mode,
+) {
   if ($node->bundle() != G2::BUNDLE) {
     return;
   }

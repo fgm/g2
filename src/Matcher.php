@@ -10,12 +10,12 @@ use Drupal\node\NodeInterface;
 /**
  * The matcher class implements the g2.matcher service.
  *
- * The mission of this service is to keep an to-date Aho-Corasick MSM of all the
- * deduplicated G2 entry titles and of the associated G2 entries, and provide
- * access to both.
+ * The mission of this service is to keep an up-to-date Aho-Corasick MSM of all
+ * the deduplicated G2 entry titles and of the associated G2 entries,
+ * and to provide access to both.
  *
- * This is especially useful to ensure linear performance of the Definition
- * Process plugin.
+ * This is especially useful to ensure linear performance of the G2 filter
+ * plugins.
  *
  * We keep the titles and MSM separately becase a MSM does not account for
  * duplicates, while in G2 multiple entries may share an identical title.

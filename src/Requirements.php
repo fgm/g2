@@ -212,7 +212,7 @@ class Requirements implements ContainerInjectionInterface {
   public function checkControllers() {
     $this->result['main.nid'] = $this->checkNid('controller.main.nid',
       $this->t('G2 main page node id (deprecated)'));
-    $this->result['main.route'] = $this->checkRoute('controller.main.route',
+    $this->result['main.route'] = $this->checkRoute(G2::VARMAINROUTE,
       $this->t('G2 main page route'));
     $this->result['homonyms.nid'] = $this->checkNid(G2::VARHOMONYMSNID,
       $this->t('G2 homonyms disambiguation page node id (deprecated)'));

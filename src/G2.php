@@ -311,6 +311,13 @@ class G2 {
   const VARMAINNID = 'controller.main.nid';
 
   /**
+   * The config path for the main page route.
+   *
+   * Always use it to build URLs instead of assuming route g2.main.
+   */
+  const VARMAINROUTE = 'controller.main.route';
+
+  /**
    * The config path for the free tagging choice on node formatting.
    */
   const VARNOFREETAGGING = 'formatting.hide_free_tagging';
@@ -319,8 +326,6 @@ class G2 {
    * The config path for the title override on G2 entry pages.
    */
   const VARPAGETITLE = 'formatting.title';
-
-  const VARPATHMAIN = 'g2-path-main';
 
   /**
    * The State key for the current stored random entry.
@@ -366,16 +371,17 @@ class G2 {
 
   const VARWOTDFEEDAUTHOR = 'g2-wotd-feed-author';
 
-  const VARWOTDFEEDDESCR = 'g2-wotd-feed-description';
+  /**
+   * The config path for the WOTD feed description.
+   */
+  const VARWOTDFEEDDESCR = 'controller.wotd.description';
 
   const VARWOTDFEEDLINK = 'g2-wotd-feed-link';
 
   /**
-   * Default is DEFWOTDTITLE, Use g2.settings.controller.wotd.title.
+   * The config path for the WOTD feed title.
    */
-  const VARWOTDFEEDTITLE = 'g2-wotd-feed-title';
-
-  const VARWOTDTITLE = 'g2-wotd-title';
+  const VARWOTDFEEDTITLE = 'controller.wotd.title';
 
   /**
    * The public-facing version: two first levels for semantic versioning.
