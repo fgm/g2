@@ -257,6 +257,9 @@ class WOTD {
    * Override WOTD created time with the latest rotation time.
    */
   public function viewsPreRender(ViewExecutable $view) {
+    if (empty($view->result)) {
+      return;
+    }
     /** @var \Drupal\node\Entity\Node $node */
     $node = &$view->result[0]->_entity;
     $createdDate = $this->state->get(G2::VARWOTDDATE) ?: time();

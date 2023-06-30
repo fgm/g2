@@ -6,7 +6,10 @@ dependencies:
   # We provide help links to G2 configuration in Field UI.
   - drupal:field_ui
   - drupal:node
+  - drupal:path
   - drupal:taxonomy
+  - drupal:text
+  - drupal:views
   - xmlrpc:xmlrpc
 package: Content display
 core_version_requirement: ^9 || ^10
