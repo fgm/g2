@@ -357,7 +357,7 @@ class SettingsForm extends ConfigFormBase {
       );
     }
     $element['redirect_status'] = [
-      '#type' => 'select',
+      '#type' => 'radios',
       '#title' => $schema['homonyms']['mapping']['redirect_status']['label'],
       '#options' => $options,
       '#default_value' => $config['homonyms']['redirect_status'],
