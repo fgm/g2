@@ -606,6 +606,8 @@ another site, while the server allows your site to provide entries to such
       '#type' => 'value',
       '#value' => $section,
     ];
+    $form['#attached']['library'][] = G2::LIB_ADMIN;
+
     $builder = 'build' . ucfirst($section) . 'Form';
     if (method_exists($this, $builder)) {
       $config = $this->config(G2::CONFIG_NAME)->get($section);

@@ -80,7 +80,7 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
       '#alphabar' => $links,
       '#row_length' => $this->blockConfig['row_length'],
       '#attached' => [
-        'library' => ['g2/g2-alphabar'],
+        'library' => [G2::LIB_ALPHABAR],
       ],
       '#cache' => [
         'tags' => ["config:" . (G2::CONFIG_NAME)],
@@ -112,7 +112,7 @@ class AlphabarBlock extends BlockBase implements ContainerFactoryPluginInterface
     $plugin_definition
   ) {
     /** @var \Drupal\g2\Alphabar $alphabar */
-    $alphabar = $container->get('g2.alphabar');
+    $alphabar = $container->get(G2::SVC_ALPHABAR);
 
     /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $container->get(G2::SVC_CONF);

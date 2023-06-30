@@ -198,7 +198,7 @@ class Main implements ContainerInjectionInterface {
    */
   public static function create(ContainerInterface $container) {
     /** @var \Drupal\g2\Alphabar $alphabar */
-    $alphabar = $container->get('g2.alphabar');
+    $alphabar = $container->get(G2::SVC_ALPHABAR);
 
     /** @var \Drupal\Core\Config\ConfigFactoryInterface $configFactory */
     $configFactory = $container->get(G2::SVC_CONF);

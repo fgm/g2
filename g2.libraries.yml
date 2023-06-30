@@ -1,11 +1,18 @@
-g2-alphabar:
-  version: 1.x
-  css:
-    component:
-      css/g2-alphabar.css: {}
-
 g2:
   version: 1.x
   css:
     component:
       css/g2.css: {}
+
+g2.admin:
+  version: 1.x
+  css:
+    component:
+      css/g2-controller.css: {}
+
+g2.alphabar:
+  version: 1.x
+  css:
+    component:
+      css/g2-alphabar.css: {}
+

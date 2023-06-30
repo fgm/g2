@@ -58,6 +58,16 @@ class G2 {
   const KV_TITLES = 'g2:titles';
 
   /**
+   * The name of the G2 admin front library.
+   */
+  const LIB_ADMIN = self::NAME . '/g2.admin';
+
+  /**
+   * The name of the G2 alphabar styling library.
+   */
+  const LIB_ALPHABAR = self::NAME . '/' . self::SVC_ALPHABAR;
+
+  /**
    * The module name.
    *
    * Meant to be used to identify the origin of stored data emanating from this
