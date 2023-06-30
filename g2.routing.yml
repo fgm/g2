@@ -22,15 +22,6 @@ g2.autocomplete.route_1param:
   requirements:
     _permission: 'administer site configuration'
 
-# G2 WOTD RSS feed.
-g2.feed.wotd:
-  path: '/g2/feed/wotd'
-  defaults:
-    _controller: '\Drupal\g2\Controller\Feed::wotdAction'
-    _title: 'Word of the day'
-  requirements:
-    _permission: 'access content'
-
 # G2 default homonyms-matching page.
 g2.homonyms:
   path: '/g2/homonyms/{g2_match}'

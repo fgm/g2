@@ -2,6 +2,8 @@
 
 namespace Drupal\g2;
 
+use Drupal\Core\Cache\Cache;
+
 /**
  * Class G2 is the container for general-use G2 data.
  */
@@ -33,11 +35,7 @@ class G2 {
 
   const DEFWOTDFEEDAUTHOR = '';
 
-  const DEFWOTDFEEDDESCR = '';
-
   const DEFWOTDFEEDLINK = TRUE;
-
-  const DEFWOTDTITLE = '';
 
   /**
    * Block: n most viewed.
@@ -128,7 +126,7 @@ class G2 {
   /**
    * Route: WOTD RSS feed.
    */
-  const ROUTE_FEED_WOTD = 'g2.feed.wotd';
+  const ROUTE_FEED_WOTD = 'view.g2_wotd.feed_1';
 
   /**
    * Route: G2 main page.
@@ -371,22 +369,22 @@ class G2 {
 
   const VARWOTDFEEDAUTHOR = 'g2-wotd-feed-author';
 
-  /**
-   * The config path for the WOTD feed description.
-   */
-  const VARWOTDFEEDDESCR = 'controller.wotd.description';
-
   const VARWOTDFEEDLINK = 'g2-wotd-feed-link';
-
-  /**
-   * The config path for the WOTD feed title.
-   */
-  const VARWOTDFEEDTITLE = 'controller.wotd.title';
 
   /**
    * The public-facing version: two first levels for semantic versioning.
    */
   const VERSION = '8.1';
+
+  /**
+   * The ID of the WOTD view.
+   */
+  const VIEW_WOTD = 'g2_wotd';
+
+  /**
+   * The ID of the feed display in the WOTD view.
+   */
+  const VIEW_WOTD_DISPLAY = 'feed_1';
 
   // View modes.
   const VM_BLOCK = 'g2_block';
@@ -448,6 +446,21 @@ class G2 {
       '+' => '%2B',
     ]);
     return $terminal;
+  }
+
+  /**
+   * Manually invalidate the WOTD view.
+   *
+   * This is needed because of a core bug causing cache metadata from default
+   * argument plugins not to be present in Views results.
+   *
+   * To work around the missing automatic invalidation, we invalidate the
+   * rendered elements including the WOTD view manually.
+   *
+   * @see https://www.drupal.org/project/drupal/issues/3371236
+   */
+  public static function invalidateWotdView(): void {
+    Cache::invalidateTags(["config:views.view.g2_wotd"]);
   }
 
 }

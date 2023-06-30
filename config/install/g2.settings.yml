@@ -11,7 +11,7 @@ services:
   alphabar:
     contents: 0123456789abcdefghijklmnopqrstuvwxyz
   latest:
-    max_count: 100
+    max_count: 10
   random:
     store: true
   top:
@@ -32,13 +32,10 @@ controller:
     redirect_status: 302
     route: g2.homonyms
     vid: g2_homonyms
-  wotd:
-    title: 'G2 word of the day RSS feed'
-    description: 'One definition a day from the G2 Glossary on :site'
-    feed_author: false
+  wotd: {}
 api:
   client:
-    remote: 'https://riff.org/g2/entries'
+    remote: ''
   server:
     enabled: false
     throttle: !!float 1

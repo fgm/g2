@@ -385,20 +385,16 @@ class SettingsForm extends ConfigFormBase {
     ] + $this->getInfoFromLabel($schema['homonyms']['mapping']['nid']['label']);
 
     $element = &$form['controller']['wotd'];
-    $element['title'] = [
-      '#type' => 'textfield',
-      '#title' => $schema['wotd']['mapping']['title']['label'],
-      '#default_value' => $config['wotd']['title'],
+    $element['controller'] = [
+      '#type' => 'markup',
+      '#markup' => $this->t('Configure the WOTD feed by editing the <a href=":view"><code>g2_wotd</code> view</a> and access it on <a href=":url">:url</a>', [
+        ':view' => Url::fromRoute('entity.view.edit_display_form', [
+          'view' => G2::VIEW_WOTD,
+          'display_id' => G2::VIEW_WOTD_DISPLAY,
+        ])->toString(),
+        ':url' => Url::fromRoute(G2::ROUTE_FEED_WOTD)->toString(),
+      ]),
     ];
-    $element['description'] = [
-      '#type' => 'textfield',
-      '#default_value' => $config['wotd']['description'],
-    ] + $this->getInfoFromLabel($schema['wotd']['mapping']['description']['label']);
-    $element['feed_author'] = [
-      '#type' => 'checkbox',
-      '#default_value' => $config['wotd']['feed_author'],
-    ] + $this->getInfoFromLabel($schema['wotd']['mapping']['feed_author']['label']);
-
     return $form;
   }
 
@@ -647,6 +643,13 @@ another site, while the server allows your site to provide entries to such
   public function submitControllerForm(array &$form, FormStateInterface $form_state) {
     $this->routerBuilder->setRebuildNeeded();
     $this->messenger()->addStatus($this->t('The router has been marked for rebuilding.'));
+  }
+
+  /**
+   * Additional submit handler for the services configuration form.
+   */
+  public function submitServicesForm(array &$form, FormStateInterface $form_state) {
+    G2::invalidateWotdView();
   }
 
   /**

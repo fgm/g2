@@ -10,8 +10,10 @@ use Drupal\Core\Link;
 use Drupal\Core\Logger\RfcLogLevel;
 use Drupal\Core\State\StateInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\Url;
 use Drupal\g2\Exception\RandomException;
 use Drupal\node\NodeInterface;
+use Drupal\views\ViewExecutable;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -157,6 +159,7 @@ class WOTD {
         watchdog_exception(G2::NAME, $e, NULL, [], RfcLogLevel::ERROR, $link);
       }
     }
+    G2::invalidateWotdView();
   }
 
   /**
@@ -214,6 +217,51 @@ class WOTD {
       ['!title' => $node->label(), '@nid' => $node->id()]
     );
     return $title;
+  }
+
+  /**
+   * Implements hook_preprocess_views_view_rss().
+   *
+   * Provide missing channel elements.
+   */
+  public function preprocessViewsViewRss(&$variables) {
+    $route = $this->config
+      ->get(G2::CONFIG_NAME)
+      ->get(G2::VARMAINROUTE);
+    $mail = $this->config
+      ->get('system.site')
+      ->get('mail');
+
+    $variables['link'] = Url::fromRoute($route)->setAbsolute()->toString();
+    // Get the major Drupal version.
+    [$coreVersion] = explode('.', \Drupal::VERSION);
+    $generator = $this->t('Glossary 2 module for Drupal @version :url', [
+      '@version' => $coreVersion,
+      ':url' => 'https://www.drupal.org/project/g2',
+    ]);
+    $variables['channel_elements'][] = [
+      '#type' => 'html_tag',
+      '#tag' => 'generator',
+      '#value' => $generator,
+    ];
+    $variables['channel_elements'][] = [
+      '#type' => 'html_tag',
+      '#tag' => 'managingEditor',
+      '#value' => $mail,
+    ];
+  }
+
+  /**
+   * Implements hook_views_pre_render().
+   *
+   * Override WOTD created time with the latest rotation time.
+   */
+  public function viewsPreRender(ViewExecutable $view) {
+    /** @var \Drupal\node\Entity\Node $node */
+    $node = &$view->result[0]->_entity;
+    $createdDate = $this->state->get(G2::VARWOTDDATE) ?: time();
+    $created = \DateTimeImmutable::createFromFormat(WOTD::DATE_STORAGE_FORMAT, $createdDate);
+    $node->setCreatedTime($created->getTimestamp());
   }
 
   /**

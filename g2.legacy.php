@@ -36,43 +36,12 @@ function zg2_block_configure($delta) {
       break;
 
     case G2::DELTA_WOTD:
-      $form['wotd_feed'] = [
-        '#type' => 'fieldset',
-        '#title' => t('RSS Feed'),
-      ];
       $form['wotd_feed'][G2::VARWOTDFEEDLINK] = [
         '#type' => 'checkbox',
         '#title' => t('Display feed link'),
         '#default_value' => variable_get(G2::VARWOTDFEEDLINK,
           G2::DEFWOTDFEEDLINK),
         '#description' => t('Should the theme display the link to the RSS feed for this block ?'),
-      ];
-      $form['wotd_feed'][G2::VARWOTDFEEDAUTHOR] = [
-        '#type' => 'textfield',
-        '#title' => t('The feed item author'),
-        '#size' => 60,
-        '#maxlength' => 60,
-        '#required' => TRUE,
-        '#default_value' => variable_get(G2::VARWOTDFEEDAUTHOR,
-          G2::DEFWOTDFEEDAUTHOR),
-        '#description' => t(
-          'The author name to be included in the feed entries.
-      In this string @author will be replaced by the actual author information.'
-        ),
-      ];
-      $form['wotd_feed'][G2::VARWOTDFEEDDESCR] = [
-        '#type' => 'textfield',
-        '#title' => t('The feed description'),
-        '#size' => 60,
-        '#maxlength' => 60,
-        '#required' => TRUE,
-        '#default_value' => variable_get(G2::VARWOTDFEEDDESCR,
-          t('A daily definition from the G2 Glossary at !site')),
-        '#description' => t(
-          'The description for the feed itself.
-      This will typically be used by aggregators when describing the feed prior to subscription.
-      It may contain !site, which will dynamically be replaced by the site base URL.'
-        ),
       ];
       break;
 
@@ -101,13 +70,6 @@ function zg2_block_save($delta, $edit) {
   switch ($delta) {
     case G2::DELTA_TOP:
       variable_set(G2::VARTOPMAXCOUNT, $edit[G2::VARTOPMAXCOUNT]);
-      break;
-
-    case G2::DELTA_WOTD:
-      variable_set(G2::VARWOTDFEEDLINK, $edit[G2::VARWOTDFEEDLINK]);
-      variable_set(G2::VARWOTDFEEDTITLE, $edit[G2::VARWOTDFEEDTITLE]);
-      variable_set(G2::VARWOTDFEEDDESCR, $edit[G2::VARWOTDFEEDDESCR]);
-      variable_set(G2::VARWOTDFEEDAUTHOR, $edit[G2::VARWOTDFEEDAUTHOR]);
       break;
 
     default:
@@ -370,78 +332,5 @@ function ztheme_g2_random($variables) {
       'title' => t('&nbsp;(+)'),
     ]
   );
-  return $ret;
-}
-
-/**
- * Theme a WOTD block.
- *
- * @param object $variables
- *   The node for the word of the day. teaser and body are already filtered and
- *   truncated if needed.
- *
- * @return string
- *   Title / nid / teaser / [body].
- *
- * @todo 20110122: replace with just a node rendered with a specific view_mode
- */
-function ztheme_g2_wotd($variables) {
-  $node = $variables[G2::TYPE];
-  if (empty($node)) {
-    return NULL;
-  }
-  $uri = entity_uri(G2::TYPE, $node);
-
-  $link = l($node->title, $uri['path'], $uri['options']);
-  if (isset($node->expansion) and !empty($node->expansion)) {
-    // Teaser already filtered by G2::wotd(), don't filter twice.
-    // @todo 20110122 make sure this is true.
-    $teaser = '<span id="g2_wotd_expansion">' . strip_tags($node->expansion) . '</span>';
-    $ret = t(
-      '!link: !teaser',
-      [
-        '!link' => $link,
-        '!teaser' => $teaser,
-      ]
-    );
-    unset($teaser);
-  }
-  else {
-    $ret = $link;
-  }
-
-  // No longer needed: use a view_mode instead.
-  /*
-  if (!empty($node->body)) {
-  // already filtered by G2::wotd(), don't filter twice, just strip.
-  $body = strip_tags($node->body);
-  if ($node->truncated) {
-  $body .= '&hellip;';
-  }
-  $ret .= '<div id="g2_wotd_body">' . $body . '</div>';
-  }
-   */
-
-  // No need to test: won't change anything unless taxonomy has been returned.
-  $ret .= theme(
-    'more_link',
-    [
-      'url' => $uri['path'],
-      // @todo Check evolution of http://drupal.org/node/1036190
-      'options' => $uri['options'],
-      'title' => t('&nbsp;(+)'),
-    ]
-  );
-  if (variable_get(G2::VARWOTDFEEDLINK, G2::DEFWOTDFEEDLINK)) {
-    $ret .= theme(
-      'feed_icon',
-      [
-        'url' => url(G2::ROUTE_FEED_WOTD, ['absolute' => TRUE]),
-        // @todo Find a better title.
-        'title' => t('Glossary feed'),
-      ]
-    );
-  }
-
   return $ret;
 }

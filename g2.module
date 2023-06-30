@@ -16,10 +16,8 @@
  */
 
 use Drupal\Component\Utility\Html;
-use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\Entity\EntityViewMode;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Extension\ExtensionPathResolver;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\GeneratedLink;
 use Drupal\Core\Routing\RouteMatchInterface;
@@ -27,6 +25,7 @@ use Drupal\g2\G2;
 use Drupal\g2\Top;
 use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
+use Drupal\views\ViewExecutable;
 
 /**
  * Implements hook_cron().
@@ -136,7 +135,43 @@ function g2_node_update(NodeInterface $node) {
   $matcher->rebuild();
 }
 
+/**
+ * Implements hook_preprocess_views_view_rss().
+ */
+function g2_preprocess_views_view_rss(&$variables) {
+  /** @var \Drupal\g2\WOTD $wotd */
+  $wotd = Drupal::service(G2::SVC_WOTD);
+  $wotd->preprocessViewsViewRss($variables);
+}
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function g2_views_pre_render(ViewExecutable $view) {
+  if ($view->id() === G2::VIEW_WOTD && $view->current_display === G2::VIEW_WOTD_DISPLAY) {
+    /** @var \Drupal\g2\WOTD $wotd */
+    $wotd = Drupal::service(G2::SVC_WOTD);
+    $wotd->viewsPreRender($view);
+  }
+}
+
 /* Code in this part of the module works in D10/9 but may not be finalized. */
+
+/**
+ * Implements hook_ENTITY_TYPE_view().
+ */
+function g2_node_view(array &$build, NodeInterface $node) {
+  if ($node->bundle() != G2::BUNDLE) {
+    return;
+  }
+  $config = Drupal::config(G2::CONFIG_NAME);
+
+  if ($config->get(G2::VARLOGREFERRERS)) {
+    _g2_insert_referrer($node);
+  }
+
+  return $node;
+}
 
 /**
  * Implements hook_xmlrpc().
@@ -400,7 +435,6 @@ function g2_theme() {
 
     // --- Older versions ------------------------------------------------------
     'g2_random' => ['variables' => [G2::TYPE => NULL]],
-    'g2_wotd' => ['variables' => [G2::TYPE => NULL]],
   ];
   return $ret;
 }
@@ -565,46 +599,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
             G2::DEFWOTDFEEDLINK),
           '#description' => t('Should the theme display the link to the RSS feed for this block ?'),
         ];
-        $form['wotd_feed'][G2::VARWOTDFEEDTITLE] = [
-          '#type' => 'textfield',
-          '#title' => t('The feed title'),
-          '#size' => 60,
-          '#maxlength' => 60,
-          '#required' => TRUE,
-          '#default_value' => variable_get(G2::VARWOTDFEEDTITLE, G2::DEFWOTDTITLE),
-          '#description' => t(
-            'The title for the feed itself.
-           This will typically be used by aggregators to remind users of the feed and link to it.
-           If nulled, G2 will reset it to the title of the block.'
-          ),
-        ];
-        $form['wotd_feed'][G2::VARWOTDFEEDAUTHOR] = [
-          '#type' => 'textfield',
-          '#title' => t('The feed item author'),
-          '#size' => 60,
-          '#maxlength' => 60,
-          '#required' => TRUE,
-          '#default_value' => variable_get(G2::VARWOTDFEEDAUTHOR,
-            G2::DEFWOTDFEEDAUTHOR),
-          '#description' => t(
-            'The author name to be included in the feed entries.
-        In this string @author will be replaced by the actual author information.'
-          ),
-        ];
-        $form['wotd_feed'][G2::VARWOTDFEEDDESCR] = [
-          '#type' => 'textfield',
-          '#title' => t('The feed description'),
-          '#size' => 60,
-          '#maxlength' => 60,
-          '#required' => TRUE,
-          '#default_value' => variable_get(G2::VARWOTDFEEDDESCR,
-            G2::DEFWOTDFEEDDESCR),
-          '#description' => t(
-            'The description for the feed itself.
-        This will typically be used by aggregators when describing the feed prior to subscription.
-        It may contain !site, which will dynamically be replaced by the site base URL.'
-          ),
-        ];
         break;
 
       default:
@@ -617,12 +611,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
     switch ($delta) {
       case G2::DELTA_WOTD:
         variable_set(G2::VARWOTDFEEDLINK, $edit[G2::VARWOTDFEEDLINK]);
-        variable_set(G2::VARWOTDFEEDTITLE, $edit[G2::VARWOTDFEEDTITLE]);
-        variable_set(G2::VARWOTDFEEDDESCR, $edit[G2::VARWOTDFEEDDESCR]);
-        variable_set(G2::VARWOTDFEEDAUTHOR, $edit[G2::VARWOTDFEEDAUTHOR]);
-        break;
-
-      default:
         break;
     }
   }
@@ -824,33 +812,6 @@ SQL;
 }
 
 /**
- * Implements hook_ENTITY_TYPE_view().
- */
-function g2_node_view(
-  array &$build,
-  EntityInterface $node,
-  EntityViewDisplayInterface $display,
-  string $view_mode,
-) {
-  if ($node->bundle() != G2::BUNDLE) {
-    return;
-  }
-  $config = Drupal::config(G2::CONFIG_NAME);
-
-  // On the WOTD feed, force the node date to the WOTD date or current time.
-  if ($view_mode === G2::VM_RSS &&
-    Drupal::routeMatch()->getRouteName() === G2::ROUTE_FEED_WOTD) {
-    $node->created = (Drupal::state()->get(G2::VARWOTDDATE) ?: time());
-  }
-
-  if ($config->get(G2::VARLOGREFERRERS)) {
-    _g2_insert_referrer($node);
-  }
-
-  return $node;
-}
-
-/**
  * Theme a random entry.
  *
  * This is actually a short view for just about any single node, but it
@@ -872,61 +833,5 @@ function theme_g2_random($node = NULL) {
   // No need to test: also works on missing taxonomy.
   $ret .= _g2_entry_terms($node);
   $ret .= theme('more_link', url('node/' . $node->nid), t('&nbsp;(+)'));
-  return $ret;
-}
-
-/**
- * Theme a WOTD block.
- *
- * @param \Drupal\node\Entity\Node|null $node
- *   The node for the word of the day. teaser and body are already filtered and
- *   truncated if needed.
- *
- * @return string
- *   Title / nid / teaser / [body].
- */
-function theme_g2_wotd(Node $node = NULL) {
-  if (empty($node)) {
-    return NULL;
-  }
-
-  // l() check_plain's text.
-  $link = l($node->title, 'node/' . $node->nid);
-  if (isset($node->teaser) and !empty($node->teaser)) {
-    // Teaser already filtered by _g2_wotd(), don't filter twice.
-    $teaser = '<span id="g2_wotd_teaser">' . strip_tags($node->teaser) . '</span>';
-    $ret = t(
-      '!link: !teaser',
-      [
-        '!link' => $link,
-        '!teaser' => $teaser,
-      ]
-    );
-    unset($teaser);
-  }
-  else {
-    $ret = $link;
-  }
-
-  if (!empty($node->body)) {
-    // Already filtered by _g2_wotd(), don't filter twice, just strip.
-    $body = strip_tags($node->body);
-    if ($node->truncated) {
-      $body .= '&hellip;';
-    }
-    $ret .= '<div id="g2_wotd_body">' . $body . '</div>';
-  }
-  $node->taxonomy = _g2_comb_taxonomy($node->taxonomy);
-  // No need to test: it won't change anything if no taxonomy was returned.
-  $ret .= _g2_entry_terms($node);
-  $ret .= theme('more_link', url('node/' . $node->nid), t('&nbsp;(+)'));
-  if (variable_get(G2::VARWOTDFEEDLINK, G2::DEFWOTDFEEDLINK)) {
-    $ret .= theme(
-      'feed_icon',
-      url(G2::ROUTE_FEED_WOTD, ['absolute' => TRUE]),
-      t('A word a day in your RSS reader')
-    );
-  }
-
   return $ret;
 }

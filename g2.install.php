@@ -188,11 +188,6 @@ function g2_update_6001() {
     variable_set(G2::VARWOTDFEEDAUTHOR, str_replace('%author', '@author', $wotd_author));
     $count++;
   }
-  $wotd_descr = variable_get(G2::VARWOTDFEEDDESCR, G2::DEFWOTDFEEDDESCR);
-  if (strpos($wotd_descr, '%site') !== FALSE) {
-    variable_set(G2::VARWOTDFEEDDESCR, str_replace('%site', ':site', $wotd_descr));
-    $count++;
-  }
 
   if ($count) {
     // Coder false positive: :link is filtered.

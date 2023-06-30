@@ -172,16 +172,7 @@ g2.settings:
         wotd:
           type: mapping
           label: 'WOTD RSS feed'
-          mapping:
-            title:
-              type: string
-              label: 'The feed title'
-            description:
-              type: string
-              label: 'The feed description. The ":site" placeholder is a link to the G2 main page on the site.'
-            feed_author:
-              type: boolean
-              label: Include the author in the feed entries.
+          mapping: {}
 
     api:
       type: mapping
