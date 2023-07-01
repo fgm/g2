@@ -5,6 +5,8 @@
  * This is unported code for the module.
  */
 
+declare(strict_types = 1);
+
 use Drupal\g2\G2;
 
 /**

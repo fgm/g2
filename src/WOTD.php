@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Drupal\g2;
 
 use Drupal\Component\Datetime\TimeInterface;
@@ -132,7 +134,8 @@ class WOTD {
   public function autoChange(): void {
     $previousStored = (string) $this->state->get(G2::VARWOTDDATE) ?: static::EPOCH_RFC3339;
     $previousDTI = \DateTimeImmutable::createFromFormat(static::DATE_STORAGE_FORMAT, $previousStored);
-    $todayDTI = \DateTimeImmutable::createFromFormat("U", $this->time->getRequestTime());
+    $todayDTI = \DateTimeImmutable::createFromFormat("U",
+      (string) $this->time->getRequestTime());
     $previous = $previousDTI->format(static::DATE_COMPARISON_FORMAT);
     $today = $todayDTI->format(static::DATE_COMPARISON_FORMAT);
     if ($today !== $previous) {

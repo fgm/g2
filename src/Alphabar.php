@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Drupal\g2;
 
 use Drupal\Core\Config\ConfigFactoryInterface;

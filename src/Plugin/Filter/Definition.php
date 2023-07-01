@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\g2\Plugin\Filter;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Render\RendererInterface;
@@ -20,13 +21,18 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @Filter(
  *   id = "g2:dfn",
- *   title = @Translation("Link to G2 definitions using &lt;dfn&gt;
- *   elements."),
- *   type = Drupal\filter\Plugin\FilterInterface::TYPE_TRANSFORM_IRREVERSIBLE,
- *   settings = {},
- *   description=@Translation("Wrap &lt;dfn&gt; elements around the words for
- *   which you want a link to the matching G2 entries, like this:
- *   &lt;dfn&gt;UTF-8&lt;/dfn&gt;"), weight = 0,
+ *   title = @Translation("Convert <code>&lt;dfn/&gt</code> elements into links
+ *   to definitions in the G2 glossary."), type =
+ *   Drupal\filter\Plugin\FilterInterface::TYPE_TRANSFORM_IRREVERSIBLE,
+ *   settings = {}, description=@Translation("Wrap <code>&lt;dfn&gt;</code>
+ *   elements around the words for which you want a link to the matching G2
+ *   entries, like this: <code>&lt;dfn&gt;UTF-8&lt;/dfn&gt;</code>. This filter
+ *   <em>must</em> appear after the automatic <code>&lt;dfn/&gt;</code>
+ *   wrapping filter."), description=@Translation("Converts
+ *   <code>&lt;dfn&gt;some entry&lt;/dfn&gt;</code> elements into links to the
+ *   matching G2 entry, or a homonyms disambiguation page if multiple entries
+ *   match the given string. This filter <em>must</em> be applied after the
+ *   automatic <code>&lt;dfn/&gt;</code> wrapping filter."), weight = 0,
  * )
  */
 class Definition extends FilterBase implements ContainerFactoryPluginInterface {
@@ -135,8 +141,10 @@ class Definition extends FilterBase implements ContainerFactoryPluginInterface {
             /** @var \Drupal\node\NodeInterface $node */
             $node = reset($nodes);
             $tooltipRA = $builder->view($node, G2::VM_TOOLTIPS);
-            $tooltipHTML = $this->renderer->renderRoot($tooltipRA);
-            $tooltip = preg_replace('/(\s)\s+/m', '$1', trim(strip_tags($tooltipHTML)));
+            $tooltipHTML = $this->renderer
+              ->renderRoot($tooltipRA);
+            $tooltip = preg_replace('/(\s)\s+/m', '$1',
+              trim(strip_tags("$tooltipHTML")));
           }
           break;
 
@@ -156,16 +164,13 @@ class Definition extends FilterBase implements ContainerFactoryPluginInterface {
       $attributes['title'] = $tooltip;
     }
 
-    $ret = Link::createFromRoute(
+    $link = Link::createFromRoute(
       $text,
       G2::ROUTE_HOMONYMS,
       ['g2_match' => $text],
-      [
-        'absolute' => TRUE,
-        'attributes' => $attributes,
-      ]
-    )->toString();
-    return $ret;
+      ['absolute' => TRUE, 'attributes' => $attributes]
+    );
+    return "{$link->toString()}";
   }
 
   /**
@@ -226,35 +231,11 @@ class Definition extends FilterBase implements ContainerFactoryPluginInterface {
   /**
    * {@inheritDoc}
    */
-  public function settingsForm(array $form, FormStateInterface $form_state) {
-    // No settings at this point. To add some, insert elements in the existing
-    // $form, including a #element_validate to validate them.
-    $form['description'] = [
-      '#markup' => '<p>Wrap <code>&lt;dfn&gt;</code> elements around the words for which you want a link to the matching G2 entries, like this: <code>&lt;dfn&gt;UTF-8&lt;/dfn&gt;</code></p>',
-    ];
-    return $form;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
   public function tips($long = FALSE) {
     $ret = $long
       ? $this->t('Wrap &lt;dfn&gt; elements around the terms for which you want a link to the available G2 definition(s).')
       : $this->t('You may link to G2 definitions using &lt;dfn&gt; elements.');
     return $ret;
-  }
-
-  /**
-   * Form element validation handler.
-   *
-   * @param array $element
-   *   The G2 settings form element.
-   * @param \Drupal\Core\Form\FormStateInterface $formState
-   *   The form state.
-   */
-  public static function validateOptions(array &$element, FormStateInterface $formState) {
-    // Validate data from $formState->getValue(['filters', 'g2', 'settings'])).
   }
 
 }

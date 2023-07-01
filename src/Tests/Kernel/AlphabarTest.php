@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Drupal\g2\Tests\Kernel;
 
 use Drupal\g2\Alphabar;

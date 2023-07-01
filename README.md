@@ -32,10 +32,14 @@ available with drupal for a number of years, or the more recent [glossify] and
 entries, or a different feature set.
 
 Unlike [glossary] or [lexicon], it uses nodes instead of terms to hold
-definitions, and does not automatically link terms in other nodes to their
-entries in G2, but relies on <dfn> markup in definitions, and can link to terms
+definitions, relies on <dfn> markup in definitions, and can link to terms
 in multi-byte character sets and terms containing special characters like
 slashes or ampersands without any specific markup.
+
+For a better user experience, <dfn> elements may optionally be inserted
+automatically by enabling the _Automatic_ input filter, which will automatically
+insert <dfn> elements during filtering for entries it recognizes and which are
+not in the filter stop list.
 
 [glossary]: https://www.drupal.org/project/glossary
 [glossify]: https://www.drupal.org/project/glossify
@@ -80,7 +84,7 @@ Its development to this date has been entirely sponsored by [OSInet].
 | initial       | Working |
 | node add form | Done    |
 | settings      | Working |
-| WOTD feed     | TBD     |
+| WOTD feed     | Done    |
 
 ## Prerequisites
 
@@ -94,6 +98,7 @@ Since 2009-09-27:
 
 - sites not configured with clean URLs are no longer taken into account
 - the module is only maintained/evolved for the Drupal 9.x/10.x branches.
+
 
 ## Installing / upgrading / uninstalling
 
@@ -121,14 +126,20 @@ As this matrix shows, beyond Drupal 6.x, update features are limited.
 
 ## Feature changes in the D9/D10 version
 
-- New in alpha1: the Alphabar service configuration now provides a button to
-  automatically rebuild the bar from existing G2 entries.
-  The bar can then be manually adjusted before saving.
+- New in alpha2:
+  - the Automatic filter will automatically tag entries in content,
+    except those added to its stop list.
+  - No-code: the WOTD feed is now a view.
+- New in alpha1:
+  - UX: the Alphabar service configuration now provides a button to
+    automatically rebuild the bar from existing G2 entries.
+    The bar can then be manually adjusted before saving.
 - No-code: G2 versions since Drupal 4.x have been manually handling the display
   configuration on G2 entries.
   Since fields and view modes have been a standard for quite a long time and
   provide a better administrative UI, all the display configuration and specific
   templates have been removed in favor of using specific view modes.
+
 
 ## Ruby XML-RPC client
 
@@ -166,19 +177,14 @@ Drupal will be missing the module to load G2 entries. If you do not modify
 any of these nodes, reinstalling the module will restore consistency and
 enable a clean node deletion and uninstall later on.
 
----
-
-Everything below this line related to the 7.x-1.x branch, and is likely to be
-incorrect for Drupal 8+.
-
----
+Then remove the Automatic and Definition filters from all text formats.
 
 ### Statistics
 
 The statistics displayed on the "entries starting by initial ..." page
 at URL <drupal>/g2/initial/<some initial segment> mention :
 
-"Displaying 0 entries starting by ... from a total number of ... entries.
+_Displaying...0 entries starting by ... from a total number of ... entries._
 
 It must be understood that this "total number" is actually the total number
 a user without administrative permissions can see, that is, published entries.

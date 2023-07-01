@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Drupal\g2;
 
 use AhoCorasick\MultiStringMatcher;
+use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\KeyValueStore\KeyValueFactoryInterface;
 use Drupal\node\NodeInterface;
@@ -14,10 +17,13 @@ use Drupal\node\NodeInterface;
  * the deduplicated G2 entry titles and of the associated G2 entries,
  * and to provide access to both.
  *
- * This is especially useful to ensure linear performance of the G2 filter
- * plugins.
+ * This is especially useful to ensure linear performance of the G2 Automatic
+ * filter plugin.
  *
- * We keep the titles and MSM separately becase a MSM does not account for
+ * Because the stop list may change from one format to the next, we keep the
+ * complete mapping and drop entries in the stop list during content handling.
+ *
+ * We keep the titles and MSM separately because an MSM does not account for
  * duplicates, while in G2 multiple entries may share an identical title.
  *
  * See https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm
@@ -93,6 +99,104 @@ class Matcher {
   }
 
   /**
+   * Transform a single text node to insert DFN elements as needed.
+   *
+   * Also applies HTML normalization, e.g. closes elements that expect it.
+   *
+   * @param \DOMDocument $dom
+   *   The document built from the text.
+   * @param \DOMNode $node
+   *   The text node being modified.
+   * @param \AhoCorasick\MultiStringMatcher $msm
+   *   The configured matcher.
+   * @param array $stopList
+   *   The titles in the stop list.
+   *
+   * @throws \DOMException
+   *
+   * @internal This method is only public to support unit tests.
+   */
+  public static function handleTextNode(
+    \DOMDocument $dom,
+    \DOMNode $node,
+    MultiStringMatcher $msm,
+    array $stopList,
+  ) {
+    $input = $node->nodeValue;
+    $matches = $msm->searchIn($input);
+    if (empty($matches)) {
+      return;
+    }
+    $allPatterns = array_unique(array_map(fn($match) => $match[1], $matches));
+    $patterns = array_diff($allPatterns, $stopList);
+    if (empty($patterns)) {
+      return;
+    }
+    $parent = $node->parentNode;
+    foreach ($patterns as $pattern) {
+      $rx = "/\b" . preg_quote($pattern, "/") . "\b/u";
+      $res = preg_split($rx, $input, PREG_SPLIT_OFFSET_CAPTURE);
+      $len = count($res);
+      for ($i = 0; $i < $len; $i++) {
+        $fragment = $res[$i];
+        if (!empty($fragment)) {
+          $parent->insertBefore($dom->createTextNode($fragment), $node);
+        }
+        if ($i < $len - 1) {
+          $dfn = $dom->createElement('dfn', $pattern);
+          $parent->insertBefore($dfn, $node);
+        }
+      }
+    }
+    $parent->removeChild($node);
+  }
+
+  /**
+   * Perform the actual processing after checks.
+   *
+   * @param string $input
+   *   The input text, assumed to be already checked for UTF-8 validity.
+   * @param \AhoCorasick\MultiStringMatcher $msm
+   *   The MSM.
+   * @param array $stopList
+   *   The titles of the node not to automatically wrap in a DFN.
+   *
+   * @return string
+   *   The processed source.
+   *
+   * @internal This method is only public to support unit tests.
+   */
+  public static function handleSource(
+    string $input,
+    MultiStringMatcher $msm,
+    array $stopList
+  ): string {
+    if (empty($input)) {
+      return "";
+    }
+    $dom = Html::load($input);
+    $xp = new \DOMXPath($dom);
+    // We do not want to parse "script" or "style" content, and we also want to
+    // avoid existing "dfn" and "a" content because in the end the "dfn"
+    // elements will be converted to "a href" and those cannot be nested.
+    $texts = $xp->query('//text()[not(ancestor::script) and not(ancestor::style) and not(ancestor::dfn) and not(ancestor::a)]');
+    /** @var \DOMNode $text */
+    foreach ($texts as $text) {
+      self::handleTextNode($dom, $text, $msm, $stopList);
+    }
+    $bodyTags = $dom->getElementsByTagName('body');
+    assert(count($bodyTags) === 1);
+    $body = $bodyTags->item(0);
+    // There may be multiple elements at the top if there is no top wrapper.
+    assert($body->childNodes->count() >= 1);
+    $output = '';
+    foreach ($body->childNodes as $node) {
+      $output .= $dom->saveHTML($node);
+    }
+    return $output;
+  }
+
+  /**
    * Rebuild the map and MSM from the available published G2 entries.
    *
    * Store them both in KV.
@@ -117,7 +221,8 @@ class Matcher {
     foreach ($chunks as $chunk) {
       $nodes = $storage->loadMultiple($chunk);
       foreach ($nodes as $node) {
-        $map[$node->label()][] = $node->id();
+        $label = $node->label();
+        $map[$label][] = $node->id();
       }
     }
 

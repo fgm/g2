@@ -7,6 +7,8 @@
  * @copyright 2005-2023 Frédéric G. Marand, for Ouest Systemes Informatiques.
  */
 
+declare(strict_types = 1);
+
 use Drupal\g2\G2;
 use Drupal\g2\Requirements;
 

@@ -233,3 +233,19 @@ g2.settings:
               entry pages, and G2 own pages, typically for SEO purposes.
               The value can include @title which, if not empty, will be replaced
               by the standard Drupal site name.</p>
+
+
+filter_settings.g2_automatic:
+  type: filter
+  label: 'G2 Automatic'
+  mapping:
+    stop_list:
+      type: sequence
+      label: 'Igored entries'
+      sequence:
+        type: string
+
+filter_settings.g2_definition:
+  type: filter
+  label: 'G2 Definition'
+  mapping: {}

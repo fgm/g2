@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace Drupal\g2\Tests\Kernel;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -202,7 +204,7 @@ class WOTDTest extends KernelTestBase {
    *   Cf. test.
    */
   public function providerAutoChange(): array {
-    $now = \DateTimeImmutable::createFromFormat('U', time() - 86400);
+    $now = \DateTimeImmutable::createFromFormat('U', (string) (time() - 86400));
     $yesterday = $now->sub(new \DateInterval("P1D"));
     return [
       'happy' => [
