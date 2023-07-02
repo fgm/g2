@@ -223,6 +223,11 @@ class G2 {
   const SVC_TEST_LOGGER = 'g2.test.logger';
 
   /**
+   * The name of the g2.top service.
+   */
+  const SVC_TOP = 'g2.top';
+
+  /**
    * The name of the g2.wotd service.
    */
   const SVC_WOTD = 'g2.wotd';
@@ -356,6 +361,11 @@ class G2 {
    * The config path for the level of tooltips features.
    */
   const VARTOOLTIPS = 'formatting.tooltips_level';
+
+  /**
+   * The config path for the Top(n) block entry count.
+   */
+  const VARTOPCOUNT = 'block.top.count';
 
   /**
    * The config path for the Top(n) service maximum entry count.

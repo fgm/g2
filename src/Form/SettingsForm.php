@@ -78,7 +78,7 @@ class SettingsForm extends ConfigFormBase {
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
    *   The entity_type.manager service.
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
    *   The factory for configuration objects.
    * @param array $config_schema
    *   The schema array for the configuration data.
@@ -91,13 +91,13 @@ class SettingsForm extends ConfigFormBase {
    */
   public function __construct(
     EntityTypeManagerInterface $etm,
-    ConfigFactoryInterface $config_factory,
+    ConfigFactoryInterface $configFactory,
     array $config_schema,
     RouteBuilderInterface $router_builder,
     Alphabar $alphabar,
     WOTD $wotd,
   ) {
-    parent::__construct($config_factory);
+    parent::__construct($configFactory);
     $this->alphabar = $alphabar;
     $this->etm = $etm;
     $this->configSchema = $config_schema;
@@ -251,12 +251,14 @@ class SettingsForm extends ConfigFormBase {
       '#default_value' => $config['random']['max_age'],
     ] + $this->getInfoFromLabel($schema['random']['mapping']['max_age']['label']);
 
-    $element = &$form[$section]['top'];
-    $element['count'] = [
+    $path = explode('.', G2::VARTOPCOUNT);
+    [$section, $group, $key] = $path;
+    $element = &$form[$section][$group];
+    $element[$key] = [
       '#type' => 'number',
-      '#title' => $schema['top']['mapping']['count']['label'],
-      '#default_value' => $config['top']['count'],
-      '#max' => $service_config['top']['max_count'],
+      '#title' => $schema[$group]['mapping'][$key]['label'],
+      '#default_value' => $config[$group][$key],
+      '#max' => $service_config[$group]['max_count'],
       '#min' => 1,
     ];
 

@@ -5,11 +5,15 @@ dependencies:
   - drupal:block
   # We provide help links to G2 configuration in Field UI.
   - drupal:field_ui
+  - drupal:filter
   - drupal:node
   - drupal:path
+  # The TopN service and block relies on statistics.
+  - drupal:statistics
   - drupal:taxonomy
   - drupal:text
   - drupal:views
+  # The API relies on XML-RPC.
   - xmlrpc:xmlrpc
 package: Content display
 core_version_requirement: ^9 || ^10

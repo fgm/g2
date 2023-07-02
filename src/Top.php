@@ -6,10 +6,11 @@ namespace Drupal\g2;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
-use Drupal\Core\Url;
 use Drupal\Core\Utility\LinkGenerator;
+use Drupal\node\NodeInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -29,48 +30,54 @@ class Top {
   protected $available;
 
   /**
-   * The configuration hash for this service.
+   * The core config.factory service.
    *
-   * Keys:
-   * - max: the maximum number of entries returned. 0 for unlimited.
-   *
-   * @var array
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
-  protected $config;
+  protected ConfigFactoryInterface $configFactory;
 
   /**
    * The database service.
    *
    * @var \Drupal\Core\Database\Connection
    */
-  protected $database;
+  protected Connection $database;
 
   /**
    * The link generator service.
    *
    * @var \Drupal\Core\Utility\LinkGenerator
    */
-  protected $linkGenerator;
+  protected LinkGenerator $linkGenerator;
 
   /**
    * The logger.channel.g2 service.
    *
    * @var \Psr\Log\LoggerInterface
    */
-  protected $logger;
+  protected LoggerInterface $logger;
 
   /**
    * The URL generator service.
    *
    * @var \Drupal\Core\Routing\UrlGeneratorInterface
    */
-  protected $urlGenerator;
+  protected UrlGeneratorInterface $urlGenerator;
+
+  /**
+   * The core entity_type.manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected EntityTypeManagerInterface $etm;
 
   /**
    * Constructor.
    *
-   * @param \Drupal\Core\Config\ConfigFactoryInterface $config
-   *   The config factory service.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
+   *   The core config.factory service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $etm
+   *   The core entity_type.manager service.
    * @param \Drupal\Core\Utility\LinkGenerator $link_generator
    *   The link generator service.
    * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
@@ -83,7 +90,8 @@ class Top {
    *   The logger.channel.g2 service.
    */
   public function __construct(
-    ConfigFactoryInterface $config,
+    ConfigFactoryInterface $configFactory,
+    EntityTypeManagerInterface $etm,
     LinkGenerator $link_generator,
     UrlGeneratorInterface $url_generator,
     ModuleHandlerInterface $module_handler,
@@ -91,14 +99,12 @@ class Top {
     LoggerInterface $logger
   ) {
     $this->available = $module_handler->moduleExists('statistics');
+    $this->configFactory = $configFactory;
     $this->database = $connection;
+    $this->etm = $etm;
     $this->linkGenerator = $link_generator;
     $this->logger = $logger;
     $this->urlGenerator = $url_generator;
-
-    $g2_config = $config->get(G2::CONFIG_NAME);
-    $this->config = $g2_config->get('services.latest');
-
   }
 
   /**
@@ -111,80 +117,40 @@ class Top {
    *   The type of statistic by which to order. Must be one of the
    *   self::STATISTICS_* individual statistics.
    *
-   * @return arrayinteger\Drupal\g2\TopRecord
+   * @return \Drupal\node\NodeInterface[]
    *   A node-by-nid hash, ordered by latest change timestamp.
    */
-  public function getEntries(int $count, string $statistic = self::STATISTICS_DAY): array {
+  public function getNodes(int $count, string $statistic = self::STATISTICS_DAY): array {
     if (!$this->available) {
       return [];
     }
-
-    $count_limit = $this->config['max_count'];
-    $count = min($count, $count_limit);
-
-    $result = [];
-    /** @var \Drupal\g2\TopRecord $record */
-    foreach ($this->statisticsTitleList($statistic, $count) as $record) {
-      $record->normalize();
-      $result[$record->nid] = $record;
-    }
-    return $result;
-  }
-
-  /**
-   * Returns the most viewed content of all time or today.
-   *
-   * @param string $column
-   *   The database field to use, one of:
-   *   - 'totalcount': Integer that shows the top viewed content of all time.
-   *   - 'daycount': Integer that shows the top viewed content for today.
-   *   - 'timestamp': Integer that shows only the last viewed node.
-   * @param int $count
-   *   The number of rows to be returned.
-   *
-   * @return \Traversable|array
-   *   A query result (Statement) containing the node ID, title, user ID that
-   *   owns the node, username for the selected node(s), and number of views, or
-   *   an empty array if the query could not be executed correctly.
-   *
-   * @see statistics_title_list()
-   */
-  protected function statisticsTitleList($column, $count) {
-    if (!in_array($column, static::STATISTICS_TYPES)) {
+    if (!in_array($statistic, static::STATISTICS_TYPES)) {
       return [];
     }
+    $maxCount = $this->configFactory
+      ->get(G2::CONFIG_NAME)
+      ->get(G2::VARTOPMAXCOUNT);
+    $count = min($count, $maxCount);
 
-    $options = ['fetch' => '\Drupal\g2\TopRecord'];
-    $query = $this->database->select('node_field_data', 'n', $options);
-    $query->addTag('node_access');
-    $query->join('node_counter', 's', 'n.nid = s.nid');
-    $query->join('users_field_data', 'u', 'n.uid = u.uid');
-    $query->addField('s', $column, 'views');
-
-    /* Query chaining split to work around incorrect type hinting in DBTNG. */
-
-    /** @var \Drupal\Core\Database\Query\SelectInterface $query */
-    $query = $query
-      ->fields('n', ['nid', 'title'])
-      ->fields('u', ['uid', 'name'])
-      ->condition($column, 0, '<>')
-      ->condition('n.status', 1)
-      ->condition('n.type', G2::BUNDLE)
-      // @todo This should be actually filtering on the desired node status
-      //   field language and just fall back to the default language.
-      ->condition('n.default_langcode', 1)
-      ->condition('u.default_langcode', 1);
-
-    $query = $query
-      ->orderBy($column, 'DESC')
+    $query = $this->database
+      ->select('node_counter', 'nc')
+      ->fields('nc', ['nid'])
+      ->addTag('node_access')
+      ->condition('nfd.status', NodeInterface::PUBLISHED)
+      ->condition('nfd.type', G2::BUNDLE)
+      ->condition("nc.${statistic}", 0, '<>')
+      ->orderBy("nc.${statistic}", 'DESC')
       ->range(0, $count);
-
-    $result = $query->execute();
-    if ($result === FALSE) {
-      $this->logger->warning('Failed fetching %type statistics.', ['%type' => $column]);
-      $result = [];
+    $query->innerJoin('node_field_data', 'nfd', 'nfd.nid = nc.nid');
+    $executed = $query->execute();
+    if (empty($executed)) {
+      return [];
     }
-    return $result;
+    $nids = $executed->fetchCol(0);
+    $nodes = $this->etm
+      ->getStorage(G2::TYPE)
+      ->loadMultiple($nids);
+    return $nodes;
   }
 
   /**
@@ -212,11 +178,10 @@ class Top {
       // To preserve the pre-encoded path.
       'html' => TRUE,
     ];
-    /** @var \Drupal\g2\TopRecord $record */
-    foreach ($this->getEntries($count, $statistic) as $record) {
-      $parameters = [G2::TYPE => $record->nid];
-      $url = Url::fromRoute(G2::ROUTE_NODE_CANONICAL, $parameters, $options);
-      $result[] = $this->linkGenerator->generate($record->title, $url);
+
+    foreach ($this->getNodes($count, $statistic) as $node) {
+      $url = $node->toUrl('canonical', $options);
+      $result[] = $this->linkGenerator->generate($node->label(), $url);
     }
 
     return $result;

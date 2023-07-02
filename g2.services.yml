@@ -46,6 +46,7 @@ services:
     class: '\Drupal\g2\Top'
     arguments:
       - '@config.factory'
+      - '@entity_type.manager'
       - '@link_generator'
       - '@url_generator'
       - '@module_handler'

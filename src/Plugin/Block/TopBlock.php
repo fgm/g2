@@ -5,6 +5,7 @@ declare(strict_types = 1);
 namespace Drupal\g2\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\g2\G2;
 use Drupal\g2\Top;
@@ -25,9 +26,9 @@ class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
   /**
    * The g2.settings/block.top configuration.
    *
-   * @var array
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
-  protected $blockConfig;
+  protected ConfigFactoryInterface $configFactory;
 
   /**
    * The g2.top service.
@@ -45,34 +46,33 @@ class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
    *   The block ID.
    * @param array $plugin_definition
    *   The block definition.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
+   *   The core config.factory service.
    * @param \Drupal\g2\Top $top
    *   The g2.top service.
-   * @param array $block_config
-   *   The block configuration.
    */
   public function __construct(
     array $configuration,
-    $plugin_id,
+    string $plugin_id,
     array $plugin_definition,
+    ConfigFactoryInterface $configFactory,
     Top $top,
-    array $block_config,
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->top = $top;
-    $this->blockConfig = $block_config;
-    $this->setConfigurationValue('available', $top->isAvailable());
+    $this->configFactory = $configFactory;
   }
 
   /**
    * {@inheritdoc}
    */
   public function build() {
-    if (!($this->configuration['available'] ?? '')) {
+    if (!($this->top->isAvailable())) {
       return [];
     }
-
-    $count = $this->blockConfig['count'];
-    $links = $this->top->getLinks($count);
+    $config = $this->configFactory->get(G2::CONFIG_NAME);
+    $blockCount = $config->get(G2::VARTOPCOUNT);
+    $links = $this->top->getLinks($blockCount);
 
     $result = [
       '#theme' => 'item_list',
@@ -103,18 +103,15 @@ class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
     $plugin_definition
   ) {
     /** @var \Drupal\g2\Top $top */
-    $top = $container->get('g2.top');
+    $top = $container->get(G2::SVC_TOP);
 
-    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
-    $config_factory = $container->get(G2::SVC_CONF);
+    /** @var \Drupal\Core\Config\ConfigFactory $configFactory */
+    $configFactory = $container->get(G2::SVC_CONF);
 
     /** @var \Drupal\Core\Config\ImmutableConfig $config */
-    $config = $config_factory->get(G2::CONFIG_NAME);
+    $config = $configFactory->get(G2::CONFIG_NAME);
 
-    $block_config = $config->get('block.top');
-
-    return new static($configuration, $plugin_id, $plugin_definition, $top,
-      $block_config);
+    return new static($configuration, $plugin_id, $plugin_definition, $configFactory, $top);
   }
 
 }
