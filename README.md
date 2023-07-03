@@ -7,7 +7,7 @@ version 2 or later.
 
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FGM/g2/badges/quality-score.png?b=8.x-1.x)](https://scrutinizer-ci.com/g/FGM/g2/?branch=8.x-1.x)
 
-**WARNING** 2023-07-02 : This version of the project is only alpha2 level
+**WARNING** 2023-07-02 : This version of the project is only alpha level
 at the moment, rapidly evolving with a stable version expected for 2023-07.
 
 
@@ -59,23 +59,19 @@ Its development to this date has been entirely sponsored by [OSInet].
 * Sample implementation (about 6000 terms, localized to french)
   https://riff.org/glossaire
 
-## Completion status as of 2023-07-03 (alpha2)
+## Completion status as of 2023-07-03 (dev)
 
 ### Main features
 
-| Feature           | Block | Service | API     | Other        |
-|-------------------|-------|---------|---------|--------------|
-| Alphabar          | Done  | Done    | Working |              |
-| API               | n.a.  | Working | n.a.    |              |
-| Latest            | Done  | Done    | Working |              |
-| Random            | Done  | Done    |         |              |
-| Top               | Done  | Done    | Working |              |
-| WOTD              | Done  | Done    |         |              |
-| Definition filter | n.a.  | n.a.    | n.a.    | Filter: Done |
-| Automatic filter  | n.a.  | n.a.    | n.a.    | Filter: Done |
-
-* 'Done' status means working and with test coverage deemed sufficient.
-* 'Working' status means appears to work but not (completely) tested.
+| Feature           | Block | Service | API | Filter |
+|-------------------|:-----:|:-------:|:---:|:------:|
+| Alphabar          |   X   |    X    |  X  |        |
+| Latest            |   X   |    X    |  X  |        |
+| Random            |   X   |    X    |  X  |        |
+| Top               |   X   |    X    |  X  |        |
+| WOTD              |   X   |    X    |  X  |        |
+| Definition filter |       |         |     |   X    |
+| Automatic filter  |       |         |     |   X    |
 
 
 ### Pages
