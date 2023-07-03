@@ -351,6 +351,32 @@ function g2_node_view(array &$build, NodeInterface $node) {
 }
 
 /**
+ * Implements hook_preprocess_feed_icon.
+ *
+ * Remove after #3371937 is fixed.
+ *
+ * @see \Drupal\g2\Plugin\Block\WotdBlock::build()
+ *
+ * @see https://www.drupal.org/project/drupal/issues/3371937
+ */
+function g2_preprocess_feed_icon(&$variables) {
+  $route = $variables['url']->getRouteName();
+  if ($route == G2::ROUTE_FEED_WOTD) {
+    [,,$displayName] = explode('.', G2::ROUTE_FEED_WOTD);
+    /** @var \Drupal\views\ViewExecutable $view */
+    $display = Drupal::entityTypeManager()
+      ->getStorage('view')
+      ->load(G2::VIEW_WOTD)
+      ->getDisplay($displayName);
+    $description = $display['display_options']['display_description'];
+    $variables['attributes'] = [
+      'class' => ['g2-feed-icon'],
+      'title' => $description,
+    ];
+  }
+}
+
+/**
  * Implements hook_preprocess_html().
  *
  * Append the glossary name to the page title on entry pages and G2 own pages,
@@ -544,43 +570,6 @@ function _g2_referer_wipe($nid = NULL) {
     $sq = 'DELETE from {g2_referer}';
     Drupal::database()->query($sq);
   }
-}
-
-/**
- * Implements hook_block().
- */
-function g2_block($op = 'list', $delta = 0, $edit = []) {
-  if ($op == 'configure') {
-    switch ($delta) {
-      case G2::DELTA_WOTD:
-        $form['wotd_feed'] = [
-          '#type' => 'fieldset',
-          '#title' => t('RSS Feed'),
-        ];
-        $form['wotd_feed'][G2::VARWOTDFEEDLINK] = [
-          '#type' => 'checkbox',
-          '#title' => t('Display feed link'),
-          '#default_value' => variable_get(G2::VARWOTDFEEDLINK,
-            G2::DEFWOTDFEEDLINK),
-          '#description' => t('Should the theme display the link to the RSS feed for this block ?'),
-        ];
-        break;
-
-      default:
-        break;
-    }
-    $ret = $form;
-  }
-  elseif ($op == 'save') {
-    $ret = NULL;
-    switch ($delta) {
-      case G2::DELTA_WOTD:
-        variable_set(G2::VARWOTDFEEDLINK, $edit[G2::VARWOTDFEEDLINK]);
-        break;
-    }
-  }
-
-  return $ret;
 }
 
 /**

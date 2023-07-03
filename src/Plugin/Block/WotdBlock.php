@@ -6,7 +6,9 @@ namespace Drupal\g2\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\Url;
 use Drupal\g2\G2;
 use Drupal\g2\WOTD;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -25,6 +27,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @state g2.wotd.entry
  */
 class WotdBlock extends BlockBase implements ContainerFactoryPluginInterface {
+
+  /**
+   * The block setting controlling the RSS feed icon presence.
+   */
+  const FEED_SETTING = 'feed_icon';
 
   /**
    * The entity_type.manager service.
@@ -76,14 +83,59 @@ class WotdBlock extends BlockBase implements ContainerFactoryPluginInterface {
   /**
    * {@inheritdoc}
    */
+  public function blockForm($form, FormStateInterface $form_state) {
+    $form = parent::blockForm($form, $form_state);
+    $form[static::FEED_SETTING] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t("Display feed icon"),
+      '#default_value' => $this->configuration[static::FEED_SETTING] ?? TRUE,
+      '#description' => $this->t('Add the standard RSS feed icon at the bottom of the block, linking to the WOTD feed'),
+    ];
+    return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function blockSubmit($form, FormStateInterface $form_state) {
+    parent::blockSubmit($form, $form_state);
+    $this->configuration[static::FEED_SETTING] = $form_state->getValue(static::FEED_SETTING);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function build() {
     $viewBuilder = $this->etm->getViewBuilder(G2::TYPE);
+    $showFeedIcon = $this->configuration[static::FEED_SETTING] ?? TRUE;
     $entry = $this->wotd->get();
     if (empty($entry)) {
       return NULL;
     }
     $build = $viewBuilder->view($entry, G2::VM_BLOCK);
     $build['#cache'] = ['max-age' => 0];
+    if ($showFeedIcon) {
+      [,,$displayName] = explode('.', G2::ROUTE_FEED_WOTD);
+      /** @var \Drupal\views\ViewExecutable $view */
+      $display = $this->etm
+        ->getStorage('view')
+        ->load(G2::VIEW_WOTD)
+        ->getDisplay($displayName);
+      $title = $display['display_title'];
+      $description = $display['display_options']['display_description'];
+
+      $build[static::FEED_SETTING] = [
+        '#theme' => 'feed_icon',
+        '#url' => Url::fromRoute(G2::ROUTE_FEED_WOTD),
+        '#title' => $title,
+        // Ignored by #3371937, hence the need for g2_preprocess_feed_icon.
+        '#attributes' => [
+          'class' => ['g2-feed-icon'],
+          'title' => $description,
+        ],
+        '#weight' => 15,
+      ];
+    }
     return $build;
   }
 

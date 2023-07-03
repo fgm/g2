@@ -266,7 +266,7 @@ class SettingsForm extends ConfigFormBase {
     $element['wotd'] = [
       '#markup' => $this->t('<ul>
   <li>Place a G2 WOTD block in a region using the <a href=":block">block configuration page</a>,
-    and configure its title and display conditions there.</li>
+    and configure its title, feed icon, and display conditions there.</li>
   <li>Use the <a href=":vm">G2 Block view display</a> on the %bundle to adjust the WOTD rendering.</li>
   <li>Configure the WOTD value and rotation on the <a href=":services">WOTD service configuration</a>.</li>
   </ul>',

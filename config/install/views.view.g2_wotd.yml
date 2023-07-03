@@ -177,11 +177,10 @@ display:
         - url.query_args
         - 'user.node_grants:view'
         - user.permissions
-      tags:
-        - 'node:940'
+      tags: []
   feed_1:
     id: feed_1
-    display_title: 'G2 Word of the day RSS feed'
+    display_title: 'Word of the day feed'
     display_plugin: feed
     position: 1
     display_options:
@@ -209,5 +208,5 @@ display:
         - url
         - 'user.node_grants:view'
         - user.permissions
-      tags:
-        - 'node:940'
+      tags: []
+

@@ -185,7 +185,7 @@ SQL;
  */
 function g2_update_6001() {
   $count = 0;
-  $wotd_author = variable_get(G2::VARWOTDFEEDAUTHOR, G2::DEFWOTDFEEDAUTHOR);
+  $wotd_author = variable_get(G2::VARWOTDFEEDAUTHOR, '');
   if (strpos($wotd_author, '%author') !== FALSE) {
     variable_set(G2::VARWOTDFEEDAUTHOR, str_replace('%author', '@author', $wotd_author));
     $count++;

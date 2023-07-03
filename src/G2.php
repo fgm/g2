@@ -24,18 +24,10 @@ class G2 {
    */
   const CONFIG_NAME = 'g2.settings';
 
-  const DEFLOGREFERRERS = TRUE;
-
-  const DEFNOFREETAGGING = FALSE;
-
   /**
    * The State default for the current stored random entry.
    */
   const DEFRANDOMENTRY = '';
-
-  const DEFTOPMAXCOUNT = 5;
-
-  const DEFWOTDFEEDAUTHOR = '';
 
   const DEFWOTDFEEDLINK = TRUE;
 
