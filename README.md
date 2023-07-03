@@ -7,7 +7,7 @@ version 2 or later.
 
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/FGM/g2/badges/quality-score.png?b=8.x-1.x)](https://scrutinizer-ci.com/g/FGM/g2/?branch=8.x-1.x)
 
-**WARNING** 2023-06-25 : This version of the project is only alpha level
+**WARNING** 2023-07-02 : This version of the project is only alpha2 level
 at the moment, rapidly evolving with a stable version expected for 2023-07.
 
 
@@ -24,22 +24,22 @@ at the moment, rapidly evolving with a stable version expected for 2023-07.
 
 ## Introduction
 
-G2 is a glossary management module written for Drupal.
+G2 is a glossary management module written for Drupal 10 and 9.
 
-It is not intended as a direct replacement for [glossary], which has been
-available with drupal for a number of years, or the more recent [glossify] and
-[lexicon] modules, but as an alternative for sites needing a glossary for many
-entries, or a different feature set.
+It is not intended as a direct replacement for legacy [glossary] module,
+nor the more recent [glossify] and [lexicon] modules,
+but as an alternative for sites needing a glossary for many entries,
+or a different feature set.
 
 Unlike [glossary] or [lexicon], it uses nodes instead of terms to hold
-definitions, relies on <dfn> markup in definitions, and can link to terms
+definitions, relies on `<dfn>` markup in definitions, and can link to terms
 in multi-byte character sets and terms containing special characters like
 slashes or ampersands without any specific markup.
 
-For a better user experience, <dfn> elements may optionally be inserted
+For a better user experience, `<dfn>` elements may optionally be inserted
 automatically by enabling the _Automatic_ input filter, which will automatically
-insert <dfn> elements during filtering for entries it recognizes and which are
-not in the filter stop list.
+insert `<dfn>` elements during filtering for entries it recognizes and which are
+not in the filter stop list for the active text format.
 
 [glossary]: https://www.drupal.org/project/glossary
 [glossify]: https://www.drupal.org/project/glossify
@@ -59,21 +59,24 @@ Its development to this date has been entirely sponsored by [OSInet].
 * Sample implementation (about 6000 terms, localized to french)
   https://riff.org/glossaire
 
-## Completion status as of 2023-06-25 (alpha1)
+## Completion status as of 2023-07-03 (alpha2)
 
 ### Main features
 
-| Feature  | Block   | Service | API     | Block / controller |
-|----------|---------|---------|---------|--------------------|
-| Alphabar | Done    | Done    | Working | Working            |
-| API      | n.a.    | Working | n.a.    |                    |
-| Latest   | Done    | Done    | Working | Working            |
-| Random   | Done    | Done    |         |                    |
-| Top      | Working | Working | Working | Working            |
-| WOTD     | Done    | Done    |         |                    |
+| Feature           | Block | Service | API     | Other        |
+|-------------------|-------|---------|---------|--------------|
+| Alphabar          | Done  | Done    | Working |              |
+| API               | n.a.  | Working | n.a.    |              |
+| Latest            | Done  | Done    | Working |              |
+| Random            | Done  | Done    |         |              |
+| Top               | Done  | Done    | Working |              |
+| WOTD              | Done  | Done    |         |              |
+| Definition filter | n.a.  | n.a.    | n.a.    | Filter: Done |
+| Automatic filter  | n.a.  | n.a.    | n.a.    | Filter: Done |
 
 * 'Done' status means working and with test coverage deemed sufficient.
 * 'Working' status means appears to work but not (completely) tested.
+
 
 ### Pages
 
@@ -91,13 +94,6 @@ Its development to this date has been entirely sponsored by [OSInet].
 * Any Drupal version since 9.0
 * A compatible database, configured for UTF-8 encoding (utf8mb4_general_ci)
 * PHP 8.1.x or 8.2.x
-
-## Version notes
-
-Since 2009-09-27:
-
-- sites not configured with clean URLs are no longer taken into account
-- the module is only maintained/evolved for the Drupal 9.x/10.x branches.
 
 
 ## Installing / upgrading / uninstalling
@@ -117,7 +113,7 @@ by going through each of the tabs starting at `/admin/content/g2/services`
 |       7.x |          |          |          |  standard  |      n.a.       |
 |   8.x-9.x |          |          |          |            |    standard     |
 
-As this matrix shows, beyond Drupal 6.x, update features are limited.
+As this matrix shows, beyond Drupal 6.x, upgrade features are limited.
 
 - The D7 upgrade path only convers configuration,
   and there is no standard upgrade path towards D8+:
@@ -129,16 +125,17 @@ As this matrix shows, beyond Drupal 6.x, update features are limited.
 - New in alpha2:
   - the Automatic filter will automatically tag entries in content,
     except those added to its stop list.
+  - the TopN block is available again
+  - UX improvements in configuration
   - No-code: the WOTD feed is now a view.
 - New in alpha1:
   - UX: the Alphabar service configuration now provides a button to
     automatically rebuild the bar from existing G2 entries.
     The bar can then be manually adjusted before saving.
-- No-code: G2 versions since Drupal 4.x have been manually handling the display
-  configuration on G2 entries.
-  Since fields and view modes have been a standard for quite a long time and
-  provide a better administrative UI, all the display configuration and specific
-  templates have been removed in favor of using specific view modes.
+  - The Definition filter is available again.
+  - Alphabar, LatestN, Random and WOTD services and block available again.
+  - No-code: all custom logic and templates around fields replaced by predefined
+    configuration: fields, view displays, and views.
 
 
 ## Ruby XML-RPC client
