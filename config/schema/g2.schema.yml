@@ -125,9 +125,6 @@ g2.settings:
                 <p>Allows site admins to modify the route on which the G2 home page will be found.
                 This will typically be done to replace the standard path (<code>/g2</code> for route <code>g2.main</code>) by a SEO-engineered path.</p>
                 <p>If both route and nid are non-empty, the route takes precedence over the nid.</p>
-            log_referrers:
-              type: boolean
-              label: 'Log referrers on g2_entry views. Be aware that this is not triggered by anonymous views, and that a referrer can carry content anywhere in the page, not just in the main content. In particular, any page carrying a G2 block will automatically create such references.'
         initial:
           type: mapping
           label: 'Entries-by-initial-segment page'
@@ -169,6 +166,13 @@ g2.settings:
                 The default view for the homonyms disambiguation page.
                 <p>Select among all views tagged as "G2", or set to empty for a
                 plain node list using the g2_entry_list view display.</p>
+        referers:
+          type: mapping
+          label: 'Referers tracking'
+          mapping:
+            track:
+              type: boolean
+              label: 'Log referers on g2_entry views. Be aware that this is not triggered by cached views, and that a referrer can carry content anywhere in the page, not just in the main content. In particular, any page carrying a G2 block will automatically create such references.'
         wotd:
           type: mapping
           label: 'WOTD RSS feed'
@@ -233,6 +237,7 @@ g2.settings:
               entry pages, and G2 own pages, typically for SEO purposes.
               The value can include @title which, if not empty, will be replaced
               by the standard Drupal site name.</p>
+
 
 
 filter_settings.g2_automatic:

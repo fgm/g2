@@ -80,7 +80,7 @@ function g2_schema() {
   ];
 
   // G2 per-node referer stats.
-  $schema['g2_referer'] = [
+  $schema[G2::TBL_REFERER] = [
     'fields' => [
       'nid' => [
         'type' => 'int',
@@ -217,14 +217,16 @@ function g2_update_6001() {
  */
 function g2_update_6002() {
   $ret = [];
-  if (!db_table_exists('g2_referer')) {
+  if (!db_table_exists(G2::TBL_REFERER)) {
     $message = t('Temporarily reinstating g2_referer table for current version.')
       . t('In future versions, use an external tracking module instead.');
     $schema = g2_schema();
-    db_create_table($ret, 'g2_referer', $schema['g2_referer']);
+    db_create_table($ret, G2::TBL_REFERER, $schema[G2::TBL_REFERER]);
   }
   else {
-    $message = t('g2_referer table was there. No need to recreate it.');
+    $message = t('@tbl table was there. No need to recreate it.', [
+      '@tbl' => G2::TBL_REFERER,
+    ]);
   }
   \Drupal::messenger()->addStatus($message);
   return $ret;

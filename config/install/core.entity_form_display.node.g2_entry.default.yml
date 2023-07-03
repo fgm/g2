@@ -3,11 +3,11 @@ status: true
 dependencies:
   config:
     - field.field.node.g2_entry.body
-    - field.field.node.g2_entry.g2_period
     - field.field.node.g2_entry.g2_complement
     - field.field.node.g2_entry.g2_context
     - field.field.node.g2_entry.g2_expansion
     - field.field.node.g2_entry.g2_origin
+    - field.field.node.g2_entry.g2_period
     - node.type.g2_entry
   module:
     - path
@@ -32,14 +32,6 @@ content:
     weight: 8
     region: content
     settings: {  }
-    third_party_settings: {  }
-  g2_period:
-    type: string_textfield
-    weight: 3
-    region: content
-    settings:
-      size: 60
-      placeholder: 'A time period during which the entity of concept described by the term was in use. '
     third_party_settings: {  }
   g2_complement:
     type: text_textarea
@@ -74,6 +66,14 @@ content:
     settings:
       rows: 3
       placeholder: ''
+    third_party_settings: {  }
+  g2_period:
+    type: string_textfield
+    weight: 3
+    region: content
+    settings:
+      size: 60
+      placeholder: 'A time period during which the entity of concept described by the term was in use. '
     third_party_settings: {  }
   path:
     type: path

@@ -4,11 +4,11 @@ dependencies:
   config:
     - core.entity_view_mode.node.teaser
     - field.field.node.g2_entry.body
-    - field.field.node.g2_entry.g2_period
     - field.field.node.g2_entry.g2_complement
     - field.field.node.g2_entry.g2_context
     - field.field.node.g2_entry.g2_expansion
     - field.field.node.g2_entry.g2_origin
+    - field.field.node.g2_entry.g2_period
     - node.type.g2_entry
   module:
     - text
@@ -50,6 +50,6 @@ content:
     weight: 5
     region: content
 hidden:
-  g2_period: true
   g2_complement: true
   g2_origin: true
+  g2_period: true

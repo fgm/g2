@@ -26,17 +26,9 @@ content:
     type: text_summary_or_trimmed
     label: above
     settings:
-      trim_length: 600
+      trim_length: 200
     third_party_settings: {  }
     weight: 1
-    region: content
-  g2_context:
-    type: entity_reference_label
-    label: above
-    settings:
-      link: true
-    third_party_settings: {  }
-    weight: 2
     region: content
   g2_expansion:
     type: text_default
@@ -47,6 +39,7 @@ content:
     region: content
 hidden:
   g2_complement: true
+  g2_context: true
   g2_origin: true
   g2_period: true
   links: true

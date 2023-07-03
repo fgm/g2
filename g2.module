@@ -15,15 +15,15 @@
  * @link http://wiki.audean.com/g2/choosing @endlink
  */
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
-use Drupal\Component\Utility\Html;
 use Drupal\Core\Entity\Entity\EntityViewMode;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\GeneratedLink;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
 use Drupal\g2\G2;
+use Drupal\g2\RefererTracker;
 use Drupal\g2\Top;
 use Drupal\node\NodeInterface;
 use Drupal\views\ViewExecutable;
@@ -239,6 +239,25 @@ function g2_cron() {
 }
 
 /**
+ * Implements hook_entity_operation().
+ */
+function g2_entity_operation(\Drupal\Core\Entity\EntityInterface $entity) {
+  if ($entity->getEntityTypeId() !== G2::TYPE || $entity->bundle() !== G2::BUNDLE) {
+    return;
+  }
+  $operations = [];
+  $operations['g2-referers'] = [
+    'title' => t('G2 Referers'),
+    'url' => Url::fromRoute(G2::ROUTE_REFERERS, ['node' => $entity->id()]),
+    // Delete & Devel: 100.
+    'weight' => 75,
+  ];
+
+  return $operations;
+
+}
+
+/**
  * Implements hook_help().
  */
 function g2_help($route_name, RouteMatchInterface $route_match) {
@@ -341,11 +360,13 @@ function g2_node_view(array &$build, NodeInterface $node) {
   if ($node->bundle() != G2::BUNDLE) {
     return;
   }
-  $config = Drupal::config(G2::CONFIG_NAME);
-
-  if ($config->get(G2::VARLOGREFERRERS)) {
-    _g2_insert_referrer($node);
+  if (!Drupal::config(G2::CONFIG_NAME)->get(G2::VARLOGREFERERS)) {
+    return;
   }
+
+  /** @var RefererTracker $tracker */
+  $tracker = Drupal::service(G2::SVC_TRACKER);
+  $tracker->upsertReferer($node);
 
   return $node;
 }
@@ -362,7 +383,7 @@ function g2_node_view(array &$build, NodeInterface $node) {
 function g2_preprocess_feed_icon(&$variables) {
   $route = $variables['url']->getRouteName();
   if ($route == G2::ROUTE_FEED_WOTD) {
-    [,,$displayName] = explode('.', G2::ROUTE_FEED_WOTD);
+    [, , $displayName] = explode('.', G2::ROUTE_FEED_WOTD);
     /** @var \Drupal\views\ViewExecutable $view */
     $display = Drupal::entityTypeManager()
       ->getStorage('view')
@@ -486,167 +507,6 @@ function g2_xmlrpc() {
 /* Code in this part of the module is still unchecked. */
 
 /**
- * Log a hit from a referrer.
- *
- * Note that this does not work on cached pages, and will log hits from all
- * pages linking to a g2_entry, even if it is only from a block, not just from
- * the main content.
- *
- * @param \Drupal\Core\Entity\EntityInterface $node
- *   The node being viewed.
- */
-function _g2_insert_referrer(EntityInterface $node): void {
-  global $base_url;
-  $referer = $_SERVER['HTTP_REFERER'] ?? '';
-  if (empty($referer)) {
-    return;
-  }
-  // For now, we do not handle non-local referers, which are no longer emitted
-  // by modern (2025) browsers in most cases.
-  if (!str_starts_with($referer, "${base_url}/")) {
-    return;
-  }
-
-  // Extract local path, possibly aliased.
-  $referer = mb_substr($referer, mb_strlen($base_url));
-  // Unalias it.
-  $referer = Drupal::service('path_alias.manager')->getPathByAlias($referer);
-  // Sanitize it.
-  $referer = Html::escape($referer);
-
-  $sq = <<<SQL
-UPDATE {g2_referer}
-SET incoming = incoming + 1
-WHERE nid = :nid AND referer = :referer;
-SQL;
-  $args = ['nid' => $node->id(), 'referer' => $referer];
-  $stmt = Drupal::database()
-    ->prepareStatement($sq, [], TRUE);
-  $stmt->execute($args);
-  if (!$stmt->rowCount()) {
-    $sq = <<<SQL
-INSERT INTO {g2_referer}
-    (nid, referer, incoming)
-VALUES (:nid, :referer, 1);
-SQL;
-    Drupal::database()->query($sq, $args);
-  }
-}
-
-/**
- * Submit handler for _g2_referer_links().
- *
- * Use the wipe target to redirect to the wipe confirmation form. If we
- * hadn't been using a button for this link, we could just as well have
- * used a plain link.
- *
- * @param array $form
- *   The form array.
- * @param \Drupal\Core\Form\FormStateInterface $form_state
- *   The form state.
- */
-function _g2_referer_links_submit(array &$form, FormStateInterface $form_state) {
-  $form_state['redirect'] = 'g2/wipe/' . $form_state['values']['wipe_target'];
-}
-
-/**
- * Erase the referer counts on g2 entries.
- *
- * Difference from the 4.7 version: it no longer includes a goto when erasing
- * all.
- *
- * @param int $nid
- *   Node from which to erase referers, or NULL to erase all g2 referers.
- *
- * @FIXME 20090928 recheck
- */
-function _g2_referer_wipe($nid = NULL) {
-  if (isset($nid)) {
-    $sq = 'DELETE from {g2_referer} WHERE nid = %d';
-    Drupal::database()->query($sq, $nid);
-    drupal_goto('node/' . $nid);
-  }
-  else {
-    $sq = 'DELETE from {g2_referer}';
-    Drupal::database()->query($sq);
-  }
-}
-
-/**
- * Submit handler for "wipe referers" button.
- *
- * @param array $form
- *   The form array.
- * @param \Drupal\Core\Form\FormStateInterface $form_state
- *   The form state.
- */
-function g2_referer_wipe_button_submit(
-  array $form,
-  FormStateInterface $form_state
-) {
-  drupal_goto('g2/wipe');
-}
-
-/**
- * Form builder for the referer wipe confirmation request form.
- *
- * This is the same form for both global wipe and individual node wipe.
- *
- * @param \Drupal\Core\Form\FormStateInterface $form_state
- *   The form state.
- * @param null|\Drupal\node\NodeInterface $node
- *   The node from which to erase.
- *
- * @return array
- *   A render array for the confirm form.
- */
-function g2_referer_wipe_confirm_form(
-  FormStateInterface $form_state,
-  NodeInterface $node = NULL
-) {
-  $form = [];
-
-  if (is_object($node) && isset($node->nid)) {
-    $question = t('Are you sure to want to erase the referer information on this G2 entry ?');
-    $cancel = 'node/' . $node->nid . '/referers';
-    $form[G2::TYPE] = [
-      '#prefix' => '<p><em>',
-      '#value' => check_plain($node->title),
-      '#suffix' => '</em></p>',
-    ];
-  }
-  else {
-    $question = t('Are you sure to want to erase the referer information on all G2 entries ?');
-    $cancel = G2::PATH_SETTINGS;
-  }
-
-  $ret = confirm_form(
-    $form,
-    $question,
-    $cancel,
-    t('This action cannot be undone.'),
-    t('Confirm'),
-    t('Cancel')
-  );
-  return $ret;
-}
-
-/**
- * Submit handler for referer wipe confirmation.
- *
- * @param array $form
- *   The form array.
- * @param \Drupal\Core\Form\FormStateInterface $form_state
- *   The form state.
- */
-function g2_referer_wipe_confirm_form_submit(array $form, FormStateInterface $form_state) {
-  _g2_referer_wipe();
-  Drupal::messenger()
-    ->addStatus(t('Referer information has been erased on all G2 entries'));
-  $form_state['redirect'] = G2::PATH_SETTINGS;
-}
-
-/**
  * Implements hook_user().
  *
  * @todo D6 check when content is actually there
@@ -690,4 +550,3 @@ SQL;
       break;
   }
 }
-

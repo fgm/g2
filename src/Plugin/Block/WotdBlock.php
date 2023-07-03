@@ -115,7 +115,7 @@ class WotdBlock extends BlockBase implements ContainerFactoryPluginInterface {
     $build = $viewBuilder->view($entry, G2::VM_BLOCK);
     $build['#cache'] = ['max-age' => 0];
     if ($showFeedIcon) {
-      [,,$displayName] = explode('.', G2::ROUTE_FEED_WOTD);
+      [, , $displayName] = explode('.', G2::ROUTE_FEED_WOTD);
       /** @var \Drupal\views\ViewExecutable $view */
       $display = $this->etm
         ->getStorage('view')

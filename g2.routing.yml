@@ -57,15 +57,16 @@ g2.main:
   requirements:
     _permission: 'access content'
 
-# G2 node referrers
-g2.node_referrers:
-  path: '/node/{node}/g2_referrers'
+# G2 node referers
+g2.node_referers:
+  path: '/node/{node}/g2_referers'
   defaults:
-    _form: '\Drupal\g2\Form\RefererWipe'
-    _title: Referrers
-    variant: count
+    _controller: '\Drupal\g2\Controller\Referers::countReferers'
+    _title: HTTP Referers
   requirements:
     _permission: 'access content'
+    _entity_access: 'node.view'
+    node: \d+
   options:
     _admin_route: false
     parameters:
@@ -75,18 +76,19 @@ g2.node_referrers:
           - g2_entry
         converter: paramconverter.entity
     _access_checks:
+      - access_check.entity
       - access_check.permission
 
 # Settings-related routes.
 g2.settings:
-  path: "admin/config/content/g2"
+  path: "/admin/config/content/g2"
   defaults:
     _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
     _title: 'G2 Glossary'
   requirements:
     _permission: "administer site configuration"
 g2.settings.api:
-  path: "admin/config/content/g2/api"
+  path: "/admin/config/content/g2/api"
   defaults:
     _form: 'Drupal\g2\Form\SettingsForm'
     _title: "G2 api configuration"
@@ -96,7 +98,7 @@ g2.settings.api:
   requirements:
     _permission: "administer site configuration"
 g2.settings.block:
-  path: "admin/config/content/g2/block"
+  path: "/admin/config/content/g2/block"
   defaults:
     _form: 'Drupal\g2\Form\SettingsForm'
     _title: "G2 block configuration"
@@ -107,7 +109,7 @@ g2.settings.block:
     _permission: "administer site configuration"
   is_default: true
 g2.settings.controllers:
-  path: "admin/config/content/g2/controllers"
+  path: "/admin/config/content/g2/controllers"
   defaults:
     _form: 'Drupal\g2\Form\SettingsForm'
     _title: "G2 controllers configuration"
@@ -117,7 +119,7 @@ g2.settings.controllers:
   requirements:
     _permission: "administer site configuration"
 g2.settings.formatting:
-  path: "admin/config/content/g2/formatting"
+  path: "/admin/config/content/g2/formatting"
   defaults:
     _form: 'Drupal\g2\Form\SettingsForm'
     _title: "G2 formatting configuration"
@@ -127,7 +129,7 @@ g2.settings.formatting:
   requirements:
     _permission: "administer site configuration"
 g2.settings.services:
-  path: "admin/config/content/g2/services"
+  path: "/admin/config/content/g2/services"
   defaults:
     _form: 'Drupal\g2\Form\SettingsForm'
     _title: "G2 services configuration"
@@ -138,24 +140,34 @@ g2.settings.services:
     _permission: "administer site configuration"
 
 g2.wipe.all:
-  path: "g2/wipe"
+  path: "/g2/wipe"
   defaults:
     _form: 'Drupal\g2\Form\RefererWipe'
-    _title: "Wipe all referrers on G2 entries"
+    _title: "Wipe all referers on G2 entries"
     variant: all
   options:
     _admin_route: TRUE
   requirements:
-    _permission: "administer site configuration"
+    _permission: "administer g2 entries"
 g2.wipe.one:
-  path: "g2/wipe/{node}"
+  path: "/g2/wipe/{node}"
   defaults:
     _form: 'Drupal\g2\Form\RefererWipe'
-    _title: "Wipe all referrers on a specific G2 entry"
+    _title: "Wipe all referers on a specific G2 entry"
     variant: one
-  options:
-    _admin_route: TRUE
   requirements:
-    _permission: "administer site configuration"
+    _permission: "administer g2 entries"
     _entity_access: 'node.view'
     node: \d+
+  options:
+    _admin_route: TRUE
+    parameters:
+      node:
+        type: 'entity:node'
+        bundle:
+          - g2_entry
+        converter: paramconverter.entity
+    _access_checks:
+      - access_check.entity
+      - access_check.permission
+

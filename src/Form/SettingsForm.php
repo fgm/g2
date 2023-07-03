@@ -10,6 +10,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Link;
 use Drupal\Core\Routing\RouteBuilderInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -330,14 +331,6 @@ class SettingsForm extends ConfigFormBase {
       ] + $this->getInfoFromLabel($schema[$name]['mapping']['route']['label']);
     }
 
-    $path = explode('.', G2::VARLOGREFERRERS);
-    [$section, $group, $key] = $path;
-    $element = &$form[$section][$group];
-    $element[$key] = [
-      '#type' => 'checkbox',
-      '#default_value' => $config[$group][$key],
-    ] + $this->getInfoFromLabel($schema[$group]['mapping'][$key]['label']);
-
     $element = &$form['controller']['homonyms'];
     $element['redirect_on_single_match'] = [
       '#type' => 'checkbox',
@@ -387,6 +380,22 @@ class SettingsForm extends ConfigFormBase {
       '#type' => 'number',
       '#default_value' => $config['homonyms']['nid'],
     ] + $this->getInfoFromLabel($schema['homonyms']['mapping']['nid']['label']);
+
+    $path = explode('.', G2::VARLOGREFERERS);
+    [$section, $group, $key] = $path;
+    $element = &$form[$section][$group];
+    $element[$key] = [
+      '#type' => 'checkbox',
+      '#default_value' => $config[$group][$key],
+    ] + $this->getInfoFromLabel($schema[$group]['mapping'][$key]['label']);
+    $element['wipe'] = [
+      '#markup' => '<p>'
+      . Link::fromTextAndUrl(
+        $this->t('Wipe all stored referers'),
+        Url::fromRoute(G2::ROUTE_WIPE_ALL),
+      )->toString()
+      . '</p>',
+    ];
 
     $element = &$form['controller']['wotd'];
     $element['controller'] = [

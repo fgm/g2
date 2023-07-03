@@ -21,6 +21,14 @@ targetEntityType: node
 bundle: g2_entry
 mode: g2_tooltips
 content:
+  body:
+    type: text_trimmed
+    label: hidden
+    settings:
+      trim_length: 80
+    third_party_settings: {  }
+    weight: 1
+    region: content
   g2_expansion:
     type: text_default
     label: hidden
@@ -29,7 +37,6 @@ content:
     weight: 0
     region: content
 hidden:
-  body: true
   g2_complement: true
   g2_context: true
   g2_origin: true

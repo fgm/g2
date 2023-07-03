@@ -6,7 +6,7 @@ block:
   random:
     max_age: 5
   top:
-    count: 10
+    count: 5
 services:
   alphabar:
     contents: 0123456789abcdefghijklmnopqrstuvwxyz
@@ -23,7 +23,6 @@ controller:
   main:
     nid: 0
     route: g2.main
-    log_referrers: true
   initial:
     route: g2.initial
   homonyms:
@@ -32,6 +31,8 @@ controller:
     redirect_status: 302
     route: g2.homonyms
     vid: g2_homonyms
+  referers:
+    track: true
   wotd: {}
 api:
   client:
@@ -41,5 +42,5 @@ api:
     throttle: !!float 1
 formatting:
   hide_free_tagging: true
-  tooltips_level: 0
+  tooltips_level: 2
   title: 'G2 Glossary on @title'

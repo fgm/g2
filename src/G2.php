@@ -108,6 +108,11 @@ class G2 {
   const ROUTE_CONFIG_API = 'g2.settings.api';
 
   /**
+   * Route: the G2 controllers configuration form.
+   */
+  const ROUTE_CONFIG_CONTROLLERS = 'g2.settings.controllers';
+
+  /**
    * Route: the G2 formatting configuration form.
    */
   const ROUTE_CONFIG_FORMATTING = 'g2.settings.formatting';
@@ -143,9 +148,9 @@ class G2 {
   const ROUTE_NODE_CANONICAL = 'entity.node.canonical';
 
   /**
-   * Route: show referrers to a g2_entry.
+   * Route: show referers to a g2_entry.
    */
-  const ROUTE_REFERRERS = 'g2.node_referrers';
+  const ROUTE_REFERERS = 'g2.node_referers';
 
   /**
    * Route: Field UI node display modes.
@@ -153,12 +158,12 @@ class G2 {
   const ROUTE_VM = 'entity.entity_view_display.node.view_mode';
 
   /**
-   * Route: form offering to wipe all referrers.
+   * Route: form offering to wipe all referers.
    */
   const ROUTE_WIPE_ALL = 'g2.wipe.all';
 
   /**
-   * Route: form offering to wipe referrers for a single G2 entry.
+   * Route: form offering to wipe referers for a single G2 entry.
    */
   const ROUTE_WIPE_ONE = 'g2.wipe.one';
 
@@ -220,9 +225,19 @@ class G2 {
   const SVC_TOP = 'g2.top';
 
   /**
+   * The name of the g2.referer_tracker service.
+   */
+  const SVC_TRACKER = 'g2.referer_tracker';
+
+  /**
    * The name of the g2.wotd service.
    */
   const SVC_WOTD = 'g2.wotd';
+
+  /**
+   * The name of the SQL table holding the G2 referer information.
+   */
+  const TBL_REFERER = 'g2_referer';
 
   const TITLE_MAIN = 'Glossary';
 
@@ -307,7 +322,7 @@ class G2 {
   /**
    * The config path for the referrer logging feature.
    */
-  const VARLOGREFERRERS = 'controller.main.log_referrers';
+  const VARLOGREFERERS = 'controller.referers.track';
 
   /**
    * The config path for the node used to build the main G2 page.

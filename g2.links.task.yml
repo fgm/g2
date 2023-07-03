@@ -1,8 +1,8 @@
-g2.referrers:
+g2.referers:
   base_route: entity.node.canonical
-  route_name: g2.node_referrers
-  title: 'Referrers'
-  weight: 8 # After View/Edit/Delete/Revisions
+  route_name: g2.node_referers
+  title: 'G2 Referers'
+  weight: 1 # Between Edit and Delete
 
 g2.settings.api_tab:
   base_route: g2.settings.api

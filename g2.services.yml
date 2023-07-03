@@ -31,6 +31,12 @@ services:
       - '@entity_type.manager'
       - '@state'
 
+  g2.referer_tracker:
+    class: 'Drupal\g2\RefererTracker'
+    arguments:
+      - '@database'
+      - '@request_stack'
+
   g2.route_filter:
     class: '\Drupal\g2\RouteFilter'
     arguments:
