@@ -25,9 +25,206 @@ use Drupal\Core\GeneratedLink;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\g2\G2;
 use Drupal\g2\Top;
-use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 use Drupal\views\ViewExecutable;
+
+/**
+ * XML-RPC callback : returns alphabar data.
+ *
+ * @return string
+ *   The alphabar data, to be serialized in XML.
+ */
+function _g2_alphabar() {
+  /** @var \Drupal\g2\Alphabar $alphabar */
+  $alphabar = Drupal::service(G2::SVC_ALPHABAR);
+  $ret = array_map(fn(GeneratedLink $link) => "$link", $alphabar->getLinks());
+  return $ret;
+}
+
+/**
+ * XML-RPC callback : returns a list of the latest n nodes.
+ *
+ * "Latest" nodes are identified by time of latest update.
+ *
+ * @param int $count
+ *   The maximum number of entries to return.
+ *
+ * @return array
+ *   Note that the results are NOT filtered, and must be filtered when used.
+ *
+ * @throws \Drupal\Core\Entity\EntityMalformedException
+ */
+function _g2_latest(int $count = 0): array {
+  $config = Drupal::config(G2::CONFIG_NAME);
+  /** @var int $service_max */
+  $service_max = $config->get(G2::VARLATESTMAXCOUNT);
+  /** @var float $api_throttle */
+  $api_throttle = $config->get(G2::VARAPITHROTTLE);
+  $actual_max = (int) ceil($api_throttle * $service_max);
+
+  // Limit extraction.
+  if (empty($count) || ($count > $actual_max)) {
+    $count = $actual_max;
+  }
+
+  /** @var \Drupal\g2\Latest $latest */
+  $latest = Drupal::service(G2::SVC_LATEST);
+  $links = $latest->getLinks($count);
+  $result = [];
+
+  /** @var \Drupal\Core\Link $link */
+  foreach ($links as $link) {
+    $result[] = "{$link->toString()}";
+  }
+  return $result;
+}
+
+/**
+ * XML-RPC callback: return a random G2 entry.
+ *
+ * @return array
+ *   The node as an array, hiding the "internal use" g2_complement and g2_origin
+ *   fields.
+ */
+function _g2_random(): array {
+  /** @var \Drupal\g2\Random $random */
+  $random = \Drupal::service(G2::SVC_RANDOM);
+  $node = $random->get();
+  $res = _g2_xmlrpc($node);
+  return $res;
+}
+
+/**
+ * Extract statistics from the G2 glossary.
+ *
+ * @param int $tid
+ *   Taxonomy term id.
+ * @param string $initial
+ *   Initial segment.
+ *
+ * @return array
+ *   - g2 entries having chosen taxonomy term
+ *   - g2 entries starting with chosen initial segment
+ */
+function _g2_stats(int $tid = 0, string $initial = ''): array {
+  $db = Drupal::database();
+
+  $qUnpub = $db->select('node', 'n');
+  $unPubAlias = $qUnpub->innerJoin('node_field_data', 'nfd', 'nfd.nid = n.nid');
+  $qUnpub
+    ->condition('n.type', G2::BUNDLE)
+    ->condition("${unPubAlias}.status", NodeInterface::NOT_PUBLISHED)
+    ->addTag('node_access');
+
+  $qPub = $db->select('node', 'n');
+  $pubAlias = $qPub->innerJoin('node_field_data', 'nfd', 'nfd.nid = n.nid');
+  $qPub
+    ->condition('n.type', G2::BUNDLE)
+    ->condition("${pubAlias}.status", NodeInterface::PUBLISHED)
+    ->addTag('node_access');
+
+  if (!empty($tid)) {
+    $qUnpub->innerJoin('taxonomy_index', 'ti', 'n.nid = ti.nid');
+    $qPub->innerJoin('taxonomy_index', 'ti', 'n.nid = ti.nid');
+    $qUnpub = $qUnpub->condition('ti.tid', $tid);
+    $qPub = $qPub->condition('ti.tid', $tid);
+  }
+
+  if (!empty($initial)) {
+    $qUnpub = $qUnpub->condition("${unPubAlias}.title", "$initial%", 'LIKE');
+    $qPub = $qPub->condition("${pubAlias}.title", "$initial%", 'LIKE');
+  }
+
+  $unpub = $qUnpub->countQuery()->execute();
+  $pub = $qPub->countQuery()->execute();
+
+  // Avoid empty returns.
+  $ret = [
+    'unpublished' => (int) $unpub->fetchField(),
+    'published' => (int) $pub->fetchField(),
+  ];
+
+  return $ret;
+}
+
+/**
+ * Returns a list of the top n nodes as counted by statistics.module.
+ *
+ * - Unpublished nodes are not listed.
+ * - Stickyness is ignored for ordering, but returned in the results for
+ *   client-side ordering if needed.
+ *
+ * @param int|null $count
+ *   Number or entries to return.
+ * @param bool|null $daily_top
+ *   Order by daily views if TRUE, otherwise by total views (default).
+ *
+ * @return array|null
+ *   Statistics will empty without statistics module.
+ *   Note that the title of the nodes is NOT filtered.
+ */
+function _g2_top($count = NULL, $daily_top = FALSE) {
+  $config = Drupal::config(G2::CONFIG_NAME);
+  $service_max = $config->get(G2::VARLATESTMAXCOUNT);
+  $api_throttle = $config->get(G2::VARAPITHROTTLE);
+  $actual_max = $api_throttle * $service_max;
+
+  // Limit extraction.
+  if (empty($count) || ($count > $actual_max)) {
+    $count = $actual_max;
+  }
+  $count = (int) $count;
+
+  /** @var \Drupal\g2\Top $top */
+  $top = Drupal::service(G2::SVC_TOP);
+  $statistic = $daily_top ? Top::STATISTICS_DAY : Top::STATISTICS_TOTAL;
+  $links = $top->getLinks($count, $statistic);
+  $result = [];
+
+  /** @var \Drupal\Core\GeneratedLink $link */
+  foreach ($links as $link) {
+    $result[] = $link->__toString();
+  }
+  return $result;
+}
+
+/**
+ * Returns a structure for the WOTD.
+ *
+ * @param int $bodysize
+ *   The maximum length for the body. Entails truncation.
+ *
+ * @return object
+ *   Title / nid / teaser
+ *   Teaser and Body are returned already filtered, not stripped.
+ */
+function _g2_wotd($bodysize = 0) {
+  /** @var \Drupal\g2\WOTD $wotd */
+  $wotd = \Drupal::service(G2::SVC_WOTD);
+  $node = $wotd->get();
+  $res = _g2_xmlrpc($node);
+  return $res;
+}
+
+/**
+ * Represent a node as an array for the XML-RPC API.
+ *
+ * This implies stripping its internal use fields.
+ *
+ * @param \Drupal\node\NodeInterface $node
+ *   The node to display.
+ *
+ * @return array
+ *   The simplified node.
+ */
+function _g2_xmlrpc(NodeInterface $node): array {
+  if (empty($node) || !$node->isPublished()) {
+    return [];
+  }
+  $res = $node->toArray();
+  unset($res['g2_complement'], $res['g2_origin']);
+  return $res;
+}
 
 /**
  * Implements hook_cron().
@@ -138,28 +335,6 @@ function g2_node_update(NodeInterface $node) {
 }
 
 /**
- * Implements hook_preprocess_views_view_rss().
- */
-function g2_preprocess_views_view_rss(&$variables) {
-  /** @var \Drupal\g2\WOTD $wotd */
-  $wotd = Drupal::service(G2::SVC_WOTD);
-  $wotd->preprocessViewsViewRss($variables);
-}
-
-/**
- * Implements hook_views_pre_render().
- */
-function g2_views_pre_render(ViewExecutable $view) {
-  if ($view->id() === G2::VIEW_WOTD && $view->current_display === G2::VIEW_WOTD_DISPLAY) {
-    /** @var \Drupal\g2\WOTD $wotd */
-    $wotd = Drupal::service(G2::SVC_WOTD);
-    $wotd->viewsPreRender($view);
-  }
-}
-
-/* Code in this part of the module works in D10/9 but may not be finalized. */
-
-/**
  * Implements hook_ENTITY_TYPE_view().
  */
 function g2_node_view(array &$build, NodeInterface $node) {
@@ -176,6 +351,86 @@ function g2_node_view(array &$build, NodeInterface $node) {
 }
 
 /**
+ * Implements hook_preprocess_html().
+ *
+ * Append the glossary name to the page title on entry pages and G2 own pages,
+ * possibly including the default site name.
+ */
+function g2_preprocess_html(&$variables) {
+  if (!\Drupal::service(G2::SVC_ROUTE_FILTER)->isG2Route()) {
+    return;
+  }
+  $override = \Drupal::config(G2::CONFIG_NAME)
+    ->get(G2::VARPAGETITLE);
+  if (empty($override)) {
+    return;
+  }
+  $name = strtr($override, ['@title' => $variables['head_title']['name']]);
+  $variables['head_title']['name'] = $name;
+}
+
+/**
+ * Implements hook_preprocess_views_view_rss().
+ */
+function g2_preprocess_views_view_rss(&$variables) {
+  /** @var \Drupal\g2\WOTD $wotd */
+  $wotd = Drupal::service(G2::SVC_WOTD);
+  $wotd->preprocessViewsViewRss($variables);
+}
+
+/**
+ * Implements hook_theme().
+ */
+function g2_theme() {
+  $config = Drupal::config(G2::CONFIG_NAME);
+  $ret = [
+    // Checked for D8/9/10.
+    'g2_alphabar' => [
+      'variables' => [
+        'alphabar' => [],
+        'row_length' => $config->get(G2::VARALPHABARROWLENGTH),
+      ],
+    ],
+    // Checked for D8/9/10.
+    'g2_entries' => [
+      'variables' => [
+        'raw_entry' => '',
+        'entries' => [],
+        'message' => NULL,
+        'offer' => NULL,
+      ],
+    ],
+    // Not checked.
+    'g2_initial' => [
+      'variables' => [
+        'initial' => NULL,
+        'entries' => [],
+      ],
+    ],
+    // Not checked.
+    'g2_main' => [
+      'variables' => [
+        'alphabar' => $config->get(G2::VARALPHABARCONTENTS),
+        'text' => '',
+      ],
+    ],
+  ];
+
+  return $ret;
+}
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function g2_views_pre_render(ViewExecutable $view) {
+  if ($view->id() === G2::VIEW_WOTD && $view->current_display === G2::VIEW_WOTD_DISPLAY) {
+    /** @var \Drupal\g2\WOTD $wotd */
+    $wotd = Drupal::service(G2::SVC_WOTD);
+    $wotd->viewsPreRender($view);
+  }
+}
+
+/**
  * Implements hook_xmlrpc().
  *
  * Note that functions returning node portions return them unfiltered.
@@ -188,11 +443,9 @@ function g2_xmlrpc() {
     'g2.alphabar' => '_g2_alphabar',
     'g2.api' => [G2::class, 'api'],
     'g2.latest' => '_g2_latest',
+    'g2.random' => '_g2_random',
     'g2.stats' => '_g2_stats',
     'g2.top' => '_g2_top',
-
-    // D10/9 exception.
-    'g2.random' => [\Drupal::service(G2::SVC_RANDOM), 'get'],
     'g2.wotd' => '_g2_wotd',
   ];
 
@@ -205,19 +458,6 @@ function g2_xmlrpc() {
 }
 
 /* Code in this part of the module is still unchecked. */
-
-/**
- * XML-RPC callback : returns alphabar data.
- *
- * @return string
- *   The alphabar data, to be serialized in XML.
- */
-function _g2_alphabar() {
-  /** @var \Drupal\g2\Alphabar $alphabar */
-  $alphabar = Drupal::service(G2::SVC_ALPHABAR);
-  $ret = array_map(fn(GeneratedLink $link) => "$link", $alphabar->getLinks());
-  return $ret;
-}
 
 /**
  * Log a hit from a referrer.
@@ -268,249 +508,6 @@ SQL;
 }
 
 /**
- * XML-RPC callback : returns a list of the latest n nodes.
- *
- * "Latest" nodes are identified by time of latest update.
- *
- * @param int $count
- *   The maximum number of entries to return.
- *
- * @return array
- *   Note that the results are NOT filtered, and must be filtered when used.
- *
- * @throws \Drupal\Core\Entity\EntityMalformedException
- */
-function _g2_latest(int $count = 0): array {
-  $config = Drupal::config(G2::CONFIG_NAME);
-  /** @var int $service_max */
-  $service_max = $config->get(G2::VARLATESTMAXCOUNT);
-  /** @var float $api_throttle */
-  $api_throttle = $config->get(G2::VARAPITHROTTLE);
-  $actual_max = (int) ceil($api_throttle * $service_max);
-
-  // Limit extraction.
-  if (empty($count) || ($count > $actual_max)) {
-    $count = $actual_max;
-  }
-
-  /** @var \Drupal\g2\Latest $latest */
-  $latest = Drupal::service(G2::SVC_LATEST);
-  $links = $latest->getLinks($count);
-  $result = [];
-
-  /** @var \Drupal\Core\Link $link */
-  foreach ($links as $link) {
-    $result[] = "{$link->toString()}";
-  }
-  return $result;
-}
-
-/**
- * Extract statistics from the G2 glossary.
- *
- * @param int $tid
- *   Taxonomy term id.
- * @param string $initial
- *   Initial segment.
- *
- * @return array
- *   - g2 entries having chosen taxonomy term
- *   - g2 entries starting with chosen initial segment
- */
-function _g2_stats(int $tid = 0, string $initial = ''): array {
-  $db = Drupal::database();
-
-  $qUnpub = $db->select('node', 'n');
-  $unPubAlias = $qUnpub->innerJoin('node_field_data', 'nfd', 'nfd.nid = n.nid');
-  $qUnpub
-    ->condition('n.type', G2::BUNDLE)
-    ->condition("${unPubAlias}.status", NodeInterface::NOT_PUBLISHED)
-    ->addTag('node_access');
-
-  $qPub = $db->select('node', 'n');
-  $pubAlias = $qPub->innerJoin('node_field_data', 'nfd', 'nfd.nid = n.nid');
-  $qPub
-    ->condition('n.type', G2::BUNDLE)
-    ->condition("${pubAlias}.status", NodeInterface::PUBLISHED)
-    ->addTag('node_access');
-
-  if (!empty($tid)) {
-    $qUnpub->innerJoin('taxonomy_index', 'ti', 'n.nid = ti.nid');
-    $qPub->innerJoin('taxonomy_index', 'ti', 'n.nid = ti.nid');
-    $qUnpub = $qUnpub->condition('ti.tid', $tid);
-    $qPub = $qPub->condition('ti.tid', $tid);
-  }
-
-  if (!empty($initial)) {
-    $qUnpub = $qUnpub->condition("${unPubAlias}.title", "$initial%", 'LIKE');
-    $qPub = $qPub->condition("${pubAlias}.title", "$initial%", 'LIKE');
-  }
-
-  $unpub = $qUnpub->countQuery()->execute();
-  $pub = $qPub->countQuery()->execute();
-
-  // Avoid empty returns.
-  $ret = [
-    NodeInterface::NOT_PUBLISHED => $unpub->fetchField(),
-    NodeInterface::PUBLISHED => $pub->fetchField(),
-  ];
-
-  return $ret;
-}
-
-/**
- * Returns a list of the top n nodes as counted by statistics.module.
- *
- * - Unpublished nodes are not listed.
- * - Stickyness is ignored for ordering, but returned in the results for
- *   client-side ordering if needed.
- *
- * @param int|null $count
- *   Number or entries to return.
- * @param bool|null $daily_top
- *   Order by daily views if TRUE, otherwise by total views (default).
- *
- * @return array|null
- *   Statistics will empty without statistics module.
- *   Note that the title of the nodes is NOT filtered.
- */
-function _g2_top($count = NULL, $daily_top = FALSE) {
-  $config = Drupal::config(G2::CONFIG_NAME);
-  $service_max = $config->get(G2::VARLATESTMAXCOUNT);
-  $api_throttle = $config->get(G2::VARAPITHROTTLE);
-  $actual_max = $api_throttle * $service_max;
-
-  // Limit extraction.
-  if (empty($count) || ($count > $actual_max)) {
-    $count = $actual_max;
-  }
-
-  /** @var \Drupal\g2\Top $top */
-  $top = Drupal::service('g2.top');
-  $statistic = $daily_top ? Top::STATISTICS_DAY : Top::STATISTICS_TOTAL;
-  $links = $top->getLinks($count, $statistic);
-  $result = [];
-
-  /** @var \Drupal\Core\GeneratedLink $link */
-  foreach ($links as $link) {
-    $result[] = $link->__toString();
-  }
-  return $result;
-}
-
-/**
- * Implements hook_theme().
- */
-function g2_theme() {
-  $config = Drupal::config(G2::CONFIG_NAME);
-  $ret = [
-    // Checked for D8/9/10.
-    'g2_alphabar' => [
-      'variables' => [
-        'alphabar' => [],
-        'row_length' => $config->get(G2::VARALPHABARROWLENGTH),
-      ],
-    ],
-    // Checked for D8/9/10.
-    'g2_entries' => [
-      'variables' => [
-        'raw_entry' => '',
-        'entries' => [],
-        'message' => NULL,
-        'offer' => NULL,
-      ],
-    ],
-    // Not checked.
-    'g2_initial' => [
-      'variables' => [
-        'initial' => NULL,
-        'entries' => [],
-      ],
-    ],
-    // Not checked.
-    'g2_main' => [
-      'variables' => [
-        'alphabar' => $config->get(G2::VARALPHABARCONTENTS),
-        'text' => '',
-      ],
-    ],
-
-    // --- Older versions ------------------------------------------------------
-    'g2_random' => ['variables' => [G2::TYPE => NULL]],
-  ];
-  return $ret;
-}
-
-/* ==== Code below this line has not yet been converted to D8 =============== */
-
-/**
- * Remove tags from a taxonomy array for non-G2-admins.
- *
- * @param array $taxonomy
- *   An array of fully loaded terms (tid, vid, weight..)
- *
- * @return array
- *   The taxonomy terms, with tags removed if applicable.
- *
- *   FIXME most likely redundant with view modes.
- */
-function _g2_comb_taxonomy(array $taxonomy = []) {
-  // Filter tag vocabularies for non-G2 admins if this is requested.
-  if (variable_get(G2::VARNOFREETAGGING,
-      G2::DEFNOFREETAGGING) && !user_access(G2::PERM_ADMIN)) {
-    // No static cache here: there is already one in taxonomy_vocabulary_load().
-    $vocabs = [];
-
-    // We still hide the terms within freetagging vocabularies to allow partial
-    // display.
-    foreach ($taxonomy as $tid => $term) {
-      // Is the vocabulary for the current term known ?
-      $vid = $term->vid;
-      if (!array_key_exists($vid, $vocabs)) {
-        $vocab = taxonomy_vocabulary_load($vid);
-        $vocabs[$vid] = $vocab->tags;
-      }
-
-      // If it's a tags vocab, hide its terms.
-      if (!empty($vocabs[$vid])) {
-        unset($taxonomy[$tid]);
-      }
-    }
-  }
-
-  return $taxonomy;
-}
-
-/**
- * Return a formatted set of terms as links.
- *
- * Return a span containing links to taxonomy terms, or nothing
- * if node information contains no terms. The "node" passed must
- * contain full term information, not just tids.
- *
- * @param object $node
- *   Imitation of a node.
- *
- * @return string
- *   The resulting string.
- */
-function _g2_entry_terms($node) {
-  $ret = NULL;
-  if (!empty($node->taxonomy)) {
-    $terms = [];
-    foreach ($node->taxonomy as $tid => $term) {
-      $terms[$tid] = [
-        'href' => 'taxonomy/term/' . $term->tid,
-        'title' => check_plain($term->name),
-        'attributes' => ['rel' => 'tag'],
-      ];
-    }
-    $ret = theme('links', $terms);
-  }
-  return $ret;
-}
-
-/**
  * Submit handler for _g2_referer_links().
  *
  * Use the wipe target to redirect to the wipe confirmation form. If we
@@ -550,40 +547,6 @@ function _g2_referer_wipe($nid = NULL) {
 }
 
 /**
- * Returns a structure for the WOTD.
- *
- * @param int $bodysize
- *   The maximum length for the body. Entails truncation.
- *
- * @return object
- *   Title / nid / teaser
- *   Teaser and Body are returned already filtered, not stripped.
- */
-function _g2_wotd($bodysize = 0) {
-  /** @var \Drupal\g2\WOTD $wotd */
-  $wotd = \Drupal::service(G2::SVC_WOTD);
-  $node = $wotd->get();
-  if (empty($node)) {
-    return NULL;
-  }
-
-  $node->teaser = check_markup($node->teaser, $node->format);
-
-  $node->truncated = FALSE;
-  if ($bodysize > 0) {
-    // Save the raw version.
-    $node->raw_body = $node->body;
-    if (drupal_strlen($node->body) > $bodysize) {
-      $node->truncated = TRUE;
-      $body = drupal_substr($node->body, 0, $bodysize);
-      $node->body = check_markup($body, $node->format);
-    }
-  }
-
-  return $node;
-}
-
-/**
  * Implements hook_block().
  */
 function g2_block($op = 'list', $delta = 0, $edit = []) {
@@ -618,80 +581,6 @@ function g2_block($op = 'list', $delta = 0, $edit = []) {
   }
 
   return $ret;
-}
-
-/**
- * Loader for G2_entries.
- *
- * Only returns unpublished nodes to users with "administer nodes".
- *
- * @param string $title
- *   The title to look for.
- *
- * @return array
- *   Nodes matching the title.
- *
- * @see \Drupal\g2\Plugin\Filter\Definition::doProcess
- */
-function g2_entry_load(string $title) {
-  $storage = \Drupal::entityTypeManager()->getStorage(G2::TYPE);
-  $nids = $storage->getQuery()
-    ->accessCheck()
-    ->condition('type', G2::BUNDLE)
-    ->condition('status', NodeInterface::PUBLISHED)
-    ->condition('title', $title)
-    ->execute();
-  if (empty($nids)) {
-    return [];
-  }
-
-  $nodes = $storage->loadMultiple($nids);
-  return $nodes;
-}
-
-/**
- * Menu loader for g2_node.
- *
- * @param int $us_nid
- *   The id of the node to load.
- *
- * @return object|false|null
- *   The load result.
- */
-function g2_node_load($us_nid = 0) {
-  // Safety with regard to $us_nid is checked within node_load()
-  if (is_numeric($us_nid)) {
-    $node = Drupal::entityTypeManager()
-      ->getStorage(G2::TYPE)
-      ->load($us_nid);
-  }
-  else {
-    $node = reset($us_nid);
-  }
-  if ($node->getEntityTypeId() != G2::BUNDLE) {
-    $node = NULL;
-  }
-
-  return $node;
-}
-
-/**
- * Implements hook_preprocess_html().
- *
- * Append the glossary name to the page title on entry pages and G2 own pages,
- * possibly including the default site name.
- */
-function g2_preprocess_html(&$variables) {
-  if (!\Drupal::service(G2::SVC_ROUTE_FILTER)->isG2Route()) {
-    return;
-  }
-  $override = \Drupal::config(G2::CONFIG_NAME)
-    ->get(G2::VARPAGETITLE);
-  if (empty($override)) {
-    return;
-  }
-  $name = strtr($override, ['@title' => $variables['head_title']['name']]);
-  $variables['head_title']['name'] = $name;
 }
 
 /**
@@ -813,27 +702,3 @@ SQL;
   }
 }
 
-/**
- * Theme a random entry.
- *
- * This is actually a short view for just about any single node, but it
- * is even shorter than node_view($node, TRUE).
- *
- * @param object $node
- *   A node to display.
- *
- * @return string
- *   HTML: the themed entry.
- */
-function theme_g2_random($node = NULL) {
-  $ret = l($node->title, 'node/' . $node->nid);
-  if ($node->teaser) {
-    // Why t() ? Because varying languages have varying takes on spaces
-    // before/after semicolons.
-    $ret .= t(': @teaser', ['@teaser' => $node->teaser]);
-  }
-  // No need to test: also works on missing taxonomy.
-  $ret .= _g2_entry_terms($node);
-  $ret .= theme('more_link', url('node/' . $node->nid), t('&nbsp;(+)'));
-  return $ret;
-}

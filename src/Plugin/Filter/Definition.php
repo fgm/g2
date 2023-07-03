@@ -14,6 +14,7 @@ use Drupal\Core\Utility\UnroutedUrlAssemblerInterface;
 use Drupal\filter\FilterProcessResult;
 use Drupal\filter\Plugin\FilterBase;
 use Drupal\g2\G2;
+use Drupal\node\NodeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -97,6 +98,33 @@ class Definition extends FilterBase implements ContainerFactoryPluginInterface {
   }
 
   /**
+   * Loader for G2_entries.
+   *
+   * @param string $title
+   *   The title to look for.
+   *
+   * @return array
+   *   Nodes matching the title.
+   *
+   * @see \Drupal\g2\Plugin\Filter\Definition::doProcess
+   */
+  public function loadEntries(string $title) {
+    $storage = $this->etm->getStorage(G2::TYPE);
+    $nids = $storage->getQuery()
+      ->accessCheck()
+      ->condition('type', G2::BUNDLE)
+      ->condition('status', NodeInterface::PUBLISHED)
+      ->condition('title', $title)
+      ->execute();
+    if (empty($nids)) {
+      return [];
+    }
+
+    $nodes = $storage->loadMultiple($nids);
+    return $nodes;
+  }
+
+  /**
    * Translate glossary linking elements (<dfn>) to local links)
    *
    * This function generates absolute links, for the benefit of the WOTD RSS
@@ -119,7 +147,7 @@ class Definition extends FilterBase implements ContainerFactoryPluginInterface {
       $tooltip = '';
     }
     else {
-      $nodes = g2_entry_load($text);
+      $nodes = $this->loadEntries($text);
       $count = count($nodes);
       switch ($count) {
         case 0:
@@ -199,7 +227,7 @@ class Definition extends FilterBase implements ContainerFactoryPluginInterface {
       'absolute' => TRUE,
       'attributes' => ['class' => 'g2-dfn-link'],
     ]);
-    $ret = Link::fromTextAndUrl($text, $url)->toString();
+    $ret = Link::fromTextAndUrl($text, $url)->toString()->__toString();
     return $ret;
   }
 
