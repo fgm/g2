@@ -108,9 +108,6 @@ class TopBlock extends BlockBase implements ContainerFactoryPluginInterface {
     /** @var \Drupal\Core\Config\ConfigFactory $configFactory */
     $configFactory = $container->get(G2::SVC_CONF);
 
-    /** @var \Drupal\Core\Config\ImmutableConfig $config */
-    $config = $configFactory->get(G2::CONFIG_NAME);
-
     return new static($configuration, $plugin_id, $plugin_definition, $configFactory, $top);
   }
 

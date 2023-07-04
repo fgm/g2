@@ -7,6 +7,7 @@ use Drupal\Core\Cache\Cache;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Http\RequestStack;
+use Drupal\path_alias\AliasManagerInterface;
 
 /**
  * Tracks navigation to G2 entries anonymously.
@@ -21,6 +22,13 @@ class RefererTracker {
   protected Connection $db;
 
   /**
+   * The core path_alias.manager service.
+   *
+   * @var \Drupal\path_alias\AliasManagerInterface
+   */
+  protected AliasManagerInterface $pathAliasManager;
+
+  /**
    * The core request_stack service.
    *
    * @var \Drupal\Core\Http\RequestStack
@@ -32,14 +40,18 @@ class RefererTracker {
    *
    * @param \Drupal\Core\Database\Connection $db
    *   The core databaser service.
+   * @param \Drupal\path_alias\AliasManagerInterface $pathAliasManager
+   *   The core path_alias.manager service.
    * @param \Drupal\Core\Http\RequestStack $stack
    *   The core request_stack service.
    */
   public function __construct(
     Connection $db,
+    AliasManagerInterface $pathAliasManager,
     RequestStack $stack
   ) {
     $this->db = $db;
+    $this->pathAliasManager = $pathAliasManager;
     $this->requestStack = $stack;
   }
 
@@ -76,10 +88,9 @@ class RefererTracker {
     // Extract local path, possibly aliased.
     $path = mb_substr($referer, mb_strlen($base));
     // Unalias it.
-    $canonical = \Drupal::service('path_alias.manager')->getPathByAlias($path);
+    $canonical = $this->pathAliasManager->getPathByAlias($path);
     // Sanitize it.
     $escaped = Html::escape($canonical);
-    $table = G2::TBL_REFERER;
 
     // We cannot use the Upsert() method because this table has a composite PK.
     $updated = $this->db->update(G2::TBL_REFERER)

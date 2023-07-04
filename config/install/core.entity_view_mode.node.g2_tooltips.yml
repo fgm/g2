@@ -3,6 +3,9 @@ status: true
 dependencies:
   module:
     - node
+  enforced:
+    module:
+      - g2
 id: node.g2_tooltips
 label: 'G2 Tooltips'
 targetEntityType: node

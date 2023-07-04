@@ -88,13 +88,12 @@ class TopTest extends WebDriverTestBase {
     for ($i = 0; $i < 3; $i++) {
       $title = $rand->word(AhoCorasickTest::MAX_LEN);
       $now = $ts++;
-      $node = $this->drupalCreateNode([
+      $this->drupalCreateNode([
         'title' => $title,
         'type' => G2::BUNDLE,
         'created' => $now,
         'changed' => $now,
       ]);
-      $nid = $node->id();
     }
   }
 

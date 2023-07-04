@@ -408,12 +408,12 @@ class G2 {
   /**
    * The ID of the Authored view.
    */
-  const VIEWS_AUTHORED = 'g2_authored';
+  const VIEW_AUTHORED = 'g2_authored';
 
   /**
    * The ID of the block display in the Authored view.
    */
-  const VIEWS_AUTHORED_DISPLAY = 'user_page_block';
+  const VIEW_AUTHORED_DISPLAY = 'user_page_block';
 
   /**
    * The ID of the WOTD view.

@@ -4,6 +4,9 @@ dependencies:
   module:
     - node
     - user
+  enforced:
+    module:
+      - g2
 id: g2_wotd
 label: 'G2 WOTD'
 module: views
