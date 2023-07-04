@@ -406,6 +406,16 @@ class G2 {
   const VERSION = '8.1';
 
   /**
+   * The ID of the Authored view.
+   */
+  const VIEWS_AUTHORED = 'g2_authored';
+
+  /**
+   * The ID of the block display in the Authored view.
+   */
+  const VIEWS_AUTHORED_DISPLAY = 'user_page_block';
+
+  /**
    * The ID of the WOTD view.
    */
   const VIEW_WOTD = 'g2_wotd';

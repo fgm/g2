@@ -2,9 +2,74 @@
 
 /**
  * @file
- * Install stub for G2 Glossary.
+ * Install file for G2 Glossary.
  *
- * @copyright 2005-2015 Frédéric G. Marand, for Ouest Systemes Informatiques.
+ * @copyright 2005-2023 Frédéric G. Marand, for Ouest Systemes Informatiques.
  */
 
-require_once __DIR__ . '/g2.install.php';
+declare(strict_types = 1);
+
+use Drupal\block\Entity\Block;
+use Drupal\g2\G2;
+use Drupal\g2\Requirements;
+
+/**
+ * Implements hook_install().
+ *
+ * Automatically place the user profile block if the current them allows it.
+ */
+
+function g2_install() {
+  $theme = \Drupal::theme()->getActiveTheme();
+  $name = $theme->getName();
+  $region = 'content';
+  if (!in_array($region, $theme->getRegions())) {
+    Drupal::messenger()->addWarning(
+      t('The current theme "%theme" has no "%region" region, so the "authored" block will not be placed automatically. You can still place it manually after installation.', [
+        '%theme' => $name,
+        '%region' => $region
+      ])
+    );
+    return;
+  }
+  $view = G2::VIEWS_AUTHORED;
+  $display = G2::VIEWS_AUTHORED_DISPLAY;
+
+  $plugin_definition = [
+    'id' => "views_block__${view}_${display}",
+    'theme' => $name,
+    'region' => $region,
+    // Attempt to place the block below the default content placement.
+    'weight' => 15,
+    'plugin' => "views_block:${view}-${display}",
+  ];
+  $block = Block::create($plugin_definition);
+  $block->save();
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function g2_requirements($phase) {
+  if ($phase != 'runtime') {
+    return [];
+  }
+
+  $requirements = Requirements::create(\Drupal::getContainer());
+  $requirements->checkControllers();
+  $requirements->checkStatistics();
+  $result = $requirements->getResult();
+  return $result;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function g2_uninstall(bool $is_syncing) {
+  $view = G2::VIEWS_AUTHORED;
+  $display = G2::VIEWS_AUTHORED_DISPLAY;
+  $block = Block::load("views_block__${view}_${display}");
+  if (!empty($block)) {
+    $block->delete();
+  }
+}

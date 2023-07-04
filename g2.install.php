@@ -1,32 +1,5 @@
 <?php
 
-/**
- * @file
- * Install file for G2 Glossary.
- *
- * @copyright 2005-2023 Frédéric G. Marand, for Ouest Systemes Informatiques.
- */
-
-declare(strict_types = 1);
-
-use Drupal\g2\G2;
-use Drupal\g2\Requirements;
-
-/**
- * Implements hook_requirements().
- */
-function g2_requirements($phase) {
-  if ($phase != 'runtime') {
-    return [];
-  }
-
-  $requirements = Requirements::create(\Drupal::getContainer());
-  $requirements->checkControllers();
-  $requirements->checkStatistics();
-  $result = $requirements->getResult();
-  return $result;
-}
-
 /* ===== Code below this line not checked for D8 ============================ */
 
 /**

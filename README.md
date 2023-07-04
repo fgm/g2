@@ -59,7 +59,7 @@ Its development to this date has been entirely sponsored by [OSInet].
 * Sample implementation (about 6000 terms, localized to french)
   https://riff.org/glossaire
 
-## Completion status as of 2023-07-03 (dev)
+## Completion status as of 2023-07-04 (dev)
 
 ### Main features
 
@@ -76,14 +76,16 @@ Its development to this date has been entirely sponsored by [OSInet].
 
 ### Pages
 
-| Page          | Status  |
-|---------------|---------|
-| main          | Done    |
-| homonyms      | Done    |
-| initial       | Working |
-| node add form | Done    |
-| settings      | Working |
-| WOTD feed     | Done    |
+| Page             | Status  |
+|------------------|---------|
+| homonyms         | Done    |
+| initial          | Working |
+| main             | Done    |
+| node add form    | Done    |
+| referer tracking | Done    |
+| settings         | Done    |
+| WOTD feed        | Done    |
+
 
 ## Prerequisites
 
