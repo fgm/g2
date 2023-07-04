@@ -98,45 +98,6 @@ function g2_requirements($phase) {
 function g2_schema() {
   $schema = [];
 
-  /* Additional fields in G2 entries.
-   *
-   * G2 does not currently revision the additional information it stores
-   * its entries, so it does not need to keep the vid.
-   */
-  $schema['g2_node'] = [
-    'fields' => [
-      'nid' => [
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-        'default' => 0,
-        'description' => 'The node id for the current G2 entry',
-      ],
-      'period' => [
-        'type' => 'varchar',
-        'length' => 50,
-        'not null' => FALSE,
-        'description' => 'A time period during which the entity of concept described by the term was in use',
-      ],
-      'complement' => [
-        'type' => 'text',
-        'size' => 'medium',
-        'not null' => FALSE,
-        'description' => 'Editor-only general information about the item content',
-      ],
-      'origin' => [
-        'type' => 'text',
-        'size' => 'medium',
-        'not null' => FALSE,
-        'description' => 'Editor-only intellectual property-related information about the item content',
-      ],
-    ],
-    'primary key' => ['nid'],
-    'unique keys' => [],
-    'indexes' => [],
-    'description' => 'The G2-specific, non-versioned, informations contained in G2 entry nodes in addition to default node content.',
-  ];
-
   // G2 per-node referer stats.
   $schema[G2::TBL_REFERER] = [
     'fields' => [
